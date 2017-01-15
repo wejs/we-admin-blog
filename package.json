@@ -1,8 +1,7 @@
 {
   "name": "we-admin-blog",
   "version": "0.0.0",
-  "description": "Small description for we-admin-blog goes here",
-  "private": true,
+  "description": "We.js plugin with ember.js for add admin blog SPA in /admin route",
   "directories": {
     "doc": "doc",
     "test": "tests"
@@ -12,12 +11,18 @@
     "start": "ember server",
     "test": "ember test"
   },
-  "repository": "",
   "engines": {
     "node": ">= 0.10.0"
   },
-  "author": "",
+  "files": [
+    "dist",
+    "install.js",
+    "plugin.js",
+    "README.md"
+  ],
   "license": "MIT",
+  "repository": "wejs/we-admin-blog",
+  "author": "Alberto Souza <contato@albertosouza.net>",
   "devDependencies": {
     "broccoli-asset-rev": "^2.4.2",
     "ember-ajax": "^2.0.1",
@@ -39,5 +44,8 @@
     "ember-resolver": "^2.0.3",
     "ember-welcome-page": "^1.0.1",
     "loader.js": "^4.0.1"
-  }
+  },
+  "keywords": [
+    "wejs-plugin"
+  ]
 }

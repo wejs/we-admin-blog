@@ -11,6 +11,7 @@ module.exports = function loadPlugin(projectPath, Plugin) {
   // set plugin routes
   // plugin.setRoutes({
   // });
+
   plugin.fastLoader = function fastLoader(we, done) {
     done();
   };

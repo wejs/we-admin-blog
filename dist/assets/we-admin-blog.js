@@ -1001,6 +1001,18 @@ define('we-admin-blog/router', ['exports', 'ember', 'we-admin-blog/config/enviro
     this.route('user');
     this.route('vocabulary');
     this.route('term');
+
+    this.route('login');
+    this.route('logout');
+    this.route('profile', function () {
+      this.route('change-password');
+    });
+    this.route('users', function () {
+      this.route('create');
+      this.route('item', { path: ':id' }, function () {});
+    });
+
+    this.route('not-found', { path: '/*path' });
   });
 
   exports['default'] = Router;
@@ -1093,6 +1105,9 @@ define('we-admin-blog/routes/application', ['exports', 'ember', 'ember-simple-au
 });
 define('we-admin-blog/routes/article', ['exports', 'ember'], function (exports, _ember) {
   exports['default'] = _ember['default'].Route.extend({});
+});
+define('we-admin-blog/routes/index', ['exports', 'ember', 'ember-simple-auth/mixins/authenticated-route-mixin'], function (exports, _ember, _emberSimpleAuthMixinsAuthenticatedRouteMixin) {
+  exports['default'] = _ember['default'].Route.extend(_emberSimpleAuthMixinsAuthenticatedRouteMixin['default']);
 });
 define('we-admin-blog/routes/login', ['exports', 'ember', 'ember-simple-auth/mixins/unauthenticated-route-mixin'], function (exports, _ember, _emberSimpleAuthMixinsUnauthenticatedRouteMixin) {
   exports['default'] = _ember['default'].Route.extend(_emberSimpleAuthMixinsUnauthenticatedRouteMixin['default'], {
@@ -1207,20 +1222,204 @@ define('we-admin-blog/session-stores/application', ['exports', 'ember-simple-aut
 define("we-admin-blog/templates/application", ["exports"], function (exports) {
   exports["default"] = Ember.HTMLBars.template((function () {
     var child0 = (function () {
+      var child0 = (function () {
+        var child0 = (function () {
+          return {
+            meta: {
+              "fragmentReason": false,
+              "revision": "Ember@2.6.2",
+              "loc": {
+                "source": null,
+                "start": {
+                  "line": 4,
+                  "column": 4
+                },
+                "end": {
+                  "line": 11,
+                  "column": 4
+                }
+              },
+              "moduleName": "we-admin-blog/templates/application.hbs"
+            },
+            isEmpty: false,
+            arity: 0,
+            cachedFragment: null,
+            hasRendered: false,
+            buildFragment: function buildFragment(dom) {
+              var el0 = dom.createDocumentFragment();
+              var el1 = dom.createTextNode("      ");
+              dom.appendChild(el0, el1);
+              var el1 = dom.createElement("div");
+              dom.setAttribute(el1, "id", "wrapper");
+              var el2 = dom.createTextNode("\n        ");
+              dom.appendChild(el1, el2);
+              var el2 = dom.createComment("");
+              dom.appendChild(el1, el2);
+              var el2 = dom.createTextNode("\n        ");
+              dom.appendChild(el1, el2);
+              var el2 = dom.createElement("div");
+              dom.setAttribute(el2, "id", "page-wrapper");
+              var el3 = dom.createTextNode("\n          ");
+              dom.appendChild(el2, el3);
+              var el3 = dom.createComment("");
+              dom.appendChild(el2, el3);
+              var el3 = dom.createTextNode("\n        ");
+              dom.appendChild(el2, el3);
+              dom.appendChild(el1, el2);
+              var el2 = dom.createTextNode("\n      ");
+              dom.appendChild(el1, el2);
+              dom.appendChild(el0, el1);
+              var el1 = dom.createTextNode("\n");
+              dom.appendChild(el0, el1);
+              return el0;
+            },
+            buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+              var element0 = dom.childAt(fragment, [1]);
+              var morphs = new Array(2);
+              morphs[0] = dom.createMorphAt(element0, 1, 1);
+              morphs[1] = dom.createMorphAt(dom.childAt(element0, [3]), 1, 1);
+              return morphs;
+            },
+            statements: [["inline", "partial", ["partials/header"], [], ["loc", [null, [6, 8], [6, 37]]]], ["content", "outlet", ["loc", [null, [8, 10], [8, 20]]]]],
+            locals: [],
+            templates: []
+          };
+        })();
+        var child1 = (function () {
+          return {
+            meta: {
+              "fragmentReason": false,
+              "revision": "Ember@2.6.2",
+              "loc": {
+                "source": null,
+                "start": {
+                  "line": 11,
+                  "column": 4
+                },
+                "end": {
+                  "line": 13,
+                  "column": 4
+                }
+              },
+              "moduleName": "we-admin-blog/templates/application.hbs"
+            },
+            isEmpty: false,
+            arity: 0,
+            cachedFragment: null,
+            hasRendered: false,
+            buildFragment: function buildFragment(dom) {
+              var el0 = dom.createDocumentFragment();
+              var el1 = dom.createTextNode("      ");
+              dom.appendChild(el0, el1);
+              var el1 = dom.createComment("");
+              dom.appendChild(el0, el1);
+              var el1 = dom.createTextNode("\n");
+              dom.appendChild(el0, el1);
+              return el0;
+            },
+            buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+              var morphs = new Array(1);
+              morphs[0] = dom.createMorphAt(fragment, 1, 1, contextualElement);
+              return morphs;
+            },
+            statements: [["inline", "partial", ["partials/home-not-manager"], [], ["loc", [null, [12, 6], [12, 45]]]]],
+            locals: [],
+            templates: []
+          };
+        })();
+        return {
+          meta: {
+            "fragmentReason": false,
+            "revision": "Ember@2.6.2",
+            "loc": {
+              "source": null,
+              "start": {
+                "line": 3,
+                "column": 2
+              },
+              "end": {
+                "line": 14,
+                "column": 2
+              }
+            },
+            "moduleName": "we-admin-blog/templates/application.hbs"
+          },
+          isEmpty: false,
+          arity: 0,
+          cachedFragment: null,
+          hasRendered: false,
+          buildFragment: function buildFragment(dom) {
+            var el0 = dom.createDocumentFragment();
+            var el1 = dom.createComment("");
+            dom.appendChild(el0, el1);
+            return el0;
+          },
+          buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+            var morphs = new Array(1);
+            morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+            dom.insertBoundary(fragment, 0);
+            dom.insertBoundary(fragment, null);
+            return morphs;
+          },
+          statements: [["block", "if", [["get", "settings.isManager", ["loc", [null, [4, 10], [4, 28]]]]], [], 0, 1, ["loc", [null, [4, 4], [13, 11]]]]],
+          locals: [],
+          templates: [child0, child1]
+        };
+      })();
+      var child1 = (function () {
+        return {
+          meta: {
+            "fragmentReason": false,
+            "revision": "Ember@2.6.2",
+            "loc": {
+              "source": null,
+              "start": {
+                "line": 14,
+                "column": 2
+              },
+              "end": {
+                "line": 16,
+                "column": 2
+              }
+            },
+            "moduleName": "we-admin-blog/templates/application.hbs"
+          },
+          isEmpty: false,
+          arity: 0,
+          cachedFragment: null,
+          hasRendered: false,
+          buildFragment: function buildFragment(dom) {
+            var el0 = dom.createDocumentFragment();
+            var el1 = dom.createTextNode("    ");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createComment("");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createTextNode("\n");
+            dom.appendChild(el0, el1);
+            return el0;
+          },
+          buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+            var morphs = new Array(1);
+            morphs[0] = dom.createMorphAt(fragment, 1, 1, contextualElement);
+            return morphs;
+          },
+          statements: [["inline", "partial", ["partials/home-un-authenticated"], [], ["loc", [null, [15, 4], [15, 48]]]]],
+          locals: [],
+          templates: []
+        };
+      })();
       return {
         meta: {
-          "fragmentReason": {
-            "name": "triple-curlies"
-          },
+          "fragmentReason": false,
           "revision": "Ember@2.6.2",
           "loc": {
             "source": null,
             "start": {
-              "line": 1,
+              "line": 2,
               "column": 0
             },
             "end": {
-              "line": 6,
+              "line": 18,
               "column": 0
             }
           },
@@ -1232,35 +1431,21 @@ define("we-admin-blog/templates/application", ["exports"], function (exports) {
         hasRendered: false,
         buildFragment: function buildFragment(dom) {
           var el0 = dom.createDocumentFragment();
-          var el1 = dom.createTextNode("  ");
-          dom.appendChild(el0, el1);
-          var el1 = dom.createElement("div");
-          dom.setAttribute(el1, "id", "wrapper");
-          var el2 = dom.createTextNode("\n    ");
-          dom.appendChild(el1, el2);
-          var el2 = dom.createComment("");
-          dom.appendChild(el1, el2);
-          var el2 = dom.createTextNode("\n    ");
-          dom.appendChild(el1, el2);
-          var el2 = dom.createComment("");
-          dom.appendChild(el1, el2);
-          var el2 = dom.createTextNode("\n  ");
-          dom.appendChild(el1, el2);
+          var el1 = dom.createComment("");
           dom.appendChild(el0, el1);
           var el1 = dom.createTextNode("\n");
           dom.appendChild(el0, el1);
           return el0;
         },
         buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-          var element0 = dom.childAt(fragment, [1]);
-          var morphs = new Array(2);
-          morphs[0] = dom.createMorphAt(element0, 1, 1);
-          morphs[1] = dom.createMorphAt(element0, 3, 3);
+          var morphs = new Array(1);
+          morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+          dom.insertBoundary(fragment, 0);
           return morphs;
         },
-        statements: [["inline", "partial", ["partials/header"], [], ["loc", [null, [3, 4], [3, 33]]]], ["content", "outlet", ["loc", [null, [4, 4], [4, 14]]]]],
+        statements: [["block", "if", [["get", "session.isAuthenticated", ["loc", [null, [3, 8], [3, 31]]]]], [], 0, 1, ["loc", [null, [3, 2], [16, 9]]]]],
         locals: [],
-        templates: []
+        templates: [child0, child1]
       };
     })();
     var child1 = (function () {
@@ -1271,11 +1456,11 @@ define("we-admin-blog/templates/application", ["exports"], function (exports) {
           "loc": {
             "source": null,
             "start": {
-              "line": 6,
+              "line": 18,
               "column": 0
             },
             "end": {
-              "line": 8,
+              "line": 20,
               "column": 0
             }
           },
@@ -1300,7 +1485,7 @@ define("we-admin-blog/templates/application", ["exports"], function (exports) {
           morphs[0] = dom.createMorphAt(fragment, 1, 1, contextualElement);
           return morphs;
         },
-        statements: [["content", "bootstrap-loading", ["loc", [null, [7, 2], [7, 23]]]]],
+        statements: [["content", "bootstrap-loading", ["loc", [null, [19, 2], [19, 23]]]]],
         locals: [],
         templates: []
       };
@@ -1309,7 +1494,7 @@ define("we-admin-blog/templates/application", ["exports"], function (exports) {
       meta: {
         "fragmentReason": {
           "name": "missing-wrapper",
-          "problems": ["wrong-type"]
+          "problems": ["wrong-type", "multiple-nodes"]
         },
         "revision": "Ember@2.6.2",
         "loc": {
@@ -1319,8 +1504,8 @@ define("we-admin-blog/templates/application", ["exports"], function (exports) {
             "column": 0
           },
           "end": {
-            "line": 8,
-            "column": 7
+            "line": 21,
+            "column": 0
           }
         },
         "moduleName": "we-admin-blog/templates/application.hbs"
@@ -1333,16 +1518,21 @@ define("we-admin-blog/templates/application", ["exports"], function (exports) {
         var el0 = dom.createDocumentFragment();
         var el1 = dom.createComment("");
         dom.appendChild(el0, el1);
+        var el1 = dom.createTextNode("\n");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createComment("");
+        dom.appendChild(el0, el1);
         return el0;
       },
       buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-        var morphs = new Array(1);
+        var morphs = new Array(2);
         morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+        morphs[1] = dom.createMorphAt(fragment, 2, 2, contextualElement);
         dom.insertBoundary(fragment, 0);
         dom.insertBoundary(fragment, null);
         return morphs;
       },
-      statements: [["block", "if", [["get", "settingsLoaded", ["loc", [null, [1, 6], [1, 20]]]]], [], 0, 1, ["loc", [null, [1, 0], [8, 7]]]]],
+      statements: [["inline", "notification-container", [], ["position", "top"], ["loc", [null, [1, 0], [1, 41]]]], ["block", "if", [["get", "settingsLoaded", ["loc", [null, [2, 6], [2, 20]]]]], [], 0, 1, ["loc", [null, [2, 0], [20, 7]]]]],
       locals: [],
       templates: [child0, child1]
     };
@@ -6168,6 +6358,148 @@ define("we-admin-blog/templates/components/models-table/table-footer", ["exports
   })());
 });
 define("we-admin-blog/templates/index",["exports"],function(exports){exports["default"] = Ember.HTMLBars.template((function(){return {meta:{"fragmentReason":{"name":"triple-curlies"},"revision":"Ember@2.6.2","loc":{"source":null,"start":{"line":1,"column":0},"end":{"line":540,"column":6}},"moduleName":"we-admin-blog/templates/index.hbs"},isEmpty:false,arity:0,cachedFragment:null,hasRendered:false,buildFragment:function buildFragment(dom){var el0=dom.createDocumentFragment();var el1=dom.createElement("div");dom.setAttribute(el1,"id","page-wrapper");var el2=dom.createTextNode("\n    ");dom.appendChild(el1,el2);var el2=dom.createElement("div");dom.setAttribute(el2,"class","row");var el3=dom.createTextNode("\n        ");dom.appendChild(el2,el3);var el3=dom.createElement("div");dom.setAttribute(el3,"class","col-lg-12");var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("h1");dom.setAttribute(el4,"class","page-header");var el5=dom.createTextNode("Dashboard");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n        ");dom.appendChild(el3,el4);dom.appendChild(el2,el3);var el3=dom.createTextNode("\n        ");dom.appendChild(el2,el3);var el3=dom.createComment(" /.col-lg-12 ");dom.appendChild(el2,el3);var el3=dom.createTextNode("\n    ");dom.appendChild(el2,el3);dom.appendChild(el1,el2);var el2=dom.createTextNode("\n    ");dom.appendChild(el1,el2);var el2=dom.createComment(" /.row ");dom.appendChild(el1,el2);var el2=dom.createTextNode("\n    ");dom.appendChild(el1,el2);var el2=dom.createElement("div");dom.setAttribute(el2,"class","row");var el3=dom.createTextNode("\n        ");dom.appendChild(el2,el3);var el3=dom.createElement("div");dom.setAttribute(el3,"class","col-lg-3 col-md-6");var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("div");dom.setAttribute(el4,"class","panel panel-primary");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("div");dom.setAttribute(el5,"class","panel-heading");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("div");dom.setAttribute(el6,"class","row");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","col-xs-3");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("i");dom.setAttribute(el8,"class","fa fa-comments fa-5x");dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","col-xs-9 text-right");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","huge");var el9=dom.createTextNode("26");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");var el9=dom.createTextNode("New Comments!");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("a");dom.setAttribute(el5,"href","#");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("div");dom.setAttribute(el6,"class","panel-footer");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("span");dom.setAttribute(el7,"class","pull-left");var el8=dom.createTextNode("View Details");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("span");dom.setAttribute(el7,"class","pull-right");var el8=dom.createElement("i");dom.setAttribute(el8,"class","fa fa-arrow-circle-right");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","clearfix");dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n        ");dom.appendChild(el3,el4);dom.appendChild(el2,el3);var el3=dom.createTextNode("\n        ");dom.appendChild(el2,el3);var el3=dom.createElement("div");dom.setAttribute(el3,"class","col-lg-3 col-md-6");var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("div");dom.setAttribute(el4,"class","panel panel-green");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("div");dom.setAttribute(el5,"class","panel-heading");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("div");dom.setAttribute(el6,"class","row");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","col-xs-3");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("i");dom.setAttribute(el8,"class","fa fa-tasks fa-5x");dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","col-xs-9 text-right");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","huge");var el9=dom.createTextNode("12");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");var el9=dom.createTextNode("New Tasks!");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("a");dom.setAttribute(el5,"href","#");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("div");dom.setAttribute(el6,"class","panel-footer");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("span");dom.setAttribute(el7,"class","pull-left");var el8=dom.createTextNode("View Details");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("span");dom.setAttribute(el7,"class","pull-right");var el8=dom.createElement("i");dom.setAttribute(el8,"class","fa fa-arrow-circle-right");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","clearfix");dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n        ");dom.appendChild(el3,el4);dom.appendChild(el2,el3);var el3=dom.createTextNode("\n        ");dom.appendChild(el2,el3);var el3=dom.createElement("div");dom.setAttribute(el3,"class","col-lg-3 col-md-6");var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("div");dom.setAttribute(el4,"class","panel panel-yellow");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("div");dom.setAttribute(el5,"class","panel-heading");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("div");dom.setAttribute(el6,"class","row");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","col-xs-3");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("i");dom.setAttribute(el8,"class","fa fa-shopping-cart fa-5x");dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","col-xs-9 text-right");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","huge");var el9=dom.createTextNode("124");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");var el9=dom.createTextNode("New Orders!");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("a");dom.setAttribute(el5,"href","#");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("div");dom.setAttribute(el6,"class","panel-footer");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("span");dom.setAttribute(el7,"class","pull-left");var el8=dom.createTextNode("View Details");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("span");dom.setAttribute(el7,"class","pull-right");var el8=dom.createElement("i");dom.setAttribute(el8,"class","fa fa-arrow-circle-right");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","clearfix");dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n        ");dom.appendChild(el3,el4);dom.appendChild(el2,el3);var el3=dom.createTextNode("\n        ");dom.appendChild(el2,el3);var el3=dom.createElement("div");dom.setAttribute(el3,"class","col-lg-3 col-md-6");var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("div");dom.setAttribute(el4,"class","panel panel-red");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("div");dom.setAttribute(el5,"class","panel-heading");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("div");dom.setAttribute(el6,"class","row");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","col-xs-3");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("i");dom.setAttribute(el8,"class","fa fa-support fa-5x");dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","col-xs-9 text-right");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","huge");var el9=dom.createTextNode("13");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");var el9=dom.createTextNode("Support Tickets!");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("a");dom.setAttribute(el5,"href","#");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("div");dom.setAttribute(el6,"class","panel-footer");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("span");dom.setAttribute(el7,"class","pull-left");var el8=dom.createTextNode("View Details");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("span");dom.setAttribute(el7,"class","pull-right");var el8=dom.createElement("i");dom.setAttribute(el8,"class","fa fa-arrow-circle-right");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","clearfix");dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n        ");dom.appendChild(el3,el4);dom.appendChild(el2,el3);var el3=dom.createTextNode("\n    ");dom.appendChild(el2,el3);dom.appendChild(el1,el2);var el2=dom.createTextNode("\n    ");dom.appendChild(el1,el2);var el2=dom.createComment(" /.row ");dom.appendChild(el1,el2);var el2=dom.createTextNode("\n    ");dom.appendChild(el1,el2);var el2=dom.createElement("div");dom.setAttribute(el2,"class","row");var el3=dom.createTextNode("\n        ");dom.appendChild(el2,el3);var el3=dom.createElement("div");dom.setAttribute(el3,"class","col-lg-8");var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("div");dom.setAttribute(el4,"class","panel panel-default");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("div");dom.setAttribute(el5,"class","panel-heading");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("i");dom.setAttribute(el6,"class","fa fa-bar-chart-o fa-fw");dom.appendChild(el5,el6);var el6=dom.createTextNode(" Area Chart Example\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("div");dom.setAttribute(el6,"class","pull-right");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","btn-group");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("button");dom.setAttribute(el8,"type","button");dom.setAttribute(el8,"class","btn btn-default btn-xs dropdown-toggle");dom.setAttribute(el8,"data-toggle","dropdown");var el9=dom.createTextNode("\n                                Actions\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("span");dom.setAttribute(el9,"class","caret");dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("ul");dom.setAttribute(el8,"class","dropdown-menu pull-right");dom.setAttribute(el8,"role","menu");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("li");var el10=dom.createElement("a");dom.setAttribute(el10,"href","#");var el11=dom.createTextNode("Action");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                ");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("li");var el10=dom.createElement("a");dom.setAttribute(el10,"href","#");var el11=dom.createTextNode("Another action");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                ");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("li");var el10=dom.createElement("a");dom.setAttribute(el10,"href","#");var el11=dom.createTextNode("Something else here");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                ");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("li");dom.setAttribute(el9,"class","divider");dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("li");var el10=dom.createElement("a");dom.setAttribute(el10,"href","#");var el11=dom.createTextNode("Separated link");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                ");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createComment(" /.panel-heading ");dom.appendChild(el4,el5);var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("div");dom.setAttribute(el5,"class","panel-body");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("div");dom.setAttribute(el6,"id","morris-area-chart");dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createComment(" /.panel-body ");dom.appendChild(el4,el5);var el5=dom.createTextNode("\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createComment(" /.panel ");dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("div");dom.setAttribute(el4,"class","panel panel-default");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("div");dom.setAttribute(el5,"class","panel-heading");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("i");dom.setAttribute(el6,"class","fa fa-bar-chart-o fa-fw");dom.appendChild(el5,el6);var el6=dom.createTextNode(" Bar Chart Example\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("div");dom.setAttribute(el6,"class","pull-right");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","btn-group");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("button");dom.setAttribute(el8,"type","button");dom.setAttribute(el8,"class","btn btn-default btn-xs dropdown-toggle");dom.setAttribute(el8,"data-toggle","dropdown");var el9=dom.createTextNode("\n                                Actions\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("span");dom.setAttribute(el9,"class","caret");dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("ul");dom.setAttribute(el8,"class","dropdown-menu pull-right");dom.setAttribute(el8,"role","menu");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("li");var el10=dom.createElement("a");dom.setAttribute(el10,"href","#");var el11=dom.createTextNode("Action");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                ");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("li");var el10=dom.createElement("a");dom.setAttribute(el10,"href","#");var el11=dom.createTextNode("Another action");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                ");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("li");var el10=dom.createElement("a");dom.setAttribute(el10,"href","#");var el11=dom.createTextNode("Something else here");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                ");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("li");dom.setAttribute(el9,"class","divider");dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("li");var el10=dom.createElement("a");dom.setAttribute(el10,"href","#");var el11=dom.createTextNode("Separated link");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                ");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createComment(" /.panel-heading ");dom.appendChild(el4,el5);var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("div");dom.setAttribute(el5,"class","panel-body");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("div");dom.setAttribute(el6,"class","row");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","col-lg-4");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","table-responsive");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("table");dom.setAttribute(el9,"class","table table-bordered table-hover table-striped");var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("thead");var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("tr");var el12=dom.createTextNode("\n                                            ");dom.appendChild(el11,el12);var el12=dom.createElement("th");var el13=dom.createTextNode("#");dom.appendChild(el12,el13);dom.appendChild(el11,el12);var el12=dom.createTextNode("\n                                            ");dom.appendChild(el11,el12);var el12=dom.createElement("th");var el13=dom.createTextNode("Date");dom.appendChild(el12,el13);dom.appendChild(el11,el12);var el12=dom.createTextNode("\n                                            ");dom.appendChild(el11,el12);var el12=dom.createElement("th");var el13=dom.createTextNode("Time");dom.appendChild(el12,el13);dom.appendChild(el11,el12);var el12=dom.createTextNode("\n                                            ");dom.appendChild(el11,el12);var el12=dom.createElement("th");var el13=dom.createTextNode("Amount");dom.appendChild(el12,el13);dom.appendChild(el11,el12);var el12=dom.createTextNode("\n                                        ");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                    ");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("tbody");var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("tr");var el12=dom.createTextNode("\n                                            ");dom.appendChild(el11,el12);var el12=dom.createElement("td");var el13=dom.createTextNode("3326");dom.appendChild(el12,el13);dom.appendChild(el11,el12);var el12=dom.createTextNode("\n                                            ");dom.appendChild(el11,el12);var el12=dom.createElement("td");var el13=dom.createTextNode("10/21/2013");dom.appendChild(el12,el13);dom.appendChild(el11,el12);var el12=dom.createTextNode("\n                                            ");dom.appendChild(el11,el12);var el12=dom.createElement("td");var el13=dom.createTextNode("3:29 PM");dom.appendChild(el12,el13);dom.appendChild(el11,el12);var el12=dom.createTextNode("\n                                            ");dom.appendChild(el11,el12);var el12=dom.createElement("td");var el13=dom.createTextNode("$321.33");dom.appendChild(el12,el13);dom.appendChild(el11,el12);var el12=dom.createTextNode("\n                                        ");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("tr");var el12=dom.createTextNode("\n                                            ");dom.appendChild(el11,el12);var el12=dom.createElement("td");var el13=dom.createTextNode("3325");dom.appendChild(el12,el13);dom.appendChild(el11,el12);var el12=dom.createTextNode("\n                                            ");dom.appendChild(el11,el12);var el12=dom.createElement("td");var el13=dom.createTextNode("10/21/2013");dom.appendChild(el12,el13);dom.appendChild(el11,el12);var el12=dom.createTextNode("\n                                            ");dom.appendChild(el11,el12);var el12=dom.createElement("td");var el13=dom.createTextNode("3:20 PM");dom.appendChild(el12,el13);dom.appendChild(el11,el12);var el12=dom.createTextNode("\n                                            ");dom.appendChild(el11,el12);var el12=dom.createElement("td");var el13=dom.createTextNode("$234.34");dom.appendChild(el12,el13);dom.appendChild(el11,el12);var el12=dom.createTextNode("\n                                        ");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("tr");var el12=dom.createTextNode("\n                                            ");dom.appendChild(el11,el12);var el12=dom.createElement("td");var el13=dom.createTextNode("3324");dom.appendChild(el12,el13);dom.appendChild(el11,el12);var el12=dom.createTextNode("\n                                            ");dom.appendChild(el11,el12);var el12=dom.createElement("td");var el13=dom.createTextNode("10/21/2013");dom.appendChild(el12,el13);dom.appendChild(el11,el12);var el12=dom.createTextNode("\n                                            ");dom.appendChild(el11,el12);var el12=dom.createElement("td");var el13=dom.createTextNode("3:03 PM");dom.appendChild(el12,el13);dom.appendChild(el11,el12);var el12=dom.createTextNode("\n                                            ");dom.appendChild(el11,el12);var el12=dom.createElement("td");var el13=dom.createTextNode("$724.17");dom.appendChild(el12,el13);dom.appendChild(el11,el12);var el12=dom.createTextNode("\n                                        ");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("tr");var el12=dom.createTextNode("\n                                            ");dom.appendChild(el11,el12);var el12=dom.createElement("td");var el13=dom.createTextNode("3323");dom.appendChild(el12,el13);dom.appendChild(el11,el12);var el12=dom.createTextNode("\n                                            ");dom.appendChild(el11,el12);var el12=dom.createElement("td");var el13=dom.createTextNode("10/21/2013");dom.appendChild(el12,el13);dom.appendChild(el11,el12);var el12=dom.createTextNode("\n                                            ");dom.appendChild(el11,el12);var el12=dom.createElement("td");var el13=dom.createTextNode("3:00 PM");dom.appendChild(el12,el13);dom.appendChild(el11,el12);var el12=dom.createTextNode("\n                                            ");dom.appendChild(el11,el12);var el12=dom.createElement("td");var el13=dom.createTextNode("$23.71");dom.appendChild(el12,el13);dom.appendChild(el11,el12);var el12=dom.createTextNode("\n                                        ");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("tr");var el12=dom.createTextNode("\n                                            ");dom.appendChild(el11,el12);var el12=dom.createElement("td");var el13=dom.createTextNode("3322");dom.appendChild(el12,el13);dom.appendChild(el11,el12);var el12=dom.createTextNode("\n                                            ");dom.appendChild(el11,el12);var el12=dom.createElement("td");var el13=dom.createTextNode("10/21/2013");dom.appendChild(el12,el13);dom.appendChild(el11,el12);var el12=dom.createTextNode("\n                                            ");dom.appendChild(el11,el12);var el12=dom.createElement("td");var el13=dom.createTextNode("2:49 PM");dom.appendChild(el12,el13);dom.appendChild(el11,el12);var el12=dom.createTextNode("\n                                            ");dom.appendChild(el11,el12);var el12=dom.createElement("td");var el13=dom.createTextNode("$8345.23");dom.appendChild(el12,el13);dom.appendChild(el11,el12);var el12=dom.createTextNode("\n                                        ");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("tr");var el12=dom.createTextNode("\n                                            ");dom.appendChild(el11,el12);var el12=dom.createElement("td");var el13=dom.createTextNode("3321");dom.appendChild(el12,el13);dom.appendChild(el11,el12);var el12=dom.createTextNode("\n                                            ");dom.appendChild(el11,el12);var el12=dom.createElement("td");var el13=dom.createTextNode("10/21/2013");dom.appendChild(el12,el13);dom.appendChild(el11,el12);var el12=dom.createTextNode("\n                                            ");dom.appendChild(el11,el12);var el12=dom.createElement("td");var el13=dom.createTextNode("2:23 PM");dom.appendChild(el12,el13);dom.appendChild(el11,el12);var el12=dom.createTextNode("\n                                            ");dom.appendChild(el11,el12);var el12=dom.createElement("td");var el13=dom.createTextNode("$245.12");dom.appendChild(el12,el13);dom.appendChild(el11,el12);var el12=dom.createTextNode("\n                                        ");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("tr");var el12=dom.createTextNode("\n                                            ");dom.appendChild(el11,el12);var el12=dom.createElement("td");var el13=dom.createTextNode("3320");dom.appendChild(el12,el13);dom.appendChild(el11,el12);var el12=dom.createTextNode("\n                                            ");dom.appendChild(el11,el12);var el12=dom.createElement("td");var el13=dom.createTextNode("10/21/2013");dom.appendChild(el12,el13);dom.appendChild(el11,el12);var el12=dom.createTextNode("\n                                            ");dom.appendChild(el11,el12);var el12=dom.createElement("td");var el13=dom.createTextNode("2:15 PM");dom.appendChild(el12,el13);dom.appendChild(el11,el12);var el12=dom.createTextNode("\n                                            ");dom.appendChild(el11,el12);var el12=dom.createElement("td");var el13=dom.createTextNode("$5663.54");dom.appendChild(el12,el13);dom.appendChild(el11,el12);var el12=dom.createTextNode("\n                                        ");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("tr");var el12=dom.createTextNode("\n                                            ");dom.appendChild(el11,el12);var el12=dom.createElement("td");var el13=dom.createTextNode("3319");dom.appendChild(el12,el13);dom.appendChild(el11,el12);var el12=dom.createTextNode("\n                                            ");dom.appendChild(el11,el12);var el12=dom.createElement("td");var el13=dom.createTextNode("10/21/2013");dom.appendChild(el12,el13);dom.appendChild(el11,el12);var el12=dom.createTextNode("\n                                            ");dom.appendChild(el11,el12);var el12=dom.createElement("td");var el13=dom.createTextNode("2:13 PM");dom.appendChild(el12,el13);dom.appendChild(el11,el12);var el12=dom.createTextNode("\n                                            ");dom.appendChild(el11,el12);var el12=dom.createElement("td");var el13=dom.createTextNode("$943.45");dom.appendChild(el12,el13);dom.appendChild(el11,el12);var el12=dom.createTextNode("\n                                        ");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                    ");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                ");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createComment(" /.table-responsive ");dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createComment(" /.col-lg-4 (nested) ");dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","col-lg-8");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"id","morris-bar-chart");dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createComment(" /.col-lg-8 (nested) ");dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createComment(" /.row ");dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createComment(" /.panel-body ");dom.appendChild(el4,el5);var el5=dom.createTextNode("\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createComment(" /.panel ");dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("div");dom.setAttribute(el4,"class","panel panel-default");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("div");dom.setAttribute(el5,"class","panel-heading");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("i");dom.setAttribute(el6,"class","fa fa-clock-o fa-fw");dom.appendChild(el5,el6);var el6=dom.createTextNode(" Responsive Timeline\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createComment(" /.panel-heading ");dom.appendChild(el4,el5);var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("div");dom.setAttribute(el5,"class","panel-body");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("ul");dom.setAttribute(el6,"class","timeline");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("li");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","timeline-badge");var el9=dom.createElement("i");dom.setAttribute(el9,"class","fa fa-check");dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","timeline-panel");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("div");dom.setAttribute(el9,"class","timeline-heading");var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("h4");dom.setAttribute(el10,"class","timeline-title");var el11=dom.createTextNode("Lorem ipsum dolor");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("p");var el11=dom.createElement("small");dom.setAttribute(el11,"class","text-muted");var el12=dom.createElement("i");dom.setAttribute(el12,"class","fa fa-clock-o");dom.appendChild(el11,el12);var el12=dom.createTextNode(" 11 hours ago via Twitter");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                    ");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                ");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("div");dom.setAttribute(el9,"class","timeline-body");var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("p");var el11=dom.createTextNode("Lorem ipsum dolor sit amet, consectetur adipisicing elit. Libero laboriosam dolor perspiciatis omnis exercitationem. Beatae, officia pariatur? Est cum veniam excepturi. Maiores praesentium, porro voluptas suscipit facere rem dicta, debitis.");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                ");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("li");dom.setAttribute(el7,"class","timeline-inverted");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","timeline-badge warning");var el9=dom.createElement("i");dom.setAttribute(el9,"class","fa fa-credit-card");dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","timeline-panel");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("div");dom.setAttribute(el9,"class","timeline-heading");var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("h4");dom.setAttribute(el10,"class","timeline-title");var el11=dom.createTextNode("Lorem ipsum dolor");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                ");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("div");dom.setAttribute(el9,"class","timeline-body");var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("p");var el11=dom.createTextNode("Lorem ipsum dolor sit amet, consectetur adipisicing elit. Autem dolorem quibusdam, tenetur commodi provident cumque magni voluptatem libero, quis rerum. Fugiat esse debitis optio, tempore. Animi officiis alias, officia repellendus.");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("p");var el11=dom.createTextNode("Lorem ipsum dolor sit amet, consectetur adipisicing elit. Laudantium maiores odit qui est tempora eos, nostrum provident explicabo dignissimos debitis vel! Adipisci eius voluptates, ad aut recusandae minus eaque facere.");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                ");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("li");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","timeline-badge danger");var el9=dom.createElement("i");dom.setAttribute(el9,"class","fa fa-bomb");dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","timeline-panel");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("div");dom.setAttribute(el9,"class","timeline-heading");var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("h4");dom.setAttribute(el10,"class","timeline-title");var el11=dom.createTextNode("Lorem ipsum dolor");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                ");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("div");dom.setAttribute(el9,"class","timeline-body");var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("p");var el11=dom.createTextNode("Lorem ipsum dolor sit amet, consectetur adipisicing elit. Repellendus numquam facilis enim eaque, tenetur nam id qui vel velit similique nihil iure molestias aliquam, voluptatem totam quaerat, magni commodi quisquam.");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                ");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("li");dom.setAttribute(el7,"class","timeline-inverted");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","timeline-panel");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("div");dom.setAttribute(el9,"class","timeline-heading");var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("h4");dom.setAttribute(el10,"class","timeline-title");var el11=dom.createTextNode("Lorem ipsum dolor");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                ");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("div");dom.setAttribute(el9,"class","timeline-body");var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("p");var el11=dom.createTextNode("Lorem ipsum dolor sit amet, consectetur adipisicing elit. Voluptates est quaerat asperiores sapiente, eligendi, nihil. Itaque quos, alias sapiente rerum quas odit! Aperiam officiis quidem delectus libero, omnis ut debitis!");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                ");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("li");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","timeline-badge info");var el9=dom.createElement("i");dom.setAttribute(el9,"class","fa fa-save");dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","timeline-panel");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("div");dom.setAttribute(el9,"class","timeline-heading");var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("h4");dom.setAttribute(el10,"class","timeline-title");var el11=dom.createTextNode("Lorem ipsum dolor");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                ");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("div");dom.setAttribute(el9,"class","timeline-body");var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("p");var el11=dom.createTextNode("Lorem ipsum dolor sit amet, consectetur adipisicing elit. Nobis minus modi quam ipsum alias at est molestiae excepturi delectus nesciunt, quibusdam debitis amet, beatae consequuntur impedit nulla qui! Laborum, atque.");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("hr");dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("div");dom.setAttribute(el10,"class","btn-group");var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("button");dom.setAttribute(el11,"type","button");dom.setAttribute(el11,"class","btn btn-primary btn-sm dropdown-toggle");dom.setAttribute(el11,"data-toggle","dropdown");var el12=dom.createTextNode("\n                                            ");dom.appendChild(el11,el12);var el12=dom.createElement("i");dom.setAttribute(el12,"class","fa fa-gear");dom.appendChild(el11,el12);var el12=dom.createTextNode(" ");dom.appendChild(el11,el12);var el12=dom.createElement("span");dom.setAttribute(el12,"class","caret");dom.appendChild(el11,el12);var el12=dom.createTextNode("\n                                        ");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("ul");dom.setAttribute(el11,"class","dropdown-menu");dom.setAttribute(el11,"role","menu");var el12=dom.createTextNode("\n                                            ");dom.appendChild(el11,el12);var el12=dom.createElement("li");var el13=dom.createElement("a");dom.setAttribute(el13,"href","#");var el14=dom.createTextNode("Action");dom.appendChild(el13,el14);dom.appendChild(el12,el13);var el13=dom.createTextNode("\n                                            ");dom.appendChild(el12,el13);dom.appendChild(el11,el12);var el12=dom.createTextNode("\n                                            ");dom.appendChild(el11,el12);var el12=dom.createElement("li");var el13=dom.createElement("a");dom.setAttribute(el13,"href","#");var el14=dom.createTextNode("Another action");dom.appendChild(el13,el14);dom.appendChild(el12,el13);var el13=dom.createTextNode("\n                                            ");dom.appendChild(el12,el13);dom.appendChild(el11,el12);var el12=dom.createTextNode("\n                                            ");dom.appendChild(el11,el12);var el12=dom.createElement("li");var el13=dom.createElement("a");dom.setAttribute(el13,"href","#");var el14=dom.createTextNode("Something else here");dom.appendChild(el13,el14);dom.appendChild(el12,el13);var el13=dom.createTextNode("\n                                            ");dom.appendChild(el12,el13);dom.appendChild(el11,el12);var el12=dom.createTextNode("\n                                            ");dom.appendChild(el11,el12);var el12=dom.createElement("li");dom.setAttribute(el12,"class","divider");dom.appendChild(el11,el12);var el12=dom.createTextNode("\n                                            ");dom.appendChild(el11,el12);var el12=dom.createElement("li");var el13=dom.createElement("a");dom.setAttribute(el13,"href","#");var el14=dom.createTextNode("Separated link");dom.appendChild(el13,el14);dom.appendChild(el12,el13);var el13=dom.createTextNode("\n                                            ");dom.appendChild(el12,el13);dom.appendChild(el11,el12);var el12=dom.createTextNode("\n                                        ");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                    ");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                ");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("li");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","timeline-panel");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("div");dom.setAttribute(el9,"class","timeline-heading");var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("h4");dom.setAttribute(el10,"class","timeline-title");var el11=dom.createTextNode("Lorem ipsum dolor");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                ");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("div");dom.setAttribute(el9,"class","timeline-body");var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("p");var el11=dom.createTextNode("Lorem ipsum dolor sit amet, consectetur adipisicing elit. Sequi fuga odio quibusdam. Iure expedita, incidunt unde quis nam! Quod, quisquam. Officia quam qui adipisci quas consequuntur nostrum sequi. Consequuntur, commodi.");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                ");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("li");dom.setAttribute(el7,"class","timeline-inverted");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","timeline-badge success");var el9=dom.createElement("i");dom.setAttribute(el9,"class","fa fa-graduation-cap");dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","timeline-panel");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("div");dom.setAttribute(el9,"class","timeline-heading");var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("h4");dom.setAttribute(el10,"class","timeline-title");var el11=dom.createTextNode("Lorem ipsum dolor");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                ");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("div");dom.setAttribute(el9,"class","timeline-body");var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("p");var el11=dom.createTextNode("Lorem ipsum dolor sit amet, consectetur adipisicing elit. Deserunt obcaecati, quaerat tempore officia voluptas debitis consectetur culpa amet, accusamus dolorum fugiat, animi dicta aperiam, enim incidunt quisquam maxime neque eaque.");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                ");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createComment(" /.panel-body ");dom.appendChild(el4,el5);var el5=dom.createTextNode("\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createComment(" /.panel ");dom.appendChild(el3,el4);var el4=dom.createTextNode("\n        ");dom.appendChild(el3,el4);dom.appendChild(el2,el3);var el3=dom.createTextNode("\n        ");dom.appendChild(el2,el3);var el3=dom.createComment(" /.col-lg-8 ");dom.appendChild(el2,el3);var el3=dom.createTextNode("\n        ");dom.appendChild(el2,el3);var el3=dom.createElement("div");dom.setAttribute(el3,"class","col-lg-4");var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("div");dom.setAttribute(el4,"class","panel panel-default");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("div");dom.setAttribute(el5,"class","panel-heading");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("i");dom.setAttribute(el6,"class","fa fa-bell fa-fw");dom.appendChild(el5,el6);var el6=dom.createTextNode(" Notifications Panel\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createComment(" /.panel-heading ");dom.appendChild(el4,el5);var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("div");dom.setAttribute(el5,"class","panel-body");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("div");dom.setAttribute(el6,"class","list-group");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("a");dom.setAttribute(el7,"href","#");dom.setAttribute(el7,"class","list-group-item");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("i");dom.setAttribute(el8,"class","fa fa-comment fa-fw");dom.appendChild(el7,el8);var el8=dom.createTextNode(" New Comment\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("span");dom.setAttribute(el8,"class","pull-right text-muted small");var el9=dom.createElement("em");var el10=dom.createTextNode("4 minutes ago");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("a");dom.setAttribute(el7,"href","#");dom.setAttribute(el7,"class","list-group-item");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("i");dom.setAttribute(el8,"class","fa fa-twitter fa-fw");dom.appendChild(el7,el8);var el8=dom.createTextNode(" 3 New Followers\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("span");dom.setAttribute(el8,"class","pull-right text-muted small");var el9=dom.createElement("em");var el10=dom.createTextNode("12 minutes ago");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("a");dom.setAttribute(el7,"href","#");dom.setAttribute(el7,"class","list-group-item");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("i");dom.setAttribute(el8,"class","fa fa-envelope fa-fw");dom.appendChild(el7,el8);var el8=dom.createTextNode(" Message Sent\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("span");dom.setAttribute(el8,"class","pull-right text-muted small");var el9=dom.createElement("em");var el10=dom.createTextNode("27 minutes ago");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("a");dom.setAttribute(el7,"href","#");dom.setAttribute(el7,"class","list-group-item");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("i");dom.setAttribute(el8,"class","fa fa-tasks fa-fw");dom.appendChild(el7,el8);var el8=dom.createTextNode(" New Task\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("span");dom.setAttribute(el8,"class","pull-right text-muted small");var el9=dom.createElement("em");var el10=dom.createTextNode("43 minutes ago");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("a");dom.setAttribute(el7,"href","#");dom.setAttribute(el7,"class","list-group-item");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("i");dom.setAttribute(el8,"class","fa fa-upload fa-fw");dom.appendChild(el7,el8);var el8=dom.createTextNode(" Server Rebooted\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("span");dom.setAttribute(el8,"class","pull-right text-muted small");var el9=dom.createElement("em");var el10=dom.createTextNode("11:32 AM");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("a");dom.setAttribute(el7,"href","#");dom.setAttribute(el7,"class","list-group-item");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("i");dom.setAttribute(el8,"class","fa fa-bolt fa-fw");dom.appendChild(el7,el8);var el8=dom.createTextNode(" Server Crashed!\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("span");dom.setAttribute(el8,"class","pull-right text-muted small");var el9=dom.createElement("em");var el10=dom.createTextNode("11:13 AM");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("a");dom.setAttribute(el7,"href","#");dom.setAttribute(el7,"class","list-group-item");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("i");dom.setAttribute(el8,"class","fa fa-warning fa-fw");dom.appendChild(el7,el8);var el8=dom.createTextNode(" Server Not Responding\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("span");dom.setAttribute(el8,"class","pull-right text-muted small");var el9=dom.createElement("em");var el10=dom.createTextNode("10:57 AM");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("a");dom.setAttribute(el7,"href","#");dom.setAttribute(el7,"class","list-group-item");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("i");dom.setAttribute(el8,"class","fa fa-shopping-cart fa-fw");dom.appendChild(el7,el8);var el8=dom.createTextNode(" New Order Placed\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("span");dom.setAttribute(el8,"class","pull-right text-muted small");var el9=dom.createElement("em");var el10=dom.createTextNode("9:49 AM");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("a");dom.setAttribute(el7,"href","#");dom.setAttribute(el7,"class","list-group-item");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("i");dom.setAttribute(el8,"class","fa fa-money fa-fw");dom.appendChild(el7,el8);var el8=dom.createTextNode(" Payment Received\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("span");dom.setAttribute(el8,"class","pull-right text-muted small");var el9=dom.createElement("em");var el10=dom.createTextNode("Yesterday");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createComment(" /.list-group ");dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("a");dom.setAttribute(el6,"href","#");dom.setAttribute(el6,"class","btn btn-default btn-block");var el7=dom.createTextNode("View All Alerts");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createComment(" /.panel-body ");dom.appendChild(el4,el5);var el5=dom.createTextNode("\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createComment(" /.panel ");dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("div");dom.setAttribute(el4,"class","panel panel-default");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("div");dom.setAttribute(el5,"class","panel-heading");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("i");dom.setAttribute(el6,"class","fa fa-bar-chart-o fa-fw");dom.appendChild(el5,el6);var el6=dom.createTextNode(" Donut Chart Example\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("div");dom.setAttribute(el5,"class","panel-body");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("div");dom.setAttribute(el6,"id","morris-donut-chart");dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("a");dom.setAttribute(el6,"href","#");dom.setAttribute(el6,"class","btn btn-default btn-block");var el7=dom.createTextNode("View Details");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createComment(" /.panel-body ");dom.appendChild(el4,el5);var el5=dom.createTextNode("\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createComment(" /.panel ");dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("div");dom.setAttribute(el4,"class","chat-panel panel panel-default");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("div");dom.setAttribute(el5,"class","panel-heading");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("i");dom.setAttribute(el6,"class","fa fa-comments fa-fw");dom.appendChild(el5,el6);var el6=dom.createTextNode(" Chat\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("div");dom.setAttribute(el6,"class","btn-group pull-right");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("button");dom.setAttribute(el7,"type","button");dom.setAttribute(el7,"class","btn btn-default btn-xs dropdown-toggle");dom.setAttribute(el7,"data-toggle","dropdown");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("i");dom.setAttribute(el8,"class","fa fa-chevron-down");dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("ul");dom.setAttribute(el7,"class","dropdown-menu slidedown");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("li");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("a");dom.setAttribute(el9,"href","#");var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("i");dom.setAttribute(el10,"class","fa fa-refresh fa-fw");dom.appendChild(el9,el10);var el10=dom.createTextNode(" Refresh\n                                ");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("li");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("a");dom.setAttribute(el9,"href","#");var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("i");dom.setAttribute(el10,"class","fa fa-check-circle fa-fw");dom.appendChild(el9,el10);var el10=dom.createTextNode(" Available\n                                ");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("li");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("a");dom.setAttribute(el9,"href","#");var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("i");dom.setAttribute(el10,"class","fa fa-times fa-fw");dom.appendChild(el9,el10);var el10=dom.createTextNode(" Busy\n                                ");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("li");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("a");dom.setAttribute(el9,"href","#");var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("i");dom.setAttribute(el10,"class","fa fa-clock-o fa-fw");dom.appendChild(el9,el10);var el10=dom.createTextNode(" Away\n                                ");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("li");dom.setAttribute(el8,"class","divider");dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("li");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("a");dom.setAttribute(el9,"href","#");var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("i");dom.setAttribute(el10,"class","fa fa-sign-out fa-fw");dom.appendChild(el9,el10);var el10=dom.createTextNode(" Sign Out\n                                ");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createComment(" /.panel-heading ");dom.appendChild(el4,el5);var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("div");dom.setAttribute(el5,"class","panel-body");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("ul");dom.setAttribute(el6,"class","chat");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("li");dom.setAttribute(el7,"class","left clearfix");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("span");dom.setAttribute(el8,"class","chat-img pull-left");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("img");dom.setAttribute(el9,"src","http://placehold.it/50/55C1E7/fff");dom.setAttribute(el9,"alt","User Avatar");dom.setAttribute(el9,"class","img-circle");dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","chat-body clearfix");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("div");dom.setAttribute(el9,"class","header");var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("strong");dom.setAttribute(el10,"class","primary-font");var el11=dom.createTextNode("Jack Sparrow");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("small");dom.setAttribute(el10,"class","pull-right text-muted");var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("i");dom.setAttribute(el11,"class","fa fa-clock-o fa-fw");dom.appendChild(el10,el11);var el11=dom.createTextNode(" 12 mins ago\n                                    ");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                ");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("p");var el10=dom.createTextNode("\n                                    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur bibendum ornare dolor, quis ullamcorper ligula sodales.\n                                ");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("li");dom.setAttribute(el7,"class","right clearfix");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("span");dom.setAttribute(el8,"class","chat-img pull-right");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("img");dom.setAttribute(el9,"src","http://placehold.it/50/FA6F57/fff");dom.setAttribute(el9,"alt","User Avatar");dom.setAttribute(el9,"class","img-circle");dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","chat-body clearfix");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("div");dom.setAttribute(el9,"class","header");var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("small");dom.setAttribute(el10,"class"," text-muted");var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("i");dom.setAttribute(el11,"class","fa fa-clock-o fa-fw");dom.appendChild(el10,el11);var el11=dom.createTextNode(" 13 mins ago");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("strong");dom.setAttribute(el10,"class","pull-right primary-font");var el11=dom.createTextNode("Bhaumik Patel");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                ");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("p");var el10=dom.createTextNode("\n                                    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur bibendum ornare dolor, quis ullamcorper ligula sodales.\n                                ");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("li");dom.setAttribute(el7,"class","left clearfix");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("span");dom.setAttribute(el8,"class","chat-img pull-left");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("img");dom.setAttribute(el9,"src","http://placehold.it/50/55C1E7/fff");dom.setAttribute(el9,"alt","User Avatar");dom.setAttribute(el9,"class","img-circle");dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","chat-body clearfix");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("div");dom.setAttribute(el9,"class","header");var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("strong");dom.setAttribute(el10,"class","primary-font");var el11=dom.createTextNode("Jack Sparrow");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("small");dom.setAttribute(el10,"class","pull-right text-muted");var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("i");dom.setAttribute(el11,"class","fa fa-clock-o fa-fw");dom.appendChild(el10,el11);var el11=dom.createTextNode(" 14 mins ago");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                ");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("p");var el10=dom.createTextNode("\n                                    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur bibendum ornare dolor, quis ullamcorper ligula sodales.\n                                ");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("li");dom.setAttribute(el7,"class","right clearfix");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("span");dom.setAttribute(el8,"class","chat-img pull-right");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("img");dom.setAttribute(el9,"src","http://placehold.it/50/FA6F57/fff");dom.setAttribute(el9,"alt","User Avatar");dom.setAttribute(el9,"class","img-circle");dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","chat-body clearfix");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("div");dom.setAttribute(el9,"class","header");var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("small");dom.setAttribute(el10,"class"," text-muted");var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("i");dom.setAttribute(el11,"class","fa fa-clock-o fa-fw");dom.appendChild(el10,el11);var el11=dom.createTextNode(" 15 mins ago");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("strong");dom.setAttribute(el10,"class","pull-right primary-font");var el11=dom.createTextNode("Bhaumik Patel");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                ");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("p");var el10=dom.createTextNode("\n                                    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur bibendum ornare dolor, quis ullamcorper ligula sodales.\n                                ");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createComment(" /.panel-body ");dom.appendChild(el4,el5);var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("div");dom.setAttribute(el5,"class","panel-footer");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("div");dom.setAttribute(el6,"class","input-group");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("input");dom.setAttribute(el7,"id","btn-input");dom.setAttribute(el7,"type","text");dom.setAttribute(el7,"class","form-control input-sm");dom.setAttribute(el7,"placeholder","Type your message here...");dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("span");dom.setAttribute(el7,"class","input-group-btn");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("button");dom.setAttribute(el8,"class","btn btn-warning btn-sm");dom.setAttribute(el8,"id","btn-chat");var el9=dom.createTextNode("\n                                Send\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createComment(" /.panel-footer ");dom.appendChild(el4,el5);var el5=dom.createTextNode("\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createComment(" /.panel .chat-panel ");dom.appendChild(el3,el4);var el4=dom.createTextNode("\n        ");dom.appendChild(el3,el4);dom.appendChild(el2,el3);var el3=dom.createTextNode("\n        ");dom.appendChild(el2,el3);var el3=dom.createComment(" /.col-lg-4 ");dom.appendChild(el2,el3);var el3=dom.createTextNode("\n    ");dom.appendChild(el2,el3);dom.appendChild(el1,el2);var el2=dom.createTextNode("\n    ");dom.appendChild(el1,el2);var el2=dom.createComment(" /.row ");dom.appendChild(el1,el2);var el2=dom.createTextNode("\n");dom.appendChild(el1,el2);dom.appendChild(el0,el1);return el0;},buildRenderNodes:function buildRenderNodes(){return [];},statements:[],locals:[],templates:[]};})());});
+define("we-admin-blog/templates/login", ["exports"], function (exports) {
+  exports["default"] = Ember.HTMLBars.template((function () {
+    return {
+      meta: {
+        "fragmentReason": {
+          "name": "triple-curlies"
+        },
+        "revision": "Ember@2.6.2",
+        "loc": {
+          "source": null,
+          "start": {
+            "line": 1,
+            "column": 0
+          },
+          "end": {
+            "line": 18,
+            "column": 0
+          }
+        },
+        "moduleName": "we-admin-blog/templates/login.hbs"
+      },
+      isEmpty: false,
+      arity: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      buildFragment: function buildFragment(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createElement("div");
+        dom.setAttribute(el1, "class", "row");
+        var el2 = dom.createElement("div");
+        dom.setAttribute(el2, "class", "col-lg-12");
+        var el3 = dom.createTextNode("\n  ");
+        dom.appendChild(el2, el3);
+        var el3 = dom.createElement("form");
+        dom.setAttribute(el3, "class", "form-signin");
+        var el4 = dom.createTextNode("\n    ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createElement("h2");
+        dom.setAttribute(el4, "class", "form-signin-heading");
+        var el5 = dom.createTextNode("Área restrita");
+        dom.appendChild(el4, el5);
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n    ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createElement("label");
+        dom.setAttribute(el4, "for", "inputEmail");
+        dom.setAttribute(el4, "class", "sr-only");
+        var el5 = dom.createTextNode("Email");
+        dom.appendChild(el4, el5);
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n\n    ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createComment("");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n    ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createElement("label");
+        dom.setAttribute(el4, "for", "inputPassword");
+        dom.setAttribute(el4, "class", "sr-only");
+        var el5 = dom.createTextNode("Senha");
+        dom.appendChild(el4, el5);
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n    ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createComment("");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("    ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createElement("button");
+        dom.setAttribute(el4, "class", "btn btn-lg btn-primary btn-block");
+        dom.setAttribute(el4, "type", "submit");
+        var el5 = dom.createTextNode("Entrar");
+        dom.appendChild(el4, el5);
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n  ");
+        dom.appendChild(el3, el4);
+        dom.appendChild(el2, el3);
+        var el3 = dom.createTextNode("\n");
+        dom.appendChild(el2, el3);
+        dom.appendChild(el1, el2);
+        dom.appendChild(el0, el1);
+        var el1 = dom.createTextNode("\n");
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+        var element0 = dom.childAt(fragment, [0, 0, 1]);
+        var morphs = new Array(3);
+        morphs[0] = dom.createElementMorph(element0);
+        morphs[1] = dom.createMorphAt(element0, 5, 5);
+        morphs[2] = dom.createMorphAt(element0, 9, 9);
+        return morphs;
+      },
+      statements: [["element", "action", ["authenticate"], ["on", "submit"], ["loc", [null, [2, 28], [2, 65]]]], ["inline", "input", [], ["id", "identification", "type", "email", "placeholder", "Endereço de email", "value", ["subexpr", "@mut", [["get", "identification", ["loc", [null, [6, 83], [6, 97]]]]], [], []], "required", "required", "autofocus", "true", "class", "form-control"], ["loc", [null, [6, 4], [6, 157]]]], ["inline", "input", [], ["id", "password", "placeholder", "Senha ...", "type", "password", "value", ["subexpr", "@mut", [["get", "password", ["loc", [null, [8, 72], [8, 80]]]]], [], []], "required", "required", "class", "form-control"], ["loc", [null, [8, 4], [8, 123]]]]],
+      locals: [],
+      templates: []
+    };
+  })());
+});
+define("we-admin-blog/templates/logout", ["exports"], function (exports) {
+  exports["default"] = Ember.HTMLBars.template((function () {
+    return {
+      meta: {
+        "fragmentReason": {
+          "name": "missing-wrapper",
+          "problems": ["wrong-type"]
+        },
+        "revision": "Ember@2.6.2",
+        "loc": {
+          "source": null,
+          "start": {
+            "line": 1,
+            "column": 0
+          },
+          "end": {
+            "line": 1,
+            "column": 20
+          }
+        },
+        "moduleName": "we-admin-blog/templates/logout.hbs"
+      },
+      isEmpty: false,
+      arity: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      buildFragment: function buildFragment(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createTextNode("Loggin out, wait ...");
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      buildRenderNodes: function buildRenderNodes() {
+        return [];
+      },
+      statements: [],
+      locals: [],
+      templates: []
+    };
+  })());
+});
 define("we-admin-blog/templates/partials/header", ["exports"], function (exports) {
   exports["default"] = Ember.HTMLBars.template((function () {
     var child0 = (function () {
@@ -6815,6 +7147,154 @@ define("we-admin-blog/templates/partials/header", ["exports"], function (exports
       statements: [["block", "link-to", ["index"], ["class", "navbar-brand"], 0, null, ["loc", [null, [9, 8], [11, 20]]]], ["inline", "partial", ["partials/navbar-top-links"], [], ["loc", [null, [13, 4], [13, 43]]]], ["block", "ember-metismenu", [], ["classNames", "nav"], 1, null, ["loc", [null, [17, 10], [116, 30]]]]],
       locals: [],
       templates: [child0, child1]
+    };
+  })());
+});
+define("we-admin-blog/templates/partials/home-un-authenticated", ["exports"], function (exports) {
+  exports["default"] = Ember.HTMLBars.template((function () {
+    var child0 = (function () {
+      return {
+        meta: {
+          "fragmentReason": false,
+          "revision": "Ember@2.6.2",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 10,
+              "column": 6
+            },
+            "end": {
+              "line": 12,
+              "column": 6
+            }
+          },
+          "moduleName": "we-admin-blog/templates/partials/home-un-authenticated.hbs"
+        },
+        isEmpty: false,
+        arity: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createTextNode("        ");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var morphs = new Array(1);
+          morphs[0] = dom.createMorphAt(fragment, 1, 1, contextualElement);
+          return morphs;
+        },
+        statements: [["content", "appName", ["loc", [null, [11, 8], [11, 19]]]]],
+        locals: [],
+        templates: []
+      };
+    })();
+    return {
+      meta: {
+        "fragmentReason": {
+          "name": "missing-wrapper",
+          "problems": ["multiple-nodes"]
+        },
+        "revision": "Ember@2.6.2",
+        "loc": {
+          "source": null,
+          "start": {
+            "line": 1,
+            "column": 0
+          },
+          "end": {
+            "line": 16,
+            "column": 39
+          }
+        },
+        "moduleName": "we-admin-blog/templates/partials/home-un-authenticated.hbs"
+      },
+      isEmpty: false,
+      arity: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      buildFragment: function buildFragment(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createElement("nav");
+        dom.setAttribute(el1, "class", "navbar navbar-default");
+        var el2 = dom.createTextNode("\n  ");
+        dom.appendChild(el1, el2);
+        var el2 = dom.createElement("div");
+        dom.setAttribute(el2, "class", "container-fluid");
+        var el3 = dom.createTextNode("\n    ");
+        dom.appendChild(el2, el3);
+        var el3 = dom.createElement("div");
+        dom.setAttribute(el3, "class", "navbar-header");
+        var el4 = dom.createTextNode("\n      ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createElement("button");
+        dom.setAttribute(el4, "type", "button");
+        dom.setAttribute(el4, "class", "navbar-toggle collapsed");
+        dom.setAttribute(el4, "data-toggle", "collapse");
+        dom.setAttribute(el4, "data-target", "#navbar");
+        dom.setAttribute(el4, "aria-expanded", "false");
+        dom.setAttribute(el4, "aria-controls", "navbar");
+        var el5 = dom.createTextNode("\n        ");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createElement("span");
+        dom.setAttribute(el5, "class", "sr-only");
+        var el6 = dom.createTextNode("Toggle navigation");
+        dom.appendChild(el5, el6);
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("\n        ");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createElement("span");
+        dom.setAttribute(el5, "class", "icon-bar");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("\n        ");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createElement("span");
+        dom.setAttribute(el5, "class", "icon-bar");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("\n        ");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createElement("span");
+        dom.setAttribute(el5, "class", "icon-bar");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("\n      ");
+        dom.appendChild(el4, el5);
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createComment("");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("    ");
+        dom.appendChild(el3, el4);
+        dom.appendChild(el2, el3);
+        var el3 = dom.createTextNode("\n  ");
+        dom.appendChild(el2, el3);
+        dom.appendChild(el1, el2);
+        var el2 = dom.createTextNode("\n");
+        dom.appendChild(el1, el2);
+        dom.appendChild(el0, el1);
+        var el1 = dom.createTextNode("\n");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createElement("div");
+        dom.setAttribute(el1, "class", "container");
+        var el2 = dom.createComment("");
+        dom.appendChild(el1, el2);
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+        var morphs = new Array(2);
+        morphs[0] = dom.createMorphAt(dom.childAt(fragment, [0, 1, 1]), 3, 3);
+        morphs[1] = dom.createMorphAt(dom.childAt(fragment, [2]), 0, 0);
+        return morphs;
+      },
+      statements: [["block", "link-to", ["index"], ["class", "navbar-brand"], 0, null, ["loc", [null, [10, 6], [12, 18]]]], ["content", "outlet", ["loc", [null, [16, 23], [16, 33]]]]],
+      locals: [],
+      templates: [child0]
     };
   })());
 });

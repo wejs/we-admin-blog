@@ -1,8 +1,20 @@
+{{notification-container position="top"}}
 {{#if settingsLoaded}}
-  <div id="wrapper">
-    {{partial 'partials/header'}}
-    {{outlet}}
-  </div>
+  {{#if session.isAuthenticated}}
+    {{#if settings.isManager}}
+      <div id="wrapper">
+        {{partial 'partials/header'}}
+        <div id="page-wrapper">
+          {{outlet}}
+        </div>
+      </div>
+    {{else}}
+      {{partial 'partials/home-not-manager'}}
+    {{/if}}
+  {{else}}
+    {{partial 'partials/home-un-authenticated'}}
+  {{/if}}
+
 {{else}}
   {{bootstrap-loading}}
 {{/if}}

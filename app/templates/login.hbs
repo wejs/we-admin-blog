@@ -1,0 +1,17 @@
+<div class="row"><div class="col-lg-12">
+  <form class="form-signin" {{action 'authenticate' on='submit'}}>
+    <h2 class="form-signin-heading">Área restrita</h2>
+    <label for="inputEmail" class="sr-only">Email</label>
+
+    {{input id='identification' type="email" placeholder="Endereço de email" value=identification required="required" autofocus="true" class="form-control"}}
+    <label for="inputPassword" class="sr-only">Senha</label>
+    {{input id='password' placeholder="Senha ..." type='password' value=password required="required" class="form-control"}}
+    {{!--
+    <div class="checkbox">
+      <label>
+        <input type="checkbox" value="remember-me"> Remember me
+      </label>
+    </div> --}}
+    <button class="btn btn-lg btn-primary btn-block" type="submit">Entrar</button>
+  </form>
+</div></div>

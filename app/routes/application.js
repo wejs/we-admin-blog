@@ -7,13 +7,16 @@ export default Ember.Route.extend(ApplicationRouteMixin, {
   beforeModel() {
     this.get('notifications').setDefaultAutoClear(true);
     this.get('notifications').setDefaultClearDuration(5200);
-
-    return this.get('settings').getUserSettings();
   },
 
   model() {
     return Ember.RSVP.hash({
-      settingsLoaded: this.get('settings.settingsLoaded')
+      loadedSettings: this.get('settings').getUserSettings(),
+      minimumLoadingDelay: new window.Promise( (resolve)=> {
+        setTimeout( ()=> {
+          resolve();
+        }, 1000);
+      })
     });
   },
 

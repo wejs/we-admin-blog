@@ -17,7 +17,8 @@ loadInitializers(App, config.modulePrefix);
 
 Ember.Controller.reopen({
   notifications: Ember.inject.service('notification-messages'),
-  settings: Ember.inject.service('settings')
+  settings: Ember.inject.service('settings'),
+  session: Ember.inject.service('session')
 });
 
 Ember.Route.reopen({

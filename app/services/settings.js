@@ -20,8 +20,6 @@ export default Ember.Service.extend({
   // invert isAdmin to use in disabled inputs
   notIsAdmin: Ember.computed.not('isAdmin'),
 
-  loaded: false,
-
   getUserSettings() {
     const uid = this.get('authenticatedUserId');
     let headers = { Accept: 'application/vnd.api+json' },
@@ -44,11 +42,11 @@ export default Ember.Service.extend({
 
       // get the authenticated user:
       if (uid && response.authenticatedUser) {
-        this.get('store').push('user', response.authenticatedUser);
+        // this.get('store').push('user', response.authenticatedUser);
         this.set('user', this.get('store').peekRecord('user', uid));
       }
 
-      this.set('loaded', true);
+      return response;
     });
   }
 });

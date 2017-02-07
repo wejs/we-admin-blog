@@ -8408,7 +8408,7 @@ catch(err) {
 /* jshint ignore:start */
 
 if (!runningTests) {
-  require("we-admin-blog/app")["default"].create({"name":"we-admin-blog","version":"0.0.0+04c1a998"});
+  require("we-admin-blog/app")["default"].create({"name":"we-admin-blog","version":"0.0.0+42062954"});
 }
 
 /* jshint ignore:end */

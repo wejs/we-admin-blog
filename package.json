@@ -60,7 +60,8 @@
   ],
   "wejs": {
     "dependencies": {
-      "we-plugin-user-settings": true
+      "we-plugin-user-settings": true,
+      "we-passport-oauth2-password": true
     }
   }
 }

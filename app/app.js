@@ -15,4 +15,14 @@ App = Ember.Application.extend({
 
 loadInitializers(App, config.modulePrefix);
 
+Ember.Controller.reopen({
+  notifications: Ember.inject.service('notification-messages'),
+  settings: Ember.inject.service('settings')
+});
+
+Ember.Route.reopen({
+  notifications: Ember.inject.service('notification-messages'),
+  settings: Ember.inject.service('settings')
+});
+
 export default App;

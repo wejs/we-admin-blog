@@ -1,4 +1,8 @@
-<div id="wrapper">
-  {{partial 'partials/header'}}
-  {{outlet}}
-</div>
+{{#if settingsLoaded}}
+  <div id="wrapper">
+    {{partial 'partials/header'}}
+    {{outlet}}
+  </div>
+{{else}}
+  {{bootstrap-loading}}
+{{/if}}

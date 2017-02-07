@@ -6,6 +6,20 @@
 
 /* jshint ignore:end */
 
+define('we-admin-blog/adapters/application', ['exports', 'ember-data', 'we-admin-blog/config/environment', 'ember-simple-auth/mixins/data-adapter-mixin'], function (exports, _emberData, _weAdminBlogConfigEnvironment, _emberSimpleAuthMixinsDataAdapterMixin) {
+  exports['default'] = _emberData['default'].JSONAPIAdapter.extend(_emberSimpleAuthMixinsDataAdapterMixin['default'], {
+    host: _weAdminBlogConfigEnvironment['default'].API_HOST,
+    authorizer: 'authorizer:oauth2',
+    /**
+      @method pathForType
+      @param {String} modelName
+      @return {String} path
+    **/
+    pathForType: function pathForType(modelName) {
+      return modelName;
+    }
+  });
+});
 define('we-admin-blog/app', ['exports', 'ember', 'we-admin-blog/resolver', 'ember-load-initializers', 'we-admin-blog/config/environment'], function (exports, _ember, _weAdminBlogResolver, _emberLoadInitializers, _weAdminBlogConfigEnvironment) {
 
   var App = undefined;
@@ -20,8 +34,40 @@ define('we-admin-blog/app', ['exports', 'ember', 'we-admin-blog/resolver', 'embe
 
   (0, _emberLoadInitializers['default'])(App, _weAdminBlogConfigEnvironment['default'].modulePrefix);
 
+  _ember['default'].Controller.reopen({
+    notifications: _ember['default'].inject.service('notification-messages'),
+    settings: _ember['default'].inject.service('settings')
+  });
+
+  _ember['default'].Route.reopen({
+    notifications: _ember['default'].inject.service('notification-messages'),
+    settings: _ember['default'].inject.service('settings')
+  });
+
   exports['default'] = App;
 });
+define('we-admin-blog/authenticators/oauth2', ['exports', 'ember-simple-auth/authenticators/oauth2-password-grant', 'we-admin-blog/config/environment'], function (exports, _emberSimpleAuthAuthenticatorsOauth2PasswordGrant, _weAdminBlogConfigEnvironment) {
+  exports['default'] = _emberSimpleAuthAuthenticatorsOauth2PasswordGrant['default'].extend({
+    serverTokenEndpoint: _weAdminBlogConfigEnvironment['default']['ember-simple-auth'].serverTokenEndpoint
+  });
+});
+define('we-admin-blog/authorizers/oauth2', ['exports', 'ember', 'ember-simple-auth/authorizers/base'], function (exports, _ember, _emberSimpleAuthAuthorizersBase) {
+  exports['default'] = _emberSimpleAuthAuthorizersBase['default'].extend({
+    authorize: function authorize(data, block) {
+      var accessToken = data['access_token'];
+
+      if (!_ember['default'].isEmpty(accessToken)) {
+        block('Authorization', 'Basic ' + accessToken);
+      }
+    }
+  });
+});
+// // app/authorizers/oauth2.js
+// import OAuth2Bearer from 'ember-simple-auth/authorizers/oauth2-bearer';
+
+// export default OAuth2Bearer.extend();
+
+// app/authorizers/custom.js
 define('we-admin-blog/components/active-link', ['exports', 'ember-cli-active-link-wrapper/components/active-link'], function (exports, _emberCliActiveLinkWrapperComponentsActiveLink) {
   exports['default'] = _emberCliActiveLinkWrapperComponentsActiveLink['default'];
 });
@@ -33,6 +79,15 @@ define('we-admin-blog/components/app-version', ['exports', 'ember-cli-app-versio
   exports['default'] = _emberCliAppVersionComponentsAppVersion['default'].extend({
     version: version,
     name: name
+  });
+});
+define('we-admin-blog/components/bootstrap-loading', ['exports', 'ember'], function (exports, _ember) {
+  exports['default'] = _ember['default'].Component.extend({
+    didInsertElement: function didInsertElement() {
+      var lw = _ember['default'].$('.loading-wrapper');
+      lw.width(_ember['default'].$(window).width());
+      lw.height(_ember['default'].$(window).height());
+    }
   });
 });
 define('we-admin-blog/components/bs-accordion', ['exports', 'ember-bootstrap/components/bs-accordion'], function (exports, _emberBootstrapComponentsBsAccordion) {
@@ -372,6 +427,47 @@ define('we-admin-blog/components/models-table-server-paginated', ['exports', 'em
 define('we-admin-blog/components/models-table', ['exports', 'ember-models-table/components/models-table'], function (exports, _emberModelsTableComponentsModelsTable) {
   exports['default'] = _emberModelsTableComponentsModelsTable['default'];
 });
+define('we-admin-blog/components/notification-container', ['exports', 'ember-cli-notifications/components/notification-container'], function (exports, _emberCliNotificationsComponentsNotificationContainer) {
+  Object.defineProperty(exports, 'default', {
+    enumerable: true,
+    get: function get() {
+      return _emberCliNotificationsComponentsNotificationContainer['default'];
+    }
+  });
+});
+define('we-admin-blog/components/notification-message', ['exports', 'ember-cli-notifications/components/notification-message', 'we-admin-blog/config/environment'], function (exports, _emberCliNotificationsComponentsNotificationMessage, _weAdminBlogConfigEnvironment) {
+
+  var config = _weAdminBlogConfigEnvironment['default']['ember-cli-notifications'] || {};
+
+  exports['default'] = _emberCliNotificationsComponentsNotificationMessage['default'].extend({
+    icons: config.icons || 'font-awesome'
+  });
+});
+define('we-admin-blog/controllers/application', ['exports', 'ember'], function (exports, _ember) {
+  exports['default'] = _ember['default'].Controller.extend({
+    settingsLoaded: _ember['default'].computed.alias('settings.loaded')
+  });
+});
+define('we-admin-blog/controllers/login', ['exports', 'ember'], function (exports, _ember) {
+  exports['default'] = _ember['default'].Controller.extend({
+    session: _ember['default'].inject.service('session'),
+
+    actions: {
+      authenticate: function authenticate() {
+        var _this = this;
+
+        var _getProperties = this.getProperties('identification', 'password');
+
+        var identification = _getProperties.identification;
+        var password = _getProperties.password;
+
+        this.get('session').authenticate('authenticator:oauth2', identification, password)['catch'](function (reason) {
+          _this.set('errorMessage', reason.error || reason);
+        });
+      }
+    }
+  });
+});
 define('we-admin-blog/helpers/bs-contains', ['exports', 'ember-bootstrap/helpers/bs-contains'], function (exports, _emberBootstrapHelpersBsContains) {
   Object.defineProperty(exports, 'default', {
     enumerable: true,
@@ -456,6 +552,20 @@ define('we-admin-blog/helpers/is-same-or-before', ['exports', 'ember', 'we-admin
 define('we-admin-blog/helpers/is-same', ['exports', 'ember', 'we-admin-blog/config/environment', 'ember-moment/helpers/is-same'], function (exports, _ember, _weAdminBlogConfigEnvironment, _emberMomentHelpersIsSame) {
   exports['default'] = _emberMomentHelpersIsSame['default'].extend({
     globalAllowEmpty: !!_ember['default'].get(_weAdminBlogConfigEnvironment['default'], 'moment.allowEmpty')
+  });
+});
+define('we-admin-blog/helpers/local-class', ['exports', 'ember-css-modules/helpers/local-class'], function (exports, _emberCssModulesHelpersLocalClass) {
+  Object.defineProperty(exports, 'default', {
+    enumerable: true,
+    get: function get() {
+      return _emberCssModulesHelpersLocalClass['default'];
+    }
+  });
+  Object.defineProperty(exports, 'localClass', {
+    enumerable: true,
+    get: function get() {
+      return _emberCssModulesHelpersLocalClass.localClass;
+    }
   });
 });
 define('we-admin-blog/helpers/moment-add', ['exports', 'ember', 'we-admin-blog/config/environment', 'ember-moment/helpers/moment-add'], function (exports, _ember, _weAdminBlogConfigEnvironment, _emberMomentHelpersMomentAdd) {
@@ -594,6 +704,20 @@ define('we-admin-blog/initializers/data-adapter', ['exports', 'ember'], function
     initialize: function initialize() {}
   };
 });
+define('we-admin-blog/initializers/ember-css-modules', ['exports', 'ember-css-modules/initializers/ember-css-modules'], function (exports, _emberCssModulesInitializersEmberCssModules) {
+  Object.defineProperty(exports, 'default', {
+    enumerable: true,
+    get: function get() {
+      return _emberCssModulesInitializersEmberCssModules['default'];
+    }
+  });
+  Object.defineProperty(exports, 'initialize', {
+    enumerable: true,
+    get: function get() {
+      return _emberCssModulesInitializersEmberCssModules.initialize;
+    }
+  });
+});
 define('we-admin-blog/initializers/ember-data', ['exports', 'ember-data/setup-container', 'ember-data/-private/core'], function (exports, _emberDataSetupContainer, _emberDataPrivateCore) {
 
   /*
@@ -722,6 +846,26 @@ define('we-admin-blog/initializers/load-bootstrap-config', ['exports', 'we-admin
 define('we-admin-blog/initializers/modals-container', ['exports', 'ember-bootstrap/initializers/modals-container'], function (exports, _emberBootstrapInitializersModalsContainer) {
   exports['default'] = _emberBootstrapInitializersModalsContainer['default'];
 });
+define('we-admin-blog/initializers/notifications', ['exports', 'ember', 'ember-cli-notifications/services/notification-messages-service'], function (exports, _ember, _emberCliNotificationsServicesNotificationMessagesService) {
+    exports['default'] = {
+        name: 'notification-messages-service',
+
+        initialize: function initialize() {
+            var application = arguments[1] || arguments[0];
+            if (_ember['default'].Service) {
+                application.register('service:notification-messages', _emberCliNotificationsServicesNotificationMessagesService['default']);
+                application.inject('component:notification-container', 'notifications', 'service:notification-messages');
+                application.inject('component:notification-message', 'notifications', 'service:notification-messages');
+                return;
+            }
+            application.register('notification-messages:service', _emberCliNotificationsServicesNotificationMessagesService['default']);
+
+            ['controller', 'component', 'route', 'router', 'service'].forEach(function (injectionTarget) {
+                application.inject(injectionTarget, 'notifications', 'notification-messages:service');
+            });
+        }
+    };
+});
 define('we-admin-blog/initializers/store', ['exports', 'ember'], function (exports, _ember) {
 
   /*
@@ -764,6 +908,35 @@ define('we-admin-blog/instance-initializers/ember-simple-auth', ['exports', 'emb
     initialize: function initialize(instance) {
       (0, _emberSimpleAuthInstanceInitializersSetupSessionRestoration['default'])(instance);
     }
+  };
+});
+define('we-admin-blog/instance-initializers/session-events', ['exports'], function (exports) {
+  exports.initialize = initialize;
+
+  function initialize(instance) {
+
+    // const applicationRoute = instance.lookup('route:application');
+    var session = instance.lookup('service:session');
+    // const settings         = instance.lookup('service:settings');
+
+    session.on('authenticationSucceeded', function () {
+      window.location.reload();
+      // TODO! add suport for dinamicaly set context
+      // // get user settings ,,,
+      // settings.getUserSettings()
+      // .then( ()=> {
+      //   applicationRoute.transitionTo('index');
+      // });
+    });
+    session.on('invalidationSucceeded', function () {
+      window.location.reload();
+    });
+  }
+
+  exports['default'] = {
+    initialize: initialize,
+    name: 'session-events',
+    after: 'ember-simple-auth'
   };
 });
 define('we-admin-blog/mixins/active-link', ['exports', 'ember-cli-active-link-wrapper/mixins/active-link'], function (exports, _emberCliActiveLinkWrapperMixinsActiveLink) {
@@ -830,13 +1003,111 @@ define('we-admin-blog/router', ['exports', 'ember', 'we-admin-blog/config/enviro
 
   exports['default'] = Router;
 });
-define('we-admin-blog/routes/application', ['exports', 'ember'], function (exports, _ember) {
+define('we-admin-blog/routes/application', ['exports', 'ember', 'ember-simple-auth/mixins/application-route-mixin'], function (exports, _ember, _emberSimpleAuthMixinsApplicationRouteMixin) {
+  exports['default'] = _ember['default'].Route.extend(_emberSimpleAuthMixinsApplicationRouteMixin['default'], {
+    session: _ember['default'].inject.service('session'),
 
-  // Ensure the application route exists for ember-simple-auth's `setup-session-restoration` initializer
-  exports['default'] = _ember['default'].Route.extend();
+    beforeModel: function beforeModel() {
+      this.get('notifications').setDefaultAutoClear(true);
+      this.get('notifications').setDefaultClearDuration(5200);
+
+      return this.get('settings').getUserSettings();
+    },
+
+    model: function model() {
+      return _ember['default'].RSVP.hash({
+        settingsLoaded: this.get('settings.settingsLoaded')
+      });
+    },
+
+    actions: {
+      goTo: function goTo(route, params) {
+        if (params) {
+          this.transitionTo(route, params);
+        } else {
+          this.transitionTo(route);
+        }
+      },
+      showLoginModal: function showLoginModal() {
+        this.set('showLoginModal', true);
+      },
+
+      /**
+       * Application error handler
+       *
+       * @param  {Object} err Error object
+       */
+      error: function error(err) {
+        // handle token invalid response, this may occurs if the token is deleted in backend for block access
+        if (err.status === 401 && err.responseJSON && err.responseJSON.error === 'invalid_grant' && err.responseJSON.error_context === 'authentication') {
+          console.log('TODO add message for invalid token invalid_grant', err);
+          this.get('session').invalidate();
+          return;
+        } else if (err.errors && err.errors[0].status === '404') {
+          // log it
+          _ember['default'].Logger.error('404', err);
+          // show message
+          this.get('notifications').error('<code>404</code> não encontrado.');
+          // redirect ... to 404
+          this.transitionTo('/not-found');
+        } else {
+          _ember['default'].Logger.error(err);
+        }
+      },
+
+      queryError: function queryError(err) {
+        var _this = this;
+
+        // todo! add an better validation handling here...
+        if (err && err.errors) {
+          err.errors.forEach(function (e) {
+            if (e.errorName === 'SequelizeValidationError') {
+              // todo! add an better validation handling here...
+              _this.get('notifications').error(e.title);
+            } else {
+              _this.get('notifications').error(e.title);
+            }
+          });
+        } else if (err && err.responseJSON && err.responseJSON.meta && err.responseJSON.meta.messages) {
+
+          err.responseJSON.meta.messages.forEach(function (e) {
+            switch (e.status) {
+              case 'warning':
+                _this.get('notifications').warning(e.message);
+                break;
+              case 'success':
+                _this.get('notifications').success(e.message);
+                break;
+              default:
+                _this.get('notifications').error(e.message);
+            }
+          });
+        } else {
+          console.error('Unknow query error', err);
+        }
+      }
+    }
+  });
 });
 define('we-admin-blog/routes/article', ['exports', 'ember'], function (exports, _ember) {
   exports['default'] = _ember['default'].Route.extend({});
+});
+define('we-admin-blog/routes/login', ['exports', 'ember', 'ember-simple-auth/mixins/unauthenticated-route-mixin'], function (exports, _ember, _emberSimpleAuthMixinsUnauthenticatedRouteMixin) {
+  exports['default'] = _ember['default'].Route.extend(_emberSimpleAuthMixinsUnauthenticatedRouteMixin['default'], {
+    actions: {
+      authenticationSucceeded: function authenticationSucceeded() {
+        this.transitionTo('/');
+      }
+    }
+  });
+});
+define('we-admin-blog/routes/logout', ['exports', 'ember', 'ember-simple-auth/mixins/authenticated-route-mixin'], function (exports, _ember, _emberSimpleAuthMixinsAuthenticatedRouteMixin) {
+  exports['default'] = _ember['default'].Route.extend(_emberSimpleAuthMixinsAuthenticatedRouteMixin['default'], {
+    session: _ember['default'].inject.service('session'),
+    afterModel: function afterModel() {
+      this.get('session').invalidate();
+    }
+  });
 });
 define('we-admin-blog/routes/term', ['exports', 'ember'], function (exports, _ember) {
   exports['default'] = _ember['default'].Route.extend({});
@@ -863,18 +1134,177 @@ define('we-admin-blog/services/moment', ['exports', 'ember', 'we-admin-blog/conf
     defaultFormat: _ember['default'].get(_weAdminBlogConfigEnvironment['default'], 'moment.outputFormat')
   });
 });
+define('we-admin-blog/services/notification-messages-service', ['exports', 'ember-cli-notifications/services/notification-messages-service'], function (exports, _emberCliNotificationsServicesNotificationMessagesService) {
+  Object.defineProperty(exports, 'default', {
+    enumerable: true,
+    get: function get() {
+      return _emberCliNotificationsServicesNotificationMessagesService['default'];
+    }
+  });
+});
 define('we-admin-blog/services/session', ['exports', 'ember-simple-auth/services/session'], function (exports, _emberSimpleAuthServicesSession) {
   exports['default'] = _emberSimpleAuthServicesSession['default'];
+});
+define('we-admin-blog/services/settings', ['exports', 'ember', 'we-admin-blog/config/environment'], function (exports, _ember, _weAdminBlogConfigEnvironment) {
+  exports['default'] = _ember['default'].Service.extend({
+    store: _ember['default'].inject.service('store'),
+    session: _ember['default'].inject.service('session'),
+
+    accessToken: _ember['default'].computed.alias('session.session.authenticated.access_token'),
+
+    authenticatedUserId: _ember['default'].computed.alias('session.session.authenticated.user.id'),
+    user: null,
+    // alias for help get current authenticated user roles
+    userRoles: _ember['default'].computed.alias('user.roles'),
+
+    isAdmin: _ember['default'].computed('userRoles', function () {
+      var roles = this.get('userRoles');
+      return roles.indexOf('administrator') > -1;
+    }),
+    // invert isAdmin to use in disabled inputs
+    notIsAdmin: _ember['default'].computed.not('isAdmin'),
+
+    loaded: false,
+
+    getUserSettings: function getUserSettings() {
+      var _this = this;
+
+      var uid = this.get('authenticatedUserId');
+      var headers = { Accept: 'application/vnd.api+json' },
+          accessToken = this.get('accessToken');
+
+      if (accessToken) {
+        headers.Authorization = 'Basic ' + accessToken;
+      }
+
+      return _ember['default'].$.ajax({
+        url: _weAdminBlogConfigEnvironment['default'].API_HOST + '/user-settings?adminMenu=true',
+        type: 'GET',
+        cache: false,
+        headers: headers
+      }).then(function (response) {
+        console.log('>response>', response);
+
+        // get the authenticated user:
+        if (uid && response.authenticatedUser) {
+          _this.get('store').push('user', response.authenticatedUser);
+          _this.set('user', _this.get('store').peekRecord('user', uid));
+        }
+
+        _this.set('loaded', true);
+      });
+    }
+  });
 });
 define('we-admin-blog/session-stores/application', ['exports', 'ember-simple-auth/session-stores/adaptive'], function (exports, _emberSimpleAuthSessionStoresAdaptive) {
   exports['default'] = _emberSimpleAuthSessionStoresAdaptive['default'].extend();
 });
 define("we-admin-blog/templates/application", ["exports"], function (exports) {
   exports["default"] = Ember.HTMLBars.template((function () {
+    var child0 = (function () {
+      return {
+        meta: {
+          "fragmentReason": {
+            "name": "triple-curlies"
+          },
+          "revision": "Ember@2.6.2",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 1,
+              "column": 0
+            },
+            "end": {
+              "line": 6,
+              "column": 0
+            }
+          },
+          "moduleName": "we-admin-blog/templates/application.hbs"
+        },
+        isEmpty: false,
+        arity: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createTextNode("  ");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createElement("div");
+          dom.setAttribute(el1, "id", "wrapper");
+          var el2 = dom.createTextNode("\n    ");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createComment("");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createTextNode("\n    ");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createComment("");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createTextNode("\n  ");
+          dom.appendChild(el1, el2);
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var element0 = dom.childAt(fragment, [1]);
+          var morphs = new Array(2);
+          morphs[0] = dom.createMorphAt(element0, 1, 1);
+          morphs[1] = dom.createMorphAt(element0, 3, 3);
+          return morphs;
+        },
+        statements: [["inline", "partial", ["partials/header"], [], ["loc", [null, [3, 4], [3, 33]]]], ["content", "outlet", ["loc", [null, [4, 4], [4, 14]]]]],
+        locals: [],
+        templates: []
+      };
+    })();
+    var child1 = (function () {
+      return {
+        meta: {
+          "fragmentReason": false,
+          "revision": "Ember@2.6.2",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 6,
+              "column": 0
+            },
+            "end": {
+              "line": 8,
+              "column": 0
+            }
+          },
+          "moduleName": "we-admin-blog/templates/application.hbs"
+        },
+        isEmpty: false,
+        arity: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createTextNode("  ");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var morphs = new Array(1);
+          morphs[0] = dom.createMorphAt(fragment, 1, 1, contextualElement);
+          return morphs;
+        },
+        statements: [["content", "bootstrap-loading", ["loc", [null, [7, 2], [7, 23]]]]],
+        locals: [],
+        templates: []
+      };
+    })();
     return {
       meta: {
         "fragmentReason": {
-          "name": "triple-curlies"
+          "name": "missing-wrapper",
+          "problems": ["wrong-type"]
         },
         "revision": "Ember@2.6.2",
         "loc": {
@@ -884,8 +1314,8 @@ define("we-admin-blog/templates/application", ["exports"], function (exports) {
             "column": 0
           },
           "end": {
-            "line": 4,
-            "column": 6
+            "line": 8,
+            "column": 7
           }
         },
         "moduleName": "we-admin-blog/templates/application.hbs"
@@ -896,31 +1326,20 @@ define("we-admin-blog/templates/application", ["exports"], function (exports) {
       hasRendered: false,
       buildFragment: function buildFragment(dom) {
         var el0 = dom.createDocumentFragment();
-        var el1 = dom.createElement("div");
-        dom.setAttribute(el1, "id", "wrapper");
-        var el2 = dom.createTextNode("\n  ");
-        dom.appendChild(el1, el2);
-        var el2 = dom.createComment("");
-        dom.appendChild(el1, el2);
-        var el2 = dom.createTextNode("\n  ");
-        dom.appendChild(el1, el2);
-        var el2 = dom.createComment("");
-        dom.appendChild(el1, el2);
-        var el2 = dom.createTextNode("\n");
-        dom.appendChild(el1, el2);
+        var el1 = dom.createComment("");
         dom.appendChild(el0, el1);
         return el0;
       },
       buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-        var element0 = dom.childAt(fragment, [0]);
-        var morphs = new Array(2);
-        morphs[0] = dom.createMorphAt(element0, 1, 1);
-        morphs[1] = dom.createMorphAt(element0, 3, 3);
+        var morphs = new Array(1);
+        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+        dom.insertBoundary(fragment, 0);
+        dom.insertBoundary(fragment, null);
         return morphs;
       },
-      statements: [["inline", "partial", ["partials/header"], [], ["loc", [null, [2, 2], [2, 31]]]], ["content", "outlet", ["loc", [null, [3, 2], [3, 12]]]]],
+      statements: [["block", "if", [["get", "settingsLoaded", ["loc", [null, [1, 6], [1, 20]]]]], [], 0, 1, ["loc", [null, [1, 0], [8, 7]]]]],
       locals: [],
-      templates: []
+      templates: [child0, child1]
     };
   })());
 });
@@ -965,6 +1384,56 @@ define("we-admin-blog/templates/article", ["exports"], function (exports) {
         return morphs;
       },
       statements: [["content", "outlet", ["loc", [null, [1, 0], [1, 10]]]]],
+      locals: [],
+      templates: []
+    };
+  })());
+});
+define("we-admin-blog/templates/components/bootstrap-loading", ["exports"], function (exports) {
+  exports["default"] = Ember.HTMLBars.template((function () {
+    return {
+      meta: {
+        "fragmentReason": {
+          "name": "triple-curlies"
+        },
+        "revision": "Ember@2.6.2",
+        "loc": {
+          "source": null,
+          "start": {
+            "line": 1,
+            "column": 0
+          },
+          "end": {
+            "line": 3,
+            "column": 6
+          }
+        },
+        "moduleName": "we-admin-blog/templates/components/bootstrap-loading.hbs"
+      },
+      isEmpty: false,
+      arity: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      buildFragment: function buildFragment(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createElement("div");
+        dom.setAttribute(el1, "class", "loading-wrapper");
+        var el2 = dom.createTextNode("\n  ");
+        dom.appendChild(el1, el2);
+        var el2 = dom.createElement("img");
+        dom.setAttribute(el2, "class", "loading-gif");
+        dom.setAttribute(el2, "src", "loading.gif");
+        dom.setAttribute(el2, "alt", "Loading...");
+        dom.appendChild(el1, el2);
+        var el2 = dom.createTextNode("\n");
+        dom.appendChild(el1, el2);
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      buildRenderNodes: function buildRenderNodes() {
+        return [];
+      },
+      statements: [],
       locals: [],
       templates: []
     };
@@ -7415,7 +7884,7 @@ catch(err) {
 /* jshint ignore:start */
 
 if (!runningTests) {
-  require("we-admin-blog/app")["default"].create({"name":"we-admin-blog","version":"0.0.0+673c4ad7"});
+  require("we-admin-blog/app")["default"].create({"name":"we-admin-blog","version":"0.0.0+04c1a998"});
 }
 
 /* jshint ignore:end */

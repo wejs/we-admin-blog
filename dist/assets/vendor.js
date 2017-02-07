@@ -68800,6 +68800,107 @@ requireModule("ember");
   })
 
 }(jQuery);
+;/* globals Ember, Proxy, define */
+(function() {
+  'use strict';
+
+  var HAS_NATIVE_PROXY = typeof Proxy === 'function';
+
+  var SAFE_LOOKUP_FACTORY_METHOD = '_lookupFactory';
+  function factoryFor(fullName) {
+    var factory = this[SAFE_LOOKUP_FACTORY_METHOD](fullName);
+
+    if (!factory) {
+      return;
+    }
+
+    var FactoryManager = {
+      class: factory,
+      create: function() {
+        return this.class.create.apply(this.class, arguments);
+      }
+    };
+
+    Ember.runInDebug(function() {
+      if (HAS_NATIVE_PROXY) {
+        var validator = {
+          get: function(obj, prop) {
+            if (prop !== 'class' && prop !== 'create') {
+              throw new Error('You attempted to access "' + prop + '" on a factory manager created by container#factoryFor. "' + prop + '" is not a member of a factory manager.');
+            }
+
+            return obj[prop];
+          },
+          set: function(obj, prop, value) {
+            throw new Error('You attempted to set "' + prop + '" on a factory manager created by container#factoryFor. A factory manager is a read-only construct.');
+          }
+        };
+
+        // Note:
+        // We have to proxy access to the manager here so that private property
+        // access doesn't cause the above errors to occur.
+        var m = FactoryManager;
+        var proxiedManager = {
+          class: m.class,
+          create: function(props) {
+            return m.create(props);
+          }
+        };
+
+        FactoryManager = new Proxy(proxiedManager, validator);
+      }
+    });
+
+    return FactoryManager;
+  }
+
+  if (typeof define === 'function') {
+    define('ember-factory-for-polyfill/vendor/ember-factory-for-polyfill/index', ['exports'], function(exports) {
+      exports._factoryFor = factoryFor;
+
+      exports._updateSafeLookupFactoryMethod = function(methodName) {
+        SAFE_LOOKUP_FACTORY_METHOD = methodName;
+      };
+
+      return exports;
+    });
+  }
+
+  var FactoryForMixin = Ember.Mixin.create({
+    factoryFor: factoryFor
+  });
+
+  // added in Ember 2.8
+  if (Ember.ApplicationInstance) {
+    // augment the main application's "owner"
+    Ember.ApplicationInstance.reopen(FactoryForMixin);
+  } else {
+    // in Ember < 2.8 the Ember.ApplicationInstance is not
+    // exposed globally, so we have to monkey patch the
+    // `Ember.Application#buildInstance` method to ensure
+    // that the built instance has a `factoryFor` method
+    // this gives us support for Ember 2.3 - 2.7
+    Ember.Application.reopen({
+      buildInstance: function(_options) {
+        var options = _options || {};
+        options.factoryFor = factoryFor;
+
+        var instance = this._super(options);
+
+        return instance;
+      }
+    });
+  }
+
+  // added in Ember 2.3
+  if (Ember._ContainerProxyMixin) {
+    // supports ember-test-helpers's build-registry (and other tooling that use
+    // Ember._ContainerProxyMixin to emulate an "owner")
+    var ContainerProxyMixinWithFactoryFor = Ember.Mixin.create(Ember._ContainerProxyMixin, FactoryForMixin);
+    Ember._ContainerProxyMixin = ContainerProxyMixinWithFactoryFor;
+  }
+})();
+
 ;/* globals define */
 define('ember/load-initializers', ['exports', 'ember-load-initializers', 'ember'], function(exports, loadInitializers, Ember) {
   Ember['default'].deprecate(
@@ -69194,107 +69295,6 @@ function createDeprecatedModule(moduleId) {
 
 createDeprecatedModule('ember/resolver');
 createDeprecatedModule('resolver');
-
-;/* globals Ember, Proxy, define */
-(function() {
-  'use strict';
-
-  var HAS_NATIVE_PROXY = typeof Proxy === 'function';
-
-  var SAFE_LOOKUP_FACTORY_METHOD = '_lookupFactory';
-  function factoryFor(fullName) {
-    var factory = this[SAFE_LOOKUP_FACTORY_METHOD](fullName);
-
-    if (!factory) {
-      return;
-    }
-
-    var FactoryManager = {
-      class: factory,
-      create: function() {
-        return this.class.create.apply(this.class, arguments);
-      }
-    };
-
-    Ember.runInDebug(function() {
-      if (HAS_NATIVE_PROXY) {
-        var validator = {
-          get: function(obj, prop) {
-            if (prop !== 'class' && prop !== 'create') {
-              throw new Error('You attempted to access "' + prop + '" on a factory manager created by container#factoryFor. "' + prop + '" is not a member of a factory manager.');
-            }
-
-            return obj[prop];
-          },
-          set: function(obj, prop, value) {
-            throw new Error('You attempted to set "' + prop + '" on a factory manager created by container#factoryFor. A factory manager is a read-only construct.');
-          }
-        };
-
-        // Note:
-        // We have to proxy access to the manager here so that private property
-        // access doesn't cause the above errors to occur.
-        var m = FactoryManager;
-        var proxiedManager = {
-          class: m.class,
-          create: function(props) {
-            return m.create(props);
-          }
-        };
-
-        FactoryManager = new Proxy(proxiedManager, validator);
-      }
-    });
-
-    return FactoryManager;
-  }
-
-  if (typeof define === 'function') {
-    define('ember-factory-for-polyfill/vendor/ember-factory-for-polyfill/index', ['exports'], function(exports) {
-      exports._factoryFor = factoryFor;
-
-      exports._updateSafeLookupFactoryMethod = function(methodName) {
-        SAFE_LOOKUP_FACTORY_METHOD = methodName;
-      };
-
-      return exports;
-    });
-  }
-
-  var FactoryForMixin = Ember.Mixin.create({
-    factoryFor: factoryFor
-  });
-
-  // added in Ember 2.8
-  if (Ember.ApplicationInstance) {
-    // augment the main application's "owner"
-    Ember.ApplicationInstance.reopen(FactoryForMixin);
-  } else {
-    // in Ember < 2.8 the Ember.ApplicationInstance is not
-    // exposed globally, so we have to monkey patch the
-    // `Ember.Application#buildInstance` method to ensure
-    // that the built instance has a `factoryFor` method
-    // this gives us support for Ember 2.3 - 2.7
-    Ember.Application.reopen({
-      buildInstance: function(_options) {
-        var options = _options || {};
-        options.factoryFor = factoryFor;
-
-        var instance = this._super(options);
-
-        return instance;
-      }
-    });
-  }
-
-  // added in Ember 2.3
-  if (Ember._ContainerProxyMixin) {
-    // supports ember-test-helpers's build-registry (and other tooling that use
-    // Ember._ContainerProxyMixin to emulate an "owner")
-    var ContainerProxyMixinWithFactoryFor = Ember.Mixin.create(Ember._ContainerProxyMixin, FactoryForMixin);
-    Ember._ContainerProxyMixin = ContainerProxyMixinWithFactoryFor;
-  }
-})();
 
 ;(function (global) {
   define('ember-network/fetch', [ 'ember', 'exports' ], function(Ember, self) {
@@ -81320,6 +81320,623 @@ define("ember-cli-app-version/templates/app-version", ["exports"], function (exp
     };
   })());
 });
+define('ember-cli-notifications/components/notification-container', ['exports', 'ember', 'ember-cli-notifications/templates/components/notification-container', 'ember-cli-notifications/styles/components/notification-container'], function (exports, _ember, _emberCliNotificationsTemplatesComponentsNotificationContainer, _emberCliNotificationsStylesComponentsNotificationContainer) {
+  'use strict';
+
+  var Component = _ember['default'].Component;
+  var computed = _ember['default'].computed;
+
+  exports['default'] = Component.extend({
+    layout: _emberCliNotificationsTemplatesComponentsNotificationContainer['default'],
+    styles: _emberCliNotificationsStylesComponentsNotificationContainer['default'],
+
+    classNameBindings: ['computedPosition'],
+
+    computedPosition: computed('position', function () {
+      if (this.get('position')) return this.get('styles.c-notification__container--' + this.get('position'));
+
+      return this.get('styles.c-notification__container--top');
+    })
+  });
+});
+define('ember-cli-notifications/components/notification-message', ['exports', 'ember', 'ember-cli-notifications/templates/components/notification-message', 'ember-cli-notifications/styles/components/notification-message'], function (exports, _ember, _emberCliNotificationsTemplatesComponentsNotificationMessage, _emberCliNotificationsStylesComponentsNotificationMessage) {
+  'use strict';
+
+  var Component = _ember['default'].Component;
+  var computed = _ember['default'].computed;
+
+  exports['default'] = Component.extend({
+    layout: _emberCliNotificationsTemplatesComponentsNotificationMessage['default'],
+    styles: _emberCliNotificationsStylesComponentsNotificationMessage['default'],
+
+    classNameBindings: ['dismissClass', 'clickableClass', 'processedType', 'notification.cssClasses'],
+
+    paused: false,
+
+    dismissClass: computed('notification.dismiss', function () {
+      if (!this.get('notification.dismiss')) return this.get('styles.c-notification--in');
+
+      return false;
+    }),
+
+    clickableClass: computed('notification.onClick', function () {
+      if (this.get('notification.onClick')) return this.get('styles.c-notification--clickable');
+
+      return false;
+    }),
+
+    closeIcon: computed('icons', function () {
+      if (this.get('icons') === 'bootstrap') return 'glyphicon glyphicon-remove';
+
+      return 'fa fa-times';
+    }),
+
+    // Set icon depending on notification type
+    notificationIcon: computed('notification.type', 'icons', function () {
+      var icons = this.get('icons');
+
+      if (icons === 'bootstrap') {
+        switch (this.get('notification.type')) {
+          case "info":
+            return 'glyphicon glyphicon-info-sign';
+          case "success":
+            return 'glyphicon glyphicon-ok-sign';
+          case "warning":
+          case "error":
+            return 'glyphicon glyphicon-exclamation-sign';
+        }
+      }
+
+      switch (this.get('notification.type')) {
+        case "info":
+          return 'fa fa-info-circle';
+        case "success":
+          return 'fa fa-check';
+        case "warning":
+          return 'fa fa-warning';
+        case "error":
+          return 'fa fa-exclamation-circle';
+      }
+    }),
+
+    mouseDown: function mouseDown() {
+      if (this.get('notification.onClick')) {
+        this.get('notification.onClick')(this.get('notification'));
+      }
+    },
+    mouseEnter: function mouseEnter() {
+      if (this.get('notification.autoClear')) {
+        this.set('paused', true);
+        this.notifications.pauseAutoClear(this.get('notification'));
+      }
+    },
+
+    mouseLeave: function mouseLeave() {
+      if (this.get('notification.autoClear')) {
+        this.set('paused', false);
+        this.notifications.setupAutoClear(this.get('notification'));
+      }
+    },
+
+    processedType: computed('notification.type', function () {
+      if (this.get('notification.type') && _ember['default'].A(['info', 'success', 'warning', 'error']).includes(this.get('notification.type'))) {
+        return this.get('styles.c-notification--' + this.get('notification.type'));
+      }
+    }),
+
+    // Apply the clear animation duration rule inline
+    notificationClearDuration: computed('paused', 'notification.clearDuration', function () {
+      var duration = _ember['default'].Handlebars.Utils.escapeExpression(this.get('notification.clearDuration'));
+      var playState = this.get('paused') ? 'paused' : 'running';
+      return _ember['default'].String.htmlSafe('animation-duration: ' + duration + 'ms; -webkit-animation-duration: ' + duration + 'ms; animation-play-state: ' + playState + '; -webkit-animation-play-state: ' + playState);
+    }),
+
+    actions: {
+      removeNotification: function removeNotification() {
+        this.notifications.removeNotification(this.get('notification'));
+      }
+    }
+  });
+});
+define('ember-cli-notifications/services/notification-messages-service', ['exports', 'ember'], function (exports, _ember) {
+    'use strict';
+
+    var assign = _ember['default'].assign || _ember['default'].merge;
+
+    exports['default'] = _ember['default'].ArrayProxy.extend({
+        content: _ember['default'].A(),
+
+        defaultClearDuration: 3200,
+        defaultAutoClear: false,
+
+        addNotification: function addNotification(options) {
+            // If no message is set, throw an error
+            if (!options.message) {
+                throw new Error("No notification message set");
+            }
+
+            var notification = _ember['default'].Object.create({
+                message: options.message,
+                type: options.type || 'info', // info, success, warning, error
+                autoClear: _ember['default'].isEmpty(options.autoClear) ? this.get('defaultAutoClear') : options.autoClear,
+                clearDuration: options.clearDuration || this.get('defaultClearDuration'),
+                onClick: options.onClick,
+                htmlContent: options.htmlContent || false,
+                cssClasses: options.cssClasses
+            });
+
+            this.pushObject(notification);
+
+            if (notification.autoClear) {
+                notification.set('remaining', notification.get('clearDuration'));
+                this.setupAutoClear(notification);
+            }
+
+            return notification;
+        },
+
+        // Helper methods for each type of notification
+        error: function error(message, options) {
+            this.addNotification(assign({
+                message: message,
+                type: 'error'
+            }, options));
+        },
+
+        success: function success(message, options) {
+            this.addNotification(assign({
+                message: message,
+                type: 'success'
+            }, options));
+        },
+
+        info: function info(message, options) {
+            this.addNotification(assign({
+                message: message,
+                type: 'info'
+            }, options));
+        },
+
+        warning: function warning(message, options) {
+            this.addNotification(assign({
+                message: message,
+                type: 'warning'
+            }, options));
+        },
+
+        removeNotification: function removeNotification(notification) {
+            var _this = this;
+
+            if (!notification) {
+                return;
+            }
+            notification.set('dismiss', true);
+            // Delay removal from DOM for dismissal animation
+            _ember['default'].run.later(this, function () {
+                _this.removeObject(notification);
+            }, 500);
+        },
+
+        setupAutoClear: function setupAutoClear(notification) {
+            var _this2 = this;
+
+            notification.set('startTime', Date.now());
+
+            var timer = _ember['default'].run.later(this, function () {
+                // Hasn't been closed manually
+                if (_this2.indexOf(notification) >= 0) {
+                    _this2.removeNotification(notification);
+                }
+            }, notification.get('remaining'));
+
+            notification.set('timer', timer);
+        },
+
+        pauseAutoClear: function pauseAutoClear(notification) {
+            _ember['default'].run.cancel(notification.get('timer'));
+
+            var elapsed = Date.now() - notification.get('startTime');
+            var remaining = notification.get('clearDuration') - elapsed;
+            notification.set('remaining', remaining);
+        },
+
+        clearAll: function clearAll() {
+            var _this3 = this;
+
+            this.get('content').forEach(function (notification) {
+                _this3.removeNotification(notification);
+            });
+        },
+
+        setDefaultAutoClear: function setDefaultAutoClear(autoClear) {
+            if (_ember['default'].typeOf(autoClear) !== 'boolean') {
+                throw new Error('Default auto clear preference must be a boolean');
+            }
+
+            this.set('defaultAutoClear', autoClear);
+        },
+
+        setDefaultClearDuration: function setDefaultClearDuration(clearDuration) {
+            if (_ember['default'].typeOf(clearDuration) !== 'number') {
+                throw new Error('Clear duration must be a number');
+            }
+
+            this.set('defaultClearDuration', clearDuration);
+        }
+    });
+});
+define("ember-cli-notifications/styles/addon", ["exports"], function (exports) {
+  "use strict";
+
+  exports["default"] = {
+    "--green": "#64ce83",
+    "--blue": "#3ea2ff",
+    "--orange": "#ff7f48",
+    "--red": "#e74c3c",
+    "--spacing-1": ".5rem",
+    "--spacing-2": "1rem"
+  };
+});
+define("ember-cli-notifications/styles/components/notification-container", ["exports"], function (exports) {
+  "use strict";
+
+  exports["default"] = {
+    "--container-position": "10px",
+    "--container-zindex": "1060",
+    "--container-width": "80%",
+    "--container-max-with": "400px",
+    "c-notification__container": "_c-notification__container_qmx12s",
+    "c-notification__container--top": "_c-notification__container--top_qmx12s _c-notification__container_qmx12s",
+    "c-notification__container--top-left": "_c-notification__container--top-left_qmx12s _c-notification__container_qmx12s",
+    "c-notification__container--top-right": "_c-notification__container--top-right_qmx12s _c-notification__container_qmx12s",
+    "c-notification__container--bottom": "_c-notification__container--bottom_qmx12s _c-notification__container_qmx12s",
+    "c-notification__container--bottom-left": "_c-notification__container--bottom-left_qmx12s _c-notification__container_qmx12s",
+    "c-notification__container--bottom-right": "_c-notification__container--bottom-right_qmx12s _c-notification__container_qmx12s"
+  };
+});
+define("ember-cli-notifications/styles/components/notification-message", ["exports"], function (exports) {
+  "use strict";
+
+  exports["default"] = {
+    "--icon-width": "30px",
+    "--icon-position": "10px",
+    "--icon-color": "color(#fff a(.74))",
+    "--icon-lighten-background": "color(#fff a(.2))",
+    "--countdown-lighten-background": "color(#fff a(.4))",
+    "--notification-max-height": "800px",
+    "--notification-border-radius": "3px",
+    "--red": "#e74c3c",
+    "--blue": "#3ea2ff",
+    "--green": "#64ce83",
+    "--orange": "#ff7f48",
+    "--spacing-1": ".5rem",
+    "--spacing-2": "1rem",
+    "c-notification": "_c-notification_1k7w9i",
+    "notification-hide": "_notification-hide_1k7w9i",
+    "notification-shrink": "_notification-shrink_1k7w9i",
+    "c-notification--clickable": "_c-notification--clickable_1k7w9i",
+    "c-notification--in": "_c-notification--in_1k7w9i",
+    "notification-show": "_notification-show_1k7w9i",
+    "c-notification__content": "_c-notification__content_1k7w9i",
+    "c-notification__icon": "_c-notification__icon_1k7w9i",
+    "c-notification__close": "_c-notification__close_1k7w9i",
+    "c-notification__countdown": "_c-notification__countdown_1k7w9i",
+    "notification-countdown": "_notification-countdown_1k7w9i",
+    "c-notification--info": "_c-notification--info_1k7w9i _c-notification_1k7w9i",
+    "c-notification--success": "_c-notification--success_1k7w9i _c-notification_1k7w9i",
+    "c-notification--warning": "_c-notification--warning_1k7w9i _c-notification_1k7w9i",
+    "c-notification--error": "_c-notification--error_1k7w9i _c-notification_1k7w9i"
+  };
+});
+define("ember-cli-notifications/templates/components/notification-container", ["exports"], function (exports) {
+  "use strict";
+
+  exports["default"] = Ember.HTMLBars.template((function () {
+    var child0 = (function () {
+      return {
+        meta: {
+          "fragmentReason": {
+            "name": "missing-wrapper",
+            "problems": ["wrong-type"]
+          },
+          "revision": "Ember@2.6.2",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 1,
+              "column": 0
+            },
+            "end": {
+              "line": 3,
+              "column": 0
+            }
+          },
+          "moduleName": "modules/ember-cli-notifications/templates/components/notification-container.hbs"
+        },
+        isEmpty: false,
+        arity: 1,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createTextNode("  ");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var morphs = new Array(1);
+          morphs[0] = dom.createMorphAt(fragment, 1, 1, contextualElement);
+          return morphs;
+        },
+        statements: [["inline", "notification-message", [], ["notification", ["subexpr", "@mut", [["get", "notification", ["loc", [null, [2, 38], [2, 50]]]]], [], []]], ["loc", [null, [2, 2], [2, 52]]]]],
+        locals: ["notification"],
+        templates: []
+      };
+    })();
+    return {
+      meta: {
+        "fragmentReason": {
+          "name": "missing-wrapper",
+          "problems": ["wrong-type"]
+        },
+        "revision": "Ember@2.6.2",
+        "loc": {
+          "source": null,
+          "start": {
+            "line": 1,
+            "column": 0
+          },
+          "end": {
+            "line": 4,
+            "column": 0
+          }
+        },
+        "moduleName": "modules/ember-cli-notifications/templates/components/notification-container.hbs"
+      },
+      isEmpty: false,
+      arity: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      buildFragment: function buildFragment(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createComment("");
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+        var morphs = new Array(1);
+        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+        dom.insertBoundary(fragment, 0);
+        dom.insertBoundary(fragment, null);
+        return morphs;
+      },
+      statements: [["block", "each", [["get", "notifications", ["loc", [null, [1, 8], [1, 21]]]]], [], 0, null, ["loc", [null, [1, 0], [3, 9]]]]],
+      locals: [],
+      templates: [child0]
+    };
+  })());
+});
+define("ember-cli-notifications/templates/components/notification-message", ["exports"], function (exports) {
+  "use strict";
+
+  exports["default"] = Ember.HTMLBars.template((function () {
+    var child0 = (function () {
+      return {
+        meta: {
+          "fragmentReason": false,
+          "revision": "Ember@2.6.2",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 5,
+              "column": 2
+            },
+            "end": {
+              "line": 7,
+              "column": 2
+            }
+          },
+          "moduleName": "modules/ember-cli-notifications/templates/components/notification-message.hbs"
+        },
+        isEmpty: false,
+        arity: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createTextNode("    ");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var morphs = new Array(1);
+          morphs[0] = dom.createUnsafeMorphAt(fragment, 1, 1, contextualElement);
+          return morphs;
+        },
+        statements: [["content", "notification.message", ["loc", [null, [6, 4], [6, 30]]]]],
+        locals: [],
+        templates: []
+      };
+    })();
+    var child1 = (function () {
+      return {
+        meta: {
+          "fragmentReason": false,
+          "revision": "Ember@2.6.2",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 7,
+              "column": 2
+            },
+            "end": {
+              "line": 9,
+              "column": 2
+            }
+          },
+          "moduleName": "modules/ember-cli-notifications/templates/components/notification-message.hbs"
+        },
+        isEmpty: false,
+        arity: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createTextNode("    ");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var morphs = new Array(1);
+          morphs[0] = dom.createMorphAt(fragment, 1, 1, contextualElement);
+          return morphs;
+        },
+        statements: [["content", "notification.message", ["loc", [null, [8, 4], [8, 28]]]]],
+        locals: [],
+        templates: []
+      };
+    })();
+    var child2 = (function () {
+      return {
+        meta: {
+          "fragmentReason": false,
+          "revision": "Ember@2.6.2",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 14,
+              "column": 0
+            },
+            "end": {
+              "line": 16,
+              "column": 0
+            }
+          },
+          "moduleName": "modules/ember-cli-notifications/templates/components/notification-message.hbs"
+        },
+        isEmpty: false,
+        arity: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createTextNode("  ");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createElement("div");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var element0 = dom.childAt(fragment, [1]);
+          var morphs = new Array(2);
+          morphs[0] = dom.createAttrMorph(element0, 'style');
+          morphs[1] = dom.createAttrMorph(element0, 'class');
+          return morphs;
+        },
+        statements: [["attribute", "style", ["get", "notificationClearDuration", ["loc", [null, [15, 55], [15, 80]]]]], ["attribute", "class", ["concat", [["subexpr", "unbound", [["get", "__styles__.c-notification__countdown", []]], [], []]]]]],
+        locals: [],
+        templates: []
+      };
+    })();
+    return {
+      meta: {
+        "fragmentReason": {
+          "name": "missing-wrapper",
+          "problems": ["multiple-nodes", "wrong-type"]
+        },
+        "revision": "Ember@2.6.2",
+        "loc": {
+          "source": null,
+          "start": {
+            "line": 1,
+            "column": 0
+          },
+          "end": {
+            "line": 17,
+            "column": 0
+          }
+        },
+        "moduleName": "modules/ember-cli-notifications/templates/components/notification-message.hbs"
+      },
+      isEmpty: false,
+      arity: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      buildFragment: function buildFragment(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createElement("div");
+        var el2 = dom.createTextNode("\n  ");
+        dom.appendChild(el1, el2);
+        var el2 = dom.createElement("i");
+        dom.appendChild(el1, el2);
+        var el2 = dom.createTextNode("\n");
+        dom.appendChild(el1, el2);
+        dom.appendChild(el0, el1);
+        var el1 = dom.createTextNode("\n");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createElement("div");
+        var el2 = dom.createTextNode("\n");
+        dom.appendChild(el1, el2);
+        var el2 = dom.createComment("");
+        dom.appendChild(el1, el2);
+        var el2 = dom.createTextNode("  ");
+        dom.appendChild(el1, el2);
+        var el2 = dom.createElement("div");
+        dom.setAttribute(el2, "title", "Dismiss this notification");
+        var el3 = dom.createTextNode("\n    ");
+        dom.appendChild(el2, el3);
+        var el3 = dom.createElement("i");
+        dom.appendChild(el2, el3);
+        var el3 = dom.createTextNode("\n  ");
+        dom.appendChild(el2, el3);
+        dom.appendChild(el1, el2);
+        var el2 = dom.createTextNode("\n");
+        dom.appendChild(el1, el2);
+        dom.appendChild(el0, el1);
+        var el1 = dom.createTextNode("\n");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createComment("");
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+        var element1 = dom.childAt(fragment, [0]);
+        var element2 = dom.childAt(element1, [1]);
+        var element3 = dom.childAt(fragment, [2]);
+        var element4 = dom.childAt(element3, [3]);
+        var element5 = dom.childAt(element4, [1]);
+        var morphs = new Array(8);
+        morphs[0] = dom.createAttrMorph(element1, 'class');
+        morphs[1] = dom.createAttrMorph(element2, 'class');
+        morphs[2] = dom.createAttrMorph(element3, 'class');
+        morphs[3] = dom.createMorphAt(element3, 1, 1);
+        morphs[4] = dom.createAttrMorph(element4, 'class');
+        morphs[5] = dom.createElementMorph(element4);
+        morphs[6] = dom.createAttrMorph(element5, 'class');
+        morphs[7] = dom.createMorphAt(fragment, 4, 4, contextualElement);
+        dom.insertBoundary(fragment, null);
+        return morphs;
+      },
+      statements: [["attribute", "class", ["concat", [["subexpr", "unbound", [["get", "__styles__.c-notification__icon", []]], [], []]]]], ["attribute", "class", ["concat", [["get", "notificationIcon", ["loc", [null, [2, 14], [2, 30]]]]]]], ["attribute", "class", ["concat", [["subexpr", "unbound", [["get", "__styles__.c-notification__content", []]], [], []]]]], ["block", "if", [["get", "notification.htmlContent", ["loc", [null, [5, 8], [5, 32]]]]], [], 0, 1, ["loc", [null, [5, 2], [9, 9]]]], ["attribute", "class", ["concat", [["subexpr", "unbound", [["get", "__styles__.c-notification__close", []]], [], []]]]], ["element", "action", ["removeNotification"], [], ["loc", [null, [10, 43], [10, 74]]]], ["attribute", "class", ["concat", [["get", "closeIcon", ["loc", [null, [11, 16], [11, 25]]]]]]], ["block", "if", [["get", "notification.autoClear", ["loc", [null, [14, 6], [14, 28]]]]], [], 2, null, ["loc", [null, [14, 0], [16, 7]]]]],
+      locals: [],
+      templates: [child0, child1, child2]
+    };
+  })());
+});
 define('ember-computed-decorators/decorator-alias', ['exports', 'ember-computed-decorators/utils/extract-value'], function (exports, _emberComputedDecoratorsUtilsExtractValue) {
   'use strict';
 
@@ -81883,6 +82500,261 @@ define('ember-cookies/services/cookies', ['exports', 'ember'], function (exports
       }
 
       return cookie;
+    }
+  });
+});
+define('ember-css-modules/extensions', ['exports', 'ember', 'ember-resolver', 'ember-css-modules/mixins/component-mixin', 'ember-css-modules/mixins/controller-mixin', 'ember-css-modules/mixins/component-lookup-mixin', 'ember-css-modules/mixins/resolver-mixin'], function (exports, _ember, _emberResolver, _emberCssModulesMixinsComponentMixin, _emberCssModulesMixinsControllerMixin, _emberCssModulesMixinsComponentLookupMixin, _emberCssModulesMixinsResolverMixin) {
+  'use strict';
+
+  _ember['default'].Component.reopen(_emberCssModulesMixinsComponentMixin['default']);
+  _ember['default'].Controller.reopen(_emberCssModulesMixinsControllerMixin['default']);
+  _ember['default'].ComponentLookup.reopen(_emberCssModulesMixinsComponentLookupMixin['default']);
+  _emberResolver['default'].reopen(_emberCssModulesMixinsResolverMixin['default']);
+});
+define('ember-css-modules/helpers/local-class', ['exports', 'ember'], function (exports, _ember) {
+  'use strict';
+
+  exports.localClass = localClass;
+
+  function localClass(params, hash) {
+    _ember['default'].assert('No source specified to local-class lookup', 'from' in hash);
+    if (!hash.from) {
+      return '';
+    }
+
+    var styles = resolveSource(hash.from);
+    var classes = (params[0] || '').split(/\s+/);
+
+    return classes.map(function (style) {
+      return styles[style];
+    }).filter(Boolean).join(' ');
+  }
+
+  exports['default'] = _ember['default'].Helper.helper(localClass);
+
+  function resolveSource(source) {
+    if (typeof source === 'string') {
+      return window.require(source)['default'];
+    } else {
+      return source;
+    }
+  }
+});
+define('ember-css-modules/initializers/ember-css-modules', ['exports', 'ember-css-modules/extensions'], function (exports, _emberCssModulesExtensions) {
+  'use strict';
+
+  exports.initialize = initialize;
+
+  // Ensure our core extensions are loaded before the app boots
+
+  function initialize() {}
+
+  exports['default'] = {
+    name: 'ember-css-modules',
+    initialize: initialize
+  };
+});
+define('ember-css-modules/mixins/component-lookup-mixin', ['exports', 'ember'], function (exports, _ember) {
+  'use strict';
+
+  exports['default'] = _ember['default'].Mixin.create({
+    componentFor: function componentFor(name, owner, options) {
+      var component = this._super(name, owner, options);
+
+      // If we're doing a local lookup, don't interfere; wait for the global fallback if necessary
+      if (options && options.source) {
+        return component;
+      }
+
+      // Ensure components are always managed my the container and thus have a connection to their styles
+      if (!component && hasRegistration(owner, 'template:components/' + name)) {
+        findRegistry(owner).register('component:' + name, _ember['default'].Component);
+        component = this._super(name, owner, options);
+      }
+
+      return component;
+    }
+  });
+
+  // There are like a dozen different ways of registering something across our various supported versions of Ember,
+  // all varying levels of public-ish. This threads that needle without triggering deprecation warnings.
+  function findRegistry(owner) {
+    return owner._registry || (owner.register ? owner : owner.registry);
+  }
+
+  function hasRegistration(owner, name) {
+    var registry = findRegistry(owner);
+    return registry.hasRegistration ? registry.hasRegistration(name) : registry.has(name);
+  }
+});
+define('ember-css-modules/mixins/component-mixin', ['exports', 'ember'], function (exports, _ember) {
+  'use strict';
+
+  var _slicedToArray = (function () {
+    function sliceIterator(arr, i) {
+      var _arr = [];var _n = true;var _d = false;var _e = undefined;try {
+        for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) {
+          _arr.push(_s.value);if (i && _arr.length === i) break;
+        }
+      } catch (err) {
+        _d = true;_e = err;
+      } finally {
+        try {
+          if (!_n && _i['return']) _i['return']();
+        } finally {
+          if (_d) throw _e;
+        }
+      }return _arr;
+    }return function (arr, i) {
+      if (Array.isArray(arr)) {
+        return arr;
+      } else if (Symbol.iterator in Object(arr)) {
+        return sliceIterator(arr, i);
+      } else {
+        throw new TypeError('Invalid attempt to destructure non-iterable instance');
+      }
+    };
+  })();
+
+  function _toConsumableArray(arr) {
+    if (Array.isArray(arr)) {
+      for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) arr2[i] = arr[i];return arr2;
+    } else {
+      return Array.from(arr);
+    }
+  }
+
+  var getOwner = _ember['default'].getOwner;
+  var dasherize = _ember['default'].String.dasherize;
+
+  exports['default'] = _ember['default'].Mixin.create({
+    localClassNames: null,
+    localClassNameBindings: null,
+
+    concatenatedProperties: ['localClassNames', 'localClassNameBindings'],
+
+    init: function init() {
+      this._super();
+      this.classNameBindings = [].concat(_toConsumableArray(this.classNameBindings), _toConsumableArray(localClassNames(this)), _toConsumableArray(localClassNameBindings(this)));
+    },
+
+    styles: _ember['default'].computed('__styles__', function () {
+      _ember['default'].deprecate('Using the implicit `component.styles` computed is deprecated. In a template, use the {{local-class}} helper, ' + 'and in JavaScript, import the styles hash and reference it directly.', false, {
+        id: 'ember-css-modules.styles-computed',
+        until: '0.7.0'
+      });
+
+      return this.get('__styles__');
+    }).readOnly(),
+
+    __styles__: _ember['default'].computed(function () {
+      // If styles is an explicitly set hash, defer to it. Otherwise, use the resolver.
+      if (Object.getPrototypeOf(this.styles) === Object.prototype) {
+        return this.styles;
+      }
+
+      var key = this._debugContainerKey;
+      if (!key) {
+        return;
+      }
+
+      return getOwner(this).resolveRegistration('styles:components/' + key.split(':')[1]);
+    })
+  });
+
+  function localClassNames(component) {
+    return component.localClassNames.map(function (className) {
+      return '__styles__.' + className;
+    });
+  }
+
+  function localClassNameBindings(component) {
+    return component.localClassNameBindings.reduce(function (bindings, bindingSource) {
+      return bindings.concat(buildBindings(component, bindingSource));
+    }, []);
+  }
+
+  function buildBindings(component, bindingSource) {
+    var styles = component.get('__styles__');
+
+    var _bindingSource$split = bindingSource.split(':');
+
+    var _bindingSource$split2 = _slicedToArray(_bindingSource$split, 3);
+
+    var property = _bindingSource$split2[0];
+    var _bindingSource$split2$1 = _bindingSource$split2[1];
+    var trueStyle = _bindingSource$split2$1 === undefined ? dasherize(property) : _bindingSource$split2$1;
+    var falseStyle = _bindingSource$split2[2];
+
+    var trueClasses = (styles[trueStyle] || '').split(/\s+/);
+    var falseClasses = (styles[falseStyle] || '').split(/\s+/);
+    var bindings = [];
+
+    for (var i = 0, len = Math.max(trueClasses.length, falseClasses.length); i < len; i++) {
+      bindings.push(bindingString(property, trueClasses[i], falseClasses[i]));
+    }
+
+    return bindings;
+  }
+
+  function bindingString(property) {
+    var trueClass = arguments.length <= 1 || arguments[1] === undefined ? '' : arguments[1];
+    var falseClass = arguments.length <= 2 || arguments[2] === undefined ? '' : arguments[2];
+
+    var binding = property + ':' + (trueClass || '');
+    if (falseClass) {
+      binding += ':' + falseClass;
+    }
+    return binding;
+  }
+});
+define('ember-css-modules/mixins/controller-mixin', ['exports', 'ember'], function (exports, _ember) {
+  'use strict';
+
+  var getOwner = _ember['default'].getOwner;
+
+  exports['default'] = _ember['default'].Mixin.create({
+    styles: _ember['default'].computed('__styles__', function () {
+      _ember['default'].deprecate('Using the implicit `controller.styles` computed is deprecated. In a template, use the {{local-class}} helper, ' + 'and in JavaScript, import the styles hash and reference it directly.', false, {
+        id: 'ember-css-modules.styles-computed',
+        until: '0.7.0'
+      });
+
+      return this.get('__styles__');
+    }).readOnly(),
+
+    __styles__: _ember['default'].computed(function () {
+      // If styles is an explicitly set hash, defer to it. Otherwise, use the resolver.
+      if (Object.getPrototypeOf(this.styles) === Object.prototype) {
+        return this.styles;
+      }
+
+      var key = this._debugContainerKey;
+      if (!key) {
+        return;
+      }
+
+      return getOwner(this).resolveRegistration('styles:' + key.split(':')[1]);
+    })
+  });
+});
+define('ember-css-modules/mixins/resolver-mixin', ['exports', 'ember'], function (exports, _ember) {
+  'use strict';
+
+  exports['default'] = _ember['default'].Mixin.create({
+    init: function init() {
+      this._super();
+      this.pluralizedTypes.styles = 'styles';
+    },
+
+    podBasedLookupWithPrefix: function podBasedLookupWithPrefix(podPrefix, parsedName) {
+      var fullNameWithoutType = parsedName.fullNameWithoutType;
+
+      if (parsedName.type === 'template' || parsedName.type === 'styles') {
+        fullNameWithoutType = fullNameWithoutType.replace(/^components\//, '');
+      }
+
+      return podPrefix + '/' + fullNameWithoutType + '/' + parsedName.type;
     }
   });
 });

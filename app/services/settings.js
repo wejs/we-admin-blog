@@ -21,7 +21,7 @@ export default Ember.Service.extend({
   notIsAdmin: Ember.computed.not('isAdmin'),
 
   getUserSettings() {
-    const uid = this.get('authenticatedUserId');
+    // const uid = this.get('authenticatedUserId');
     let headers = { Accept: 'application/vnd.api+json' },
         accessToken = this.get('accessToken');
 
@@ -36,17 +36,19 @@ export default Ember.Service.extend({
       headers: headers
     })
     .then( (response)=> {
-      console.log('>response>', response);
-
       this.set('data', response);
 
-      // get the authenticated user:
-      if (uid && response.authenticatedUser) {
-        // this.get('store').push('user', response.authenticatedUser);
-        this.set('user', this.get('store').peekRecord('user', uid));
-      }
+      if (response.authenticatedUser) {
+        return this.get('store')
+        .findRecord('user', response.authenticatedUser.id)
+        .then( (u)=> {
+          this.set('user', u);
 
-      return response;
+          return response;
+        });
+      } else {
+        return response;
+      }
     });
   }
 });

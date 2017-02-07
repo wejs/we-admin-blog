@@ -1,3 +1,7 @@
 @import 'theme.css';
 @import 'login-form.css';
 @import 'bootstrap-loagind.css';
+
+.navbar-default {
+  margin-bottom: 0px;
+}

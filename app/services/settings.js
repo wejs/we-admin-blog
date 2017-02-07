@@ -4,6 +4,7 @@ import ENV from "../config/environment";
 export default Ember.Service.extend({
   store: Ember.inject.service('store'),
   session: Ember.inject.service('session'),
+  data: null,
 
   accessToken: Ember.computed.alias('session.session.authenticated.access_token'),
 
@@ -38,6 +39,8 @@ export default Ember.Service.extend({
     })
     .then( (response)=> {
       console.log('>response>', response);
+
+      this.set('data', response);
 
       // get the authenticated user:
       if (uid && response.authenticatedUser) {

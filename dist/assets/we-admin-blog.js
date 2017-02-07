@@ -445,7 +445,9 @@ define('we-admin-blog/components/notification-message', ['exports', 'ember-cli-n
 });
 define('we-admin-blog/controllers/application', ['exports', 'ember'], function (exports, _ember) {
   exports['default'] = _ember['default'].Controller.extend({
-    settingsLoaded: _ember['default'].computed.alias('settings.loaded')
+    settingsLoaded: _ember['default'].computed.alias('settings.loaded'),
+    appName: _ember['default'].computed.alias('settings.data.appName'),
+    appLogo: _ember['default'].computed.alias('settings.data.appLogo')
   });
 });
 define('we-admin-blog/controllers/login', ['exports', 'ember'], function (exports, _ember) {
@@ -1149,6 +1151,7 @@ define('we-admin-blog/services/settings', ['exports', 'ember', 'we-admin-blog/co
   exports['default'] = _ember['default'].Service.extend({
     store: _ember['default'].inject.service('store'),
     session: _ember['default'].inject.service('session'),
+    data: null,
 
     accessToken: _ember['default'].computed.alias('session.session.authenticated.access_token'),
 
@@ -1184,6 +1187,8 @@ define('we-admin-blog/services/settings', ['exports', 'ember', 'we-admin-blog/co
         headers: headers
       }).then(function (response) {
         console.log('>response>', response);
+
+        _this.set('data', response);
 
         // get the authenticated user:
         if (uid && response.authenticatedUser) {
@@ -6173,11 +6178,53 @@ define("we-admin-blog/templates/partials/header", ["exports"], function (exports
           "loc": {
             "source": null,
             "start": {
-              "line": 15,
+              "line": 9,
+              "column": 8
+            },
+            "end": {
+              "line": 11,
+              "column": 8
+            }
+          },
+          "moduleName": "we-admin-blog/templates/partials/header.hbs"
+        },
+        isEmpty: false,
+        arity: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createTextNode("          ");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var morphs = new Array(1);
+          morphs[0] = dom.createMorphAt(fragment, 1, 1, contextualElement);
+          return morphs;
+        },
+        statements: [["content", "appName", ["loc", [null, [10, 10], [10, 21]]]]],
+        locals: [],
+        templates: []
+      };
+    })();
+    var child1 = (function () {
+      return {
+        meta: {
+          "fragmentReason": false,
+          "revision": "Ember@2.6.2",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 17,
               "column": 10
             },
             "end": {
-              "line": 114,
+              "line": 116,
               "column": 10
             }
           },
@@ -6662,7 +6709,7 @@ define("we-admin-blog/templates/partials/header", ["exports"], function (exports
             "column": 0
           },
           "end": {
-            "line": 119,
+            "line": 121,
             "column": 6
           }
         },
@@ -6714,15 +6761,11 @@ define("we-admin-blog/templates/partials/header", ["exports"], function (exports
         var el4 = dom.createTextNode("\n        ");
         dom.appendChild(el3, el4);
         dom.appendChild(el2, el3);
-        var el3 = dom.createTextNode("\n        ");
+        var el3 = dom.createTextNode("\n");
         dom.appendChild(el2, el3);
-        var el3 = dom.createElement("a");
-        dom.setAttribute(el3, "class", "navbar-brand");
-        dom.setAttribute(el3, "href", "index.html");
-        var el4 = dom.createTextNode("SB Admin v2.0");
-        dom.appendChild(el3, el4);
+        var el3 = dom.createComment("");
         dom.appendChild(el2, el3);
-        var el3 = dom.createTextNode("\n    ");
+        var el3 = dom.createTextNode("    ");
         dom.appendChild(el2, el3);
         dom.appendChild(el1, el2);
         var el2 = dom.createTextNode("\n    ");
@@ -6763,14 +6806,15 @@ define("we-admin-blog/templates/partials/header", ["exports"], function (exports
       },
       buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
         var element0 = dom.childAt(fragment, [0]);
-        var morphs = new Array(2);
-        morphs[0] = dom.createMorphAt(element0, 3, 3);
-        morphs[1] = dom.createMorphAt(dom.childAt(element0, [5, 1]), 1, 1);
+        var morphs = new Array(3);
+        morphs[0] = dom.createMorphAt(dom.childAt(element0, [1]), 3, 3);
+        morphs[1] = dom.createMorphAt(element0, 3, 3);
+        morphs[2] = dom.createMorphAt(dom.childAt(element0, [5, 1]), 1, 1);
         return morphs;
       },
-      statements: [["inline", "partial", ["partials/navbar-top-links"], [], ["loc", [null, [11, 4], [11, 43]]]], ["block", "ember-metismenu", [], ["classNames", "nav"], 0, null, ["loc", [null, [15, 10], [114, 30]]]]],
+      statements: [["block", "link-to", ["index"], ["class", "navbar-brand"], 0, null, ["loc", [null, [9, 8], [11, 20]]]], ["inline", "partial", ["partials/navbar-top-links"], [], ["loc", [null, [13, 4], [13, 43]]]], ["block", "ember-metismenu", [], ["classNames", "nav"], 1, null, ["loc", [null, [17, 10], [116, 30]]]]],
       locals: [],
-      templates: [child0]
+      templates: [child0, child1]
     };
   })());
 });

@@ -1,1 +1,13 @@
-{{#link-to 'articles.item' record.id class="btn btn-default"}}Ver/editar{{/link-to}}
+{{#link-to 'articles.item' record.id class="btn btn-default btn-sm"}}Ver/editar{{/link-to}}
+<button {{action 'deleteRecord' record}} type="button" class="btn btn-default btn-sm">
+  Deletar
+</button>
+{{#if record.published}}
+  <button {{action 'changePublishedStatus' record false}} type="button" class="btn btn-default btn-sm">
+    Despublicar
+  </button>
+{{else}}
+  <button {{action 'changePublishedStatus' record true}} type="button" class="btn btn-default btn-sm">
+    Publicar
+  </button>
+{{/if}}

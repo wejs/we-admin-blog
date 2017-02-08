@@ -9,33 +9,6 @@ export default Ember.Route.extend(AuthenticatedRouteMixin, {
     });
   },
   actions: {
-    save(record) {
-      record.save()
-      .then( (r)=> {
-        this.get('notifications').success('Dados salvos.');
-        // success
-        return r;
-      })
-      .catch( (err)=> {
-        this.send('queryError', err);
-      });
-    },
 
-    changePublishedStatus(record, status) {
-      record.published = status;
-      record.save()
-      .then( (r)=> {
-        if (status) {
-          this.get('notifications').success('Artigo publicado.');
-        } else {
-          this.get('notifications').success('Artigo despublicado.');
-        }
-        // success
-        return r;
-      })
-      .catch( (err)=> {
-        this.send('queryError', err);
-      });
-    }
   }
 });

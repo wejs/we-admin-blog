@@ -370,6 +370,7 @@ define('we-admin-blog/components/bs-tooltip/element', ['exports', 'ember-bootstr
   });
 });
 define('we-admin-blog/components/conteudos-table', ['exports', 'ember', 'ember-models-table/components/models-table-server-paginated'], function (exports, _ember, _emberModelsTableComponentsModelsTableServerPaginated) {
+  var _slice = Array.prototype.slice;
 
   // ref https://github.com/onechiporenko/ember-models-table/blob/master/addon/components/models-table-server-paginated.js
 
@@ -413,8 +414,16 @@ define('we-admin-blog/components/conteudos-table', ['exports', 'ember', 'ember-m
       sortDirection: 'sortDirection',
       page: 'page',
       pageSize: 'limit'
-    }
+    },
 
+    actions: {
+      deleteRecord: function deleteRecord(record) {
+        this.sendAction('deleteRecord', record);
+      },
+      changePublishedStatus: function changePublishedStatus() {
+        this.sendAction.apply(this, ['changePublishedStatus'].concat(_slice.call(arguments)));
+      }
+    }
   });
 });
 define('we-admin-blog/components/ember-metismenu', ['exports', 'ember-metismenu/components/ember-metismenu'], function (exports, _emberMetismenuComponentsEmberMetismenu) {
@@ -1170,7 +1179,49 @@ define('we-admin-blog/routes/application', ['exports', 'ember', 'ember-simple-au
   });
 });
 define('we-admin-blog/routes/articles', ['exports', 'ember', 'ember-simple-auth/mixins/authenticated-route-mixin'], function (exports, _ember, _emberSimpleAuthMixinsAuthenticatedRouteMixin) {
-  exports['default'] = _ember['default'].Route.extend(_emberSimpleAuthMixinsAuthenticatedRouteMixin['default']);
+  exports['default'] = _ember['default'].Route.extend(_emberSimpleAuthMixinsAuthenticatedRouteMixin['default'], {
+    actions: {
+      deleteRecord: function deleteRecord(record) {
+        var _this = this;
+
+        if (confirm('Tem certeza que deseja deletar o artigo "' + record.get('title') + '"? \nEssa ação não pode ser desfeita.')) {
+          record.destroyRecord().then(function () {
+            _this.get('notifications').success('O artigo "' + record.get('title') + '" foi deletado.');
+            _this.transitionTo('articles.index');
+            return null;
+          });
+        }
+      },
+      changePublishedStatus: function changePublishedStatus(record, status) {
+        var _this2 = this;
+
+        record.published = status;
+        record.save().then(function (r) {
+          if (status) {
+            _this2.get('notifications').success('Artigo publicado.');
+          } else {
+            _this2.get('notifications').success('Artigo despublicado.');
+          }
+          // success
+          return r;
+        })['catch'](function (err) {
+          _this2.send('queryError', err);
+        });
+      },
+
+      save: function save(record) {
+        var _this3 = this;
+
+        record.save().then(function (r) {
+          _this3.get('notifications').success('Dados salvos.');
+          // success
+          return r;
+        })['catch'](function (err) {
+          _this3.send('queryError', err);
+        });
+      }
+    }
+  });
 });
 define('we-admin-blog/routes/articles/create', ['exports', 'ember', 'ember-simple-auth/mixins/authenticated-route-mixin'], function (exports, _ember, _emberSimpleAuthMixinsAuthenticatedRouteMixin) {
   exports['default'] = _ember['default'].Route.extend(_emberSimpleAuthMixinsAuthenticatedRouteMixin['default'], {
@@ -1242,36 +1293,7 @@ define('we-admin-blog/routes/articles/item', ['exports', 'ember', 'ember-simple-
         record: this.get('store').findRecord('article', params.id)
       });
     },
-    actions: {
-      save: function save(record) {
-        var _this = this;
-
-        record.save().then(function (r) {
-          _this.get('notifications').success('Dados salvos.');
-          // success
-          return r;
-        })['catch'](function (err) {
-          _this.send('queryError', err);
-        });
-      },
-
-      changePublishedStatus: function changePublishedStatus(record, status) {
-        var _this2 = this;
-
-        record.published = status;
-        record.save().then(function (r) {
-          if (status) {
-            _this2.get('notifications').success('Artigo publicado.');
-          } else {
-            _this2.get('notifications').success('Artigo despublicado.');
-          }
-          // success
-          return r;
-        })['catch'](function (err) {
-          _this2.send('queryError', err);
-        });
-      }
-    }
+    actions: {}
   });
 });
 define('we-admin-blog/routes/index', ['exports', 'ember', 'ember-simple-auth/mixins/authenticated-route-mixin'], function (exports, _ember, _emberSimpleAuthMixinsAuthenticatedRouteMixin) {
@@ -1995,17 +2017,21 @@ define("we-admin-blog/templates/articles/form", ["exports"], function (exports) 
           var el0 = dom.createDocumentFragment();
           var el1 = dom.createElement("h1");
           dom.setAttribute(el1, "class", "page-header");
-          var el2 = dom.createTextNode("Editar artigo");
+          var el2 = dom.createTextNode("Editar artigo #");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createComment("");
           dom.appendChild(el1, el2);
           dom.appendChild(el0, el1);
           var el1 = dom.createTextNode("\n");
           dom.appendChild(el0, el1);
           return el0;
         },
-        buildRenderNodes: function buildRenderNodes() {
-          return [];
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var morphs = new Array(1);
+          morphs[0] = dom.createMorphAt(dom.childAt(fragment, [0]), 1, 1);
+          return morphs;
         },
-        statements: [],
+        statements: [["content", "model.record.id", ["loc", [null, [2, 39], [2, 58]]]]],
         locals: [],
         templates: []
       };
@@ -2065,7 +2091,7 @@ define("we-admin-blog/templates/articles/form", ["exports"], function (exports) 
             "column": 0
           },
           "end": {
-            "line": 33,
+            "line": 34,
             "column": 7
           }
         },
@@ -2079,7 +2105,7 @@ define("we-admin-blog/templates/articles/form", ["exports"], function (exports) 
         var el0 = dom.createDocumentFragment();
         var el1 = dom.createComment("");
         dom.appendChild(el0, el1);
-        var el1 = dom.createTextNode("\n");
+        var el1 = dom.createTextNode("\n\n");
         dom.appendChild(el0, el1);
         var el1 = dom.createElement("form");
         var el2 = dom.createTextNode("\n  ");
@@ -2194,7 +2220,7 @@ define("we-admin-blog/templates/articles/form", ["exports"], function (exports) 
         dom.insertBoundary(fragment, 0);
         return morphs;
       },
-      statements: [["block", "if", [["get", "model.record.id", ["loc", [null, [1, 6], [1, 21]]]]], [], 0, 1, ["loc", [null, [1, 0], [5, 7]]]], ["element", "action", ["save", ["get", "model.record", ["loc", [null, [7, 22], [7, 34]]]]], ["on", "submit"], ["loc", [null, [7, 6], [7, 48]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.record.title", ["loc", [null, [11, 20], [11, 38]]]]], [], []], "class", "form-control", "placeholder", "Título do artigo", "required", "required"], ["loc", [null, [11, 6], [11, 112]]]], ["inline", "textarea", [], ["value", ["subexpr", "@mut", [["get", "model.record.about", ["loc", [null, [15, 23], [15, 41]]]]], [], []], "class", "form-control"], ["loc", [null, [15, 6], [15, 64]]]], ["inline", "tinymce-editor", [], ["value", ["subexpr", "@mut", [["get", "model.record.body", ["loc", [null, [19, 29], [19, 46]]]]], [], []]], ["loc", [null, [19, 6], [19, 48]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.user.active", ["loc", [null, [21, 18], [21, 35]]]]], [], []], "type", "hidden", "value", true], ["loc", [null, [21, 4], [21, 62]]]], ["element", "action", ["goTo", "articles.index"], [], ["loc", [null, [28, 12], [28, 46]]]]],
+      statements: [["block", "if", [["get", "model.record.id", ["loc", [null, [1, 6], [1, 21]]]]], [], 0, 1, ["loc", [null, [1, 0], [5, 7]]]], ["element", "action", ["save", ["get", "model.record", ["loc", [null, [8, 22], [8, 34]]]]], ["on", "submit"], ["loc", [null, [8, 6], [8, 48]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.record.title", ["loc", [null, [12, 20], [12, 38]]]]], [], []], "class", "form-control", "placeholder", "Título do artigo", "required", "required"], ["loc", [null, [12, 6], [12, 112]]]], ["inline", "textarea", [], ["value", ["subexpr", "@mut", [["get", "model.record.about", ["loc", [null, [16, 23], [16, 41]]]]], [], []], "class", "form-control"], ["loc", [null, [16, 6], [16, 64]]]], ["inline", "tinymce-editor", [], ["value", ["subexpr", "@mut", [["get", "model.record.body", ["loc", [null, [20, 29], [20, 46]]]]], [], []]], ["loc", [null, [20, 6], [20, 48]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.user.active", ["loc", [null, [22, 18], [22, 35]]]]], [], []], "type", "hidden", "value", true], ["loc", [null, [22, 4], [22, 62]]]], ["element", "action", ["goTo", "articles.index"], [], ["loc", [null, [29, 12], [29, 46]]]]],
       locals: [],
       templates: [child0, child1]
     };
@@ -2258,7 +2284,7 @@ define("we-admin-blog/templates/articles/index", ["exports"], function (exports)
           },
           "end": {
             "line": 10,
-            "column": 100
+            "column": 174
           }
         },
         "moduleName": "we-admin-blog/templates/articles/index.hbs"
@@ -2300,7 +2326,7 @@ define("we-admin-blog/templates/articles/index", ["exports"], function (exports)
         dom.insertBoundary(fragment, null);
         return morphs;
       },
-      statements: [["block", "link-to", ["articles.create"], ["class", "btn btn-default"], 0, null, ["loc", [null, [4, 2], [6, 14]]]], ["inline", "conteudos-table", [], ["data", ["subexpr", "@mut", [["get", "model.records", ["loc", [null, [10, 23], [10, 36]]]]], [], []], "columns", ["subexpr", "@mut", [["get", "model.columns", ["loc", [null, [10, 45], [10, 58]]]]], [], []], "pageSize", 25, "useFilteringByColumns", false], ["loc", [null, [10, 0], [10, 100]]]]],
+      statements: [["block", "link-to", ["articles.create"], ["class", "btn btn-default"], 0, null, ["loc", [null, [4, 2], [6, 14]]]], ["inline", "conteudos-table", [], ["data", ["subexpr", "@mut", [["get", "model.records", ["loc", [null, [10, 23], [10, 36]]]]], [], []], "columns", ["subexpr", "@mut", [["get", "model.columns", ["loc", [null, [10, 45], [10, 58]]]]], [], []], "pageSize", 25, "useFilteringByColumns", false, "deleteRecord", "deleteRecord", "changePublishedStatus", "changePublishedStatus"], ["loc", [null, [10, 0], [10, 174]]]]],
       locals: [],
       templates: [child0]
     };
@@ -2369,7 +2395,7 @@ define("we-admin-blog/templates/articles/list-item-actions", ["exports"], functi
             },
             "end": {
               "line": 1,
-              "column": 72
+              "column": 79
             }
           },
           "moduleName": "we-admin-blog/templates/articles/list-item-actions.hbs"
@@ -2392,11 +2418,105 @@ define("we-admin-blog/templates/articles/list-item-actions", ["exports"], functi
         templates: []
       };
     })();
+    var child1 = (function () {
+      return {
+        meta: {
+          "fragmentReason": false,
+          "revision": "Ember@2.6.2",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 5,
+              "column": 0
+            },
+            "end": {
+              "line": 9,
+              "column": 0
+            }
+          },
+          "moduleName": "we-admin-blog/templates/articles/list-item-actions.hbs"
+        },
+        isEmpty: false,
+        arity: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createTextNode("  ");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createElement("button");
+          dom.setAttribute(el1, "type", "button");
+          dom.setAttribute(el1, "class", "btn btn-default btn-sm");
+          var el2 = dom.createTextNode("\n    Despublicar\n  ");
+          dom.appendChild(el1, el2);
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var element1 = dom.childAt(fragment, [1]);
+          var morphs = new Array(1);
+          morphs[0] = dom.createElementMorph(element1);
+          return morphs;
+        },
+        statements: [["element", "action", ["changePublishedStatus", ["get", "record", ["loc", [null, [6, 43], [6, 49]]]], false], [], ["loc", [null, [6, 10], [6, 57]]]]],
+        locals: [],
+        templates: []
+      };
+    })();
+    var child2 = (function () {
+      return {
+        meta: {
+          "fragmentReason": false,
+          "revision": "Ember@2.6.2",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 9,
+              "column": 0
+            },
+            "end": {
+              "line": 13,
+              "column": 0
+            }
+          },
+          "moduleName": "we-admin-blog/templates/articles/list-item-actions.hbs"
+        },
+        isEmpty: false,
+        arity: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createTextNode("  ");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createElement("button");
+          dom.setAttribute(el1, "type", "button");
+          dom.setAttribute(el1, "class", "btn btn-default btn-sm");
+          var el2 = dom.createTextNode("\n    Publicar\n  ");
+          dom.appendChild(el1, el2);
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var element0 = dom.childAt(fragment, [1]);
+          var morphs = new Array(1);
+          morphs[0] = dom.createElementMorph(element0);
+          return morphs;
+        },
+        statements: [["element", "action", ["changePublishedStatus", ["get", "record", ["loc", [null, [10, 43], [10, 49]]]], true], [], ["loc", [null, [10, 10], [10, 56]]]]],
+        locals: [],
+        templates: []
+      };
+    })();
     return {
       meta: {
         "fragmentReason": {
           "name": "missing-wrapper",
-          "problems": ["wrong-type"]
+          "problems": ["wrong-type", "multiple-nodes"]
         },
         "revision": "Ember@2.6.2",
         "loc": {
@@ -2406,8 +2526,8 @@ define("we-admin-blog/templates/articles/list-item-actions", ["exports"], functi
             "column": 0
           },
           "end": {
-            "line": 1,
-            "column": 84
+            "line": 13,
+            "column": 7
           }
         },
         "moduleName": "we-admin-blog/templates/articles/list-item-actions.hbs"
@@ -2420,18 +2540,33 @@ define("we-admin-blog/templates/articles/list-item-actions", ["exports"], functi
         var el0 = dom.createDocumentFragment();
         var el1 = dom.createComment("");
         dom.appendChild(el0, el1);
+        var el1 = dom.createTextNode("\n");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createElement("button");
+        dom.setAttribute(el1, "type", "button");
+        dom.setAttribute(el1, "class", "btn btn-default btn-sm");
+        var el2 = dom.createTextNode("\n  Deletar\n");
+        dom.appendChild(el1, el2);
+        dom.appendChild(el0, el1);
+        var el1 = dom.createTextNode("\n");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createComment("");
+        dom.appendChild(el0, el1);
         return el0;
       },
       buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-        var morphs = new Array(1);
+        var element2 = dom.childAt(fragment, [2]);
+        var morphs = new Array(3);
         morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+        morphs[1] = dom.createElementMorph(element2);
+        morphs[2] = dom.createMorphAt(fragment, 4, 4, contextualElement);
         dom.insertBoundary(fragment, 0);
         dom.insertBoundary(fragment, null);
         return morphs;
       },
-      statements: [["block", "link-to", ["articles.item", ["get", "record.id", ["loc", [null, [1, 27], [1, 36]]]]], ["class", "btn btn-default"], 0, null, ["loc", [null, [1, 0], [1, 84]]]]],
+      statements: [["block", "link-to", ["articles.item", ["get", "record.id", ["loc", [null, [1, 27], [1, 36]]]]], ["class", "btn btn-default btn-sm"], 0, null, ["loc", [null, [1, 0], [1, 91]]]], ["element", "action", ["deleteRecord", ["get", "record", ["loc", [null, [2, 32], [2, 38]]]]], [], ["loc", [null, [2, 8], [2, 40]]]], ["block", "if", [["get", "record.published", ["loc", [null, [5, 6], [5, 22]]]]], [], 1, 2, ["loc", [null, [5, 0], [13, 7]]]]],
       locals: [],
-      templates: [child0]
+      templates: [child0, child1, child2]
     };
   })());
 });
@@ -9991,7 +10126,7 @@ catch(err) {
 /* jshint ignore:start */
 
 if (!runningTests) {
-  require("we-admin-blog/app")["default"].create({"name":"we-admin-blog","version":"0.0.0+d9c560e8"});
+  require("we-admin-blog/app")["default"].create({"name":"we-admin-blog","version":"0.0.0+cfc95737"});
 }
 
 /* jshint ignore:end */

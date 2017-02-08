@@ -45,6 +45,14 @@ export default ServerModelsTable.extend({
     sortDirection: 'sortDirection',
     page: 'page',
     pageSize: 'limit'
-  }
+  },
 
+  actions: {
+    deleteRecord(record) {
+      this.sendAction('deleteRecord', record);
+    },
+    changePublishedStatus() {
+      this.sendAction('changePublishedStatus', ...arguments);
+    }
+  }
 });

@@ -84032,12 +84032,7 @@ define("ember-data/-private/system/many-array", ["exports", "ember", "ember-data
     flushCanonical: function flushCanonical() {
       var isInitialized = arguments.length <= 0 || arguments[0] === undefined ? true : arguments[0];
 
-      // TODO make this smarter, currently its plenty stupid
-      // TODO this filtering was re-introduced as a bugfix, but seems unneeded in 2.13
-      // with the changes to internalModel cleanup in that version.
-      var toSet = this.canonicalState.filter(function (internalModel) {
-        return internalModel.currentState.stateName !== 'root.deleted.saved';
-      });
+      var toSet = this.canonicalState;
 
       //a hack for not removing new records
       //TODO remove once we have proper diffing
@@ -93021,7 +93016,7 @@ define('ember-data/-private/system/store', ['exports', 'ember', 'ember-data/mode
       @return {boolean}
     */
     recordIsLoaded: function recordIsLoaded(modelName, id) {
-      (0, _emberDataPrivateDebug.deprecate)('Use of recordIsLoaded is deprecated, use hasRecordForId instead.', false, {
+      (0, _emberDataPrivateDebug.deprecate)('Use of recordIsLoaded is deprecated, use hasRecordForId instead.', {
         id: 'ds.store.recordIsLoaded',
         until: '3.0'
       });
@@ -93261,15 +93256,8 @@ define('ember-data/-private/system/store', ['exports', 'ember', 'ember-data/mode
       // container._registry = 1.11 - 2.0
       // container = < 1.11
       var owner = (0, _emberDataPrivateUtils.getOwner)(this);
-      var mixin = undefined;
 
-      if (owner.factoryFor) {
-        var MaybeMixin = owner.factoryFor('mixin:' + normalizedModelName);
-        mixin = MaybeMixin && MaybeMixin['class'];
-      } else {
-        mixin = owner._lookupFactory('mixin:' + normalizedModelName);
-      }
-
+      var mixin = owner._lookupFactory('mixin:' + normalizedModelName);
       if (mixin) {
         //Cache the class as a model
         owner.register('model:' + normalizedModelName, _emberDataModel['default'].extend(mixin));
@@ -93317,14 +93305,7 @@ define('ember-data/-private/system/store', ['exports', 'ember', 'ember-data/mode
 
       var owner = (0, _emberDataPrivateUtils.getOwner)(this);
 
-      if (owner.factoryFor) {
-        var MaybeModel = owner.factoryFor('model:' + normalizedKey);
-        var MaybeModelFactory = MaybeModel && MaybeModel['class'];
-
-        return MaybeModelFactory;
-      } else {
-        return owner._lookupFactory('model:' + normalizedKey);
-      }
+      return owner._lookupFactory('model:' + normalizedKey);
     },
 
     /**
@@ -93517,13 +93498,7 @@ define('ember-data/-private/system/store', ['exports', 'ember', 'ember-data/mode
     },
 
     _hasModelFor: function _hasModelFor(modelName) {
-      var owner = (0, _emberDataPrivateUtils.getOwner)(this);
-
-      if (owner.factoryFor) {
-        return !!owner.factoryFor('model:' + modelName);
-      } else {
-        return !!owner._lookupFactory('model:' + modelName);
-      }
+      return !!(0, _emberDataPrivateUtils.getOwner)(this)._lookupFactory('model:' + modelName);
     },
 
     _pushInternalModel: function _pushInternalModel(data) {
@@ -93791,7 +93766,7 @@ define('ember-data/-private/system/store', ['exports', 'ember', 'ember-data/mode
     },
 
     lookupAdapter: function lookupAdapter(name) {
-      (0, _emberDataPrivateDebug.deprecate)('Use of lookupAdapter is deprecated, use adapterFor instead.', false, {
+      (0, _emberDataPrivateDebug.deprecate)('Use of lookupAdapter is deprecated, use adapterFor instead.', {
         id: 'ds.store.lookupAdapter',
         until: '3.0'
       });
@@ -93799,7 +93774,7 @@ define('ember-data/-private/system/store', ['exports', 'ember', 'ember-data/mode
     },
 
     lookupSerializer: function lookupSerializer(name) {
-      (0, _emberDataPrivateDebug.deprecate)('Use of lookupSerializer is deprecated, use serializerFor instead.', false, {
+      (0, _emberDataPrivateDebug.deprecate)('Use of lookupSerializer is deprecated, use serializerFor instead.', {
         id: 'ds.store.lookupSerializer',
         until: '3.0'
       });
@@ -94635,13 +94610,15 @@ define('ember-data/-private/utils', ['exports', 'ember'], function (exports, _em
     ember-container-inject-owner is a new feature in Ember 2.3 that finally provides a public
     API for looking items up.  This function serves as a super simple polyfill to avoid
     triggering deprecations.
-   */
+  */
   function getOwner(context) {
     var owner;
 
     if (_ember['default'].getOwner) {
       owner = _ember['default'].getOwner(context);
-    } else if (context.container) {
+    }
+
+    if (!owner && context.container) {
       owner = context.container;
     }
 
@@ -101736,7 +101713,7 @@ define('ember-data/transform', ['exports', 'ember'], function (exports, _ember) 
 define("ember-data/version", ["exports"], function (exports) {
   "use strict";
 
-  exports["default"] = "2.11.1";
+  exports["default"] = "2.11.0";
 });
 define('ember-font-awesome/components/fa-icon', ['exports', 'ember', 'ember-computed-decorators', 'ember-font-awesome/utils/try-match', 'ember-font-awesome/utils/optional-decorator'], function (exports, _ember, _emberComputedDecorators, _emberFontAwesomeUtilsTryMatch, _emberFontAwesomeUtilsOptionalDecorator) {
   'use strict';

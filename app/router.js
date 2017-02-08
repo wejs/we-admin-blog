@@ -17,7 +17,7 @@ Router.map(function() {
     this.route('change-password');
   });
 
-  this.route('article', function(){
+  this.route('articles', function(){
     this.route('create');
     this.route('item', { path: ':id' }, function(){
 

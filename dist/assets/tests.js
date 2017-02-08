@@ -431,40 +431,40 @@ define('we-admin-blog/tests/routes/application.jshint', ['exports'], function (e
     assert.ok(true, 'routes/application.js should pass jshint.');
   });
 });
-define('we-admin-blog/tests/routes/article.jshint', ['exports'], function (exports) {
+define('we-admin-blog/tests/routes/articles.jshint', ['exports'], function (exports) {
   'use strict';
 
-  QUnit.module('JSHint | routes/article.js');
+  QUnit.module('JSHint | routes/articles.js');
   QUnit.test('should pass jshint', function (assert) {
     assert.expect(1);
-    assert.ok(true, 'routes/article.js should pass jshint.');
+    assert.ok(true, 'routes/articles.js should pass jshint.');
   });
 });
-define('we-admin-blog/tests/routes/article/create.jshint', ['exports'], function (exports) {
+define('we-admin-blog/tests/routes/articles/create.jshint', ['exports'], function (exports) {
   'use strict';
 
-  QUnit.module('JSHint | routes/article/create.js');
+  QUnit.module('JSHint | routes/articles/create.js');
   QUnit.test('should pass jshint', function (assert) {
     assert.expect(1);
-    assert.ok(true, 'routes/article/create.js should pass jshint.');
+    assert.ok(true, 'routes/articles/create.js should pass jshint.');
   });
 });
-define('we-admin-blog/tests/routes/article/index.jshint', ['exports'], function (exports) {
+define('we-admin-blog/tests/routes/articles/index.jshint', ['exports'], function (exports) {
   'use strict';
 
-  QUnit.module('JSHint | routes/article/index.js');
+  QUnit.module('JSHint | routes/articles/index.js');
   QUnit.test('should pass jshint', function (assert) {
     assert.expect(1);
-    assert.ok(true, 'routes/article/index.js should pass jshint.');
+    assert.ok(true, 'routes/articles/index.js should pass jshint.');
   });
 });
-define('we-admin-blog/tests/routes/article/item.jshint', ['exports'], function (exports) {
+define('we-admin-blog/tests/routes/articles/item.jshint', ['exports'], function (exports) {
   'use strict';
 
-  QUnit.module('JSHint | routes/article/item.js');
+  QUnit.module('JSHint | routes/articles/item.js');
   QUnit.test('should pass jshint', function (assert) {
     assert.expect(1);
-    assert.ok(true, 'routes/article/item.js should pass jshint.');
+    assert.ok(true, 'routes/articles/item.js should pass jshint.');
   });
 });
 define('we-admin-blog/tests/routes/index.jshint', ['exports'], function (exports) {

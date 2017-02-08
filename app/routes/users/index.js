@@ -36,7 +36,7 @@ export default Ember.Route.extend(AuthenticatedRouteMixin, {
           disableSorting: true,
           disableFiltering: true,
           title: 'Actions',
-          template: 'users-table/actions'
+          template: 'users/list-item-actions'
         }
       ]
     });

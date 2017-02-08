@@ -1,0 +1,33 @@
+{{#if model.record.id}}
+<h1 class="page-header">Editar artigo #{{model.record.id}}</h1>
+{{else}}
+<h1 class="page-header">Criar artigo</h1>
+{{/if}}
+
+<form {{action "save" model.record on="submit"}}>
+  <fieldset>
+    <div class="form-group">
+      <label>Título*</label>
+      {{input value=model.record.title class="form-control" placeholder="Título do artigo" required="required"}}
+    </div>
+    <div class="form-group">
+      <label>Sobre:</label>
+      {{textarea value=model.record.about class="form-control"}}
+    </div>
+    <div class="form-group">
+      <label>Texto:</label>
+      {{tinymce-editor value=model.record.body}}
+    </div>
+    {{input value=model.user.active type="hidden" value=true}}
+  </fieldset>
+  <div>
+    <button class="btn btn-primary">
+      <i class="fa fa-save"></i>
+      Salvar
+    </button>
+    <button {{action 'goTo' 'articles.index'}} type="button" class="btn btn-default">
+      <i class="fa fa-step-backward"></i>
+      Cancelar
+    </button>
+  </div>
+</form>

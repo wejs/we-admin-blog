@@ -6,7 +6,7 @@ const Router = Ember.Router.extend({
 });
 
 Router.map(function() {
-  this.route('article');
+
   this.route('user');
   this.route('vocabulary');
   this.route('term');
@@ -16,6 +16,14 @@ Router.map(function() {
   this.route('profile', function() {
     this.route('change-password');
   });
+
+  this.route('article', function(){
+    this.route('create');
+    this.route('item', { path: ':id' }, function(){
+
+    });
+  });
+
   this.route('users', function() {
     this.route('create');
     this.route('item', { path: ':id' }, function(){

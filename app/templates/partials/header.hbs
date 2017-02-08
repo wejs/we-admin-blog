@@ -16,6 +16,11 @@
 				<div class="sidebar-nav navbar-collapse">
 					{{#ember-metismenu classNames="nav"}}
 			      <li>
+			        {{#link-to 'article.index'}}
+			          <i class="fa fa-file-text"></i> Artigos
+			        {{/link-to}}
+			       </li>
+			      <li>
 			        {{#link-to 'users.index'}}
 			          <i class="fa fa-users"></i> Usuários
 			          <span class="fa arrow"></span>

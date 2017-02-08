@@ -1,0 +1,25 @@
+<h1 class="page-header">Editar artigo</h1>
+
+<form {{action "save" model.record on="submit"}}>
+  <fieldset>
+    <div class="form-group">
+      <label>Título*</label>
+      {{input value=model.record.title class="form-control" placeholder="Título do artigo" required="required"}}
+    </div>
+    <div class="form-group">
+      <label>Sobre:</label>
+      {{textarea value=model.record.about class="form-control"}}
+    </div>
+    <div class="form-group">
+      <label>Texto:</label>
+      {{tinymce-editor value=model.record.body}}
+    </div>
+    {{input value=model.user.active type="hidden" value=true}}
+  </fieldset>
+  <div>
+    <button class="btn btn-primary">
+      <i class="fa fa-save"></i>
+      Salvar
+    </button>
+  </div>
+</form>

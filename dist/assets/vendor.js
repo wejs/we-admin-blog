@@ -81937,6 +81937,86 @@ define("ember-cli-notifications/templates/components/notification-message", ["ex
     };
   })());
 });
+define('ember-cli-tinymce/components/tinymce-editor', ['exports', 'ember'], function (exports, _ember) {
+  /*global tinymce */
+  'use strict';
+
+  var observer = _ember['default'].observer;
+  var on = _ember['default'].on;
+  var run = _ember['default'].run;
+
+  exports['default'] = _ember['default'].Component.extend({
+    editor: undefined,
+    tagName: 'textarea',
+    _contentChangedListener: null,
+
+    // Change the editor content if value changes
+    valueChanged: observer('value', function () {
+      var editor = this.get('editor');
+      if (editor && editor.getContent() !== this.get('value')) {
+        editor.setContent(this.get('value') || '');
+      }
+    }),
+
+    // Default implementation which will update the value.
+    // To follow DDAU guidlines you can override this method by defining the action onValueChanged=(action "yourMethod")
+    onValueChanged: function onValueChanged(value) {
+      this.set('value', value);
+    },
+
+    // Call onValueChanged if editor content changes
+    contentChanged: function contentChanged(editor) {
+      this.onValueChanged(editor.getContent());
+    },
+
+    //Bind events to function
+    setEvents: observer('editor', function () {
+      var _this = this;
+
+      var editor = this.get('editor');
+
+      this._contentChangedListener = run.bind(this, function () {
+        run.debounce(_this, _this.contentChanged, editor, 1);
+      });
+
+      editor.on('change keyup keydown keypress mousedown', this._contentChangedListener);
+    }),
+
+    // Initialize tinymce
+    initTiny: on('didInsertElement', observer('options', function () {
+      var _this2 = this;
+
+      var _getProperties = this.getProperties('options', 'editor');
+
+      var options = _getProperties.options;
+      var editor = _getProperties.editor;
+
+      var customOptions = {
+        selector: '#' + this.get('elementId'),
+        init_instance_callback: function init_instance_callback(editor) {
+          _this2.set('editor', editor);
+          _this2.get('editor').setContent(_this2.get('value') || ''); //Set content with default text
+        }
+      };
+
+      if (editor) {
+        editor.destroy();
+      }
+
+      tinymce.init(_ember['default'].$.extend(customOptions, options));
+    })),
+
+    // Destroy tinymce editor instance when editor is removed from the page.  Otherwise, it won't be
+    // created again when added back to the page (i.e. navigating away from and back to the route).
+    cleanUp: on('willDestroyElement', function () {
+      var editor = this.get('editor');
+      if (editor) {
+        editor.off('change keyup keydown keypress mousedown', this._contentChangedListener);
+        editor.destroy();
+      }
+    })
+  });
+});
 define('ember-computed-decorators/decorator-alias', ['exports', 'ember-computed-decorators/utils/extract-value'], function (exports, _emberComputedDecoratorsUtilsExtractValue) {
   'use strict';
 

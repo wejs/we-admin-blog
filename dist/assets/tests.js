@@ -440,6 +440,33 @@ define('we-admin-blog/tests/routes/article.jshint', ['exports'], function (expor
     assert.ok(true, 'routes/article.js should pass jshint.');
   });
 });
+define('we-admin-blog/tests/routes/article/create.jshint', ['exports'], function (exports) {
+  'use strict';
+
+  QUnit.module('JSHint | routes/article/create.js');
+  QUnit.test('should pass jshint', function (assert) {
+    assert.expect(1);
+    assert.ok(true, 'routes/article/create.js should pass jshint.');
+  });
+});
+define('we-admin-blog/tests/routes/article/index.jshint', ['exports'], function (exports) {
+  'use strict';
+
+  QUnit.module('JSHint | routes/article/index.js');
+  QUnit.test('should pass jshint', function (assert) {
+    assert.expect(1);
+    assert.ok(true, 'routes/article/index.js should pass jshint.');
+  });
+});
+define('we-admin-blog/tests/routes/article/item.jshint', ['exports'], function (exports) {
+  'use strict';
+
+  QUnit.module('JSHint | routes/article/item.js');
+  QUnit.test('should pass jshint', function (assert) {
+    assert.expect(1);
+    assert.ok(true, 'routes/article/item.js should pass jshint.');
+  });
+});
 define('we-admin-blog/tests/routes/index.jshint', ['exports'], function (exports) {
   'use strict';
 

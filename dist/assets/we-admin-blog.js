@@ -492,6 +492,14 @@ define('we-admin-blog/components/notification-message', ['exports', 'ember-cli-n
     icons: config.icons || 'font-awesome'
   });
 });
+define('we-admin-blog/components/tinymce-editor', ['exports', 'ember-cli-tinymce/components/tinymce-editor'], function (exports, _emberCliTinymceComponentsTinymceEditor) {
+  Object.defineProperty(exports, 'default', {
+    enumerable: true,
+    get: function get() {
+      return _emberCliTinymceComponentsTinymceEditor['default'];
+    }
+  });
+});
 define('we-admin-blog/controllers/application', ['exports', 'ember'], function (exports, _ember) {
   exports['default'] = _ember['default'].Controller.extend({
     settingsLoaded: _ember['default'].computed.alias('settings.loaded'),
@@ -1046,7 +1054,7 @@ define('we-admin-blog/router', ['exports', 'ember', 'we-admin-blog/config/enviro
   });
 
   Router.map(function () {
-    this.route('article');
+
     this.route('user');
     this.route('vocabulary');
     this.route('term');
@@ -1056,6 +1064,12 @@ define('we-admin-blog/router', ['exports', 'ember', 'we-admin-blog/config/enviro
     this.route('profile', function () {
       this.route('change-password');
     });
+
+    this.route('article', function () {
+      this.route('create');
+      this.route('item', { path: ':id' }, function () {});
+    });
+
     this.route('users', function () {
       this.route('create');
       this.route('item', { path: ':id' }, function () {});
@@ -1155,8 +1169,89 @@ define('we-admin-blog/routes/application', ['exports', 'ember', 'ember-simple-au
     }
   });
 });
-define('we-admin-blog/routes/article', ['exports', 'ember'], function (exports, _ember) {
-  exports['default'] = _ember['default'].Route.extend({});
+define('we-admin-blog/routes/article', ['exports', 'ember', 'ember-simple-auth/mixins/authenticated-route-mixin'], function (exports, _ember, _emberSimpleAuthMixinsAuthenticatedRouteMixin) {
+  exports['default'] = _ember['default'].Route.extend(_emberSimpleAuthMixinsAuthenticatedRouteMixin['default']);
+});
+define('we-admin-blog/routes/article/create', ['exports', 'ember', 'ember-simple-auth/mixins/authenticated-route-mixin'], function (exports, _ember, _emberSimpleAuthMixinsAuthenticatedRouteMixin) {
+  exports['default'] = _ember['default'].Route.extend(_emberSimpleAuthMixinsAuthenticatedRouteMixin['default']);
+});
+define('we-admin-blog/routes/article/index', ['exports', 'ember', 'ember-simple-auth/mixins/authenticated-route-mixin'], function (exports, _ember, _emberSimpleAuthMixinsAuthenticatedRouteMixin) {
+  exports['default'] = _ember['default'].Route.extend(_emberSimpleAuthMixinsAuthenticatedRouteMixin['default'], {
+    model: function model() {
+      return _ember['default'].RSVP.hash({
+        records: this.get('store').query('article', {}),
+        columns: [{
+          propertyName: 'id',
+          title: 'ID'
+        }, {
+          propertyName: 'title',
+          filteredBy: 'title',
+          title: 'Title'
+        }, {
+          propertyName: 'creator.displayName',
+          disableSorting: true,
+          disableFiltering: true,
+          title: 'Creator'
+        }, {
+          propertyName: 'published',
+          disableSorting: true,
+          disableFiltering: true,
+          title: 'Published'
+        }, {
+          propertyName: 'createdAt',
+          filteredBy: 'createdAt',
+          title: 'Criado em'
+        }, {
+          propertyName: 'actions',
+          disableSorting: true,
+          disableFiltering: true,
+          title: 'Actions',
+          template: 'users-table/actions'
+        }]
+      });
+    }
+  });
+});
+define('we-admin-blog/routes/article/item', ['exports', 'ember', 'ember-simple-auth/mixins/authenticated-route-mixin'], function (exports, _ember, _emberSimpleAuthMixinsAuthenticatedRouteMixin) {
+  // import ENV from "../../config/environment";
+
+  exports['default'] = _ember['default'].Route.extend(_emberSimpleAuthMixinsAuthenticatedRouteMixin['default'], {
+    model: function model(params) {
+      return _ember['default'].RSVP.hash({
+        record: this.get('store').findRecord('article', params.id)
+      });
+    },
+    actions: {
+      save: function save(record) {
+        var _this = this;
+
+        record.save().then(function (r) {
+          _this.get('notifications').success('Dados salvos.');
+          // success
+          return r;
+        })['catch'](function (err) {
+          _this.send('queryError', err);
+        });
+      },
+
+      changePublishedStatus: function changePublishedStatus(record, status) {
+        var _this2 = this;
+
+        record.published = status;
+        record.save().then(function (r) {
+          if (status) {
+            _this2.get('notifications').success('Artigo publicado.');
+          } else {
+            _this2.get('notifications').success('Artigo despublicado.');
+          }
+          // success
+          return r;
+        })['catch'](function (err) {
+          _this2.send('queryError', err);
+        });
+      }
+    }
+  });
 });
 define('we-admin-blog/routes/index', ['exports', 'ember', 'ember-simple-auth/mixins/authenticated-route-mixin'], function (exports, _ember, _emberSimpleAuthMixinsAuthenticatedRouteMixin) {
   exports['default'] = _ember['default'].Route.extend(_emberSimpleAuthMixinsAuthenticatedRouteMixin['default']);
@@ -1761,8 +1856,7 @@ define("we-admin-blog/templates/article", ["exports"], function (exports) {
     return {
       meta: {
         "fragmentReason": {
-          "name": "missing-wrapper",
-          "problems": ["wrong-type"]
+          "name": "triple-curlies"
         },
         "revision": "Ember@2.6.2",
         "loc": {
@@ -1772,8 +1866,8 @@ define("we-admin-blog/templates/article", ["exports"], function (exports) {
             "column": 0
           },
           "end": {
-            "line": 2,
-            "column": 0
+            "line": 1,
+            "column": 62
           }
         },
         "moduleName": "we-admin-blog/templates/article.hbs"
@@ -1784,19 +1878,440 @@ define("we-admin-blog/templates/article", ["exports"], function (exports) {
       hasRendered: false,
       buildFragment: function buildFragment(dom) {
         var el0 = dom.createDocumentFragment();
-        var el1 = dom.createComment("");
-        dom.appendChild(el0, el1);
-        var el1 = dom.createTextNode("\n");
+        var el1 = dom.createElement("div");
+        dom.setAttribute(el1, "class", "row");
+        var el2 = dom.createElement("div");
+        dom.setAttribute(el2, "class", "col-md-12");
+        var el3 = dom.createComment("");
+        dom.appendChild(el2, el3);
+        dom.appendChild(el1, el2);
         dom.appendChild(el0, el1);
         return el0;
       },
       buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
         var morphs = new Array(1);
-        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-        dom.insertBoundary(fragment, 0);
+        morphs[0] = dom.createMorphAt(dom.childAt(fragment, [0, 0]), 0, 0);
         return morphs;
       },
-      statements: [["content", "outlet", ["loc", [null, [1, 0], [1, 10]]]]],
+      statements: [["content", "outlet", ["loc", [null, [1, 40], [1, 50]]]]],
+      locals: [],
+      templates: []
+    };
+  })());
+});
+define("we-admin-blog/templates/article/create", ["exports"], function (exports) {
+  exports["default"] = Ember.HTMLBars.template((function () {
+    return {
+      meta: {
+        "fragmentReason": {
+          "name": "triple-curlies"
+        },
+        "revision": "Ember@2.6.2",
+        "loc": {
+          "source": null,
+          "start": {
+            "line": 1,
+            "column": 0
+          },
+          "end": {
+            "line": 36,
+            "column": 6
+          }
+        },
+        "moduleName": "we-admin-blog/templates/article/create.hbs"
+      },
+      isEmpty: false,
+      arity: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      buildFragment: function buildFragment(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createElement("div");
+        dom.setAttribute(el1, "class", "content-box-large");
+        var el2 = dom.createTextNode("\n  ");
+        dom.appendChild(el1, el2);
+        var el2 = dom.createElement("div");
+        dom.setAttribute(el2, "class", "panel-heading");
+        var el3 = dom.createTextNode("\n    ");
+        dom.appendChild(el2, el3);
+        var el3 = dom.createElement("h1");
+        dom.setAttribute(el3, "class", "page-header");
+        var el4 = dom.createTextNode("Criar artigo");
+        dom.appendChild(el3, el4);
+        dom.appendChild(el2, el3);
+        var el3 = dom.createTextNode("\n  ");
+        dom.appendChild(el2, el3);
+        dom.appendChild(el1, el2);
+        var el2 = dom.createTextNode("\n  ");
+        dom.appendChild(el1, el2);
+        var el2 = dom.createElement("div");
+        dom.setAttribute(el2, "class", "panel-body");
+        var el3 = dom.createTextNode("\n    ");
+        dom.appendChild(el2, el3);
+        var el3 = dom.createElement("form");
+        var el4 = dom.createTextNode("\n      ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createElement("fieldset");
+        var el5 = dom.createTextNode("\n        ");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createElement("div");
+        dom.setAttribute(el5, "class", "form-group");
+        var el6 = dom.createTextNode("\n          ");
+        dom.appendChild(el5, el6);
+        var el6 = dom.createElement("label");
+        var el7 = dom.createTextNode("Username*");
+        dom.appendChild(el6, el7);
+        dom.appendChild(el5, el6);
+        var el6 = dom.createTextNode("\n          ");
+        dom.appendChild(el5, el6);
+        var el6 = dom.createComment("");
+        dom.appendChild(el5, el6);
+        var el6 = dom.createTextNode("\n        ");
+        dom.appendChild(el5, el6);
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("\n        ");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createElement("div");
+        dom.setAttribute(el5, "class", "form-group");
+        var el6 = dom.createTextNode("\n          ");
+        dom.appendChild(el5, el6);
+        var el6 = dom.createElement("label");
+        var el7 = dom.createTextNode("DisplayName*");
+        dom.appendChild(el6, el7);
+        dom.appendChild(el5, el6);
+        var el6 = dom.createTextNode("\n          ");
+        dom.appendChild(el5, el6);
+        var el6 = dom.createComment("");
+        dom.appendChild(el5, el6);
+        var el6 = dom.createTextNode("\n        ");
+        dom.appendChild(el5, el6);
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("\n        ");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createElement("div");
+        dom.setAttribute(el5, "class", "form-group");
+        var el6 = dom.createTextNode("\n          ");
+        dom.appendChild(el5, el6);
+        var el6 = dom.createElement("label");
+        var el7 = dom.createTextNode("Email*");
+        dom.appendChild(el6, el7);
+        dom.appendChild(el5, el6);
+        var el6 = dom.createTextNode("\n          ");
+        dom.appendChild(el5, el6);
+        var el6 = dom.createComment("");
+        dom.appendChild(el5, el6);
+        var el6 = dom.createTextNode("\n        ");
+        dom.appendChild(el5, el6);
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("\n        ");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createElement("div");
+        dom.setAttribute(el5, "class", "form-group");
+        var el6 = dom.createTextNode("\n          ");
+        dom.appendChild(el5, el6);
+        var el6 = dom.createElement("label");
+        var el7 = dom.createTextNode("Biografia / sobre");
+        dom.appendChild(el6, el7);
+        dom.appendChild(el5, el6);
+        var el6 = dom.createTextNode("\n          ");
+        dom.appendChild(el5, el6);
+        var el6 = dom.createComment("");
+        dom.appendChild(el5, el6);
+        var el6 = dom.createTextNode("\n        ");
+        dom.appendChild(el5, el6);
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("\n\n        ");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createComment("");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("\n\n      ");
+        dom.appendChild(el4, el5);
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n      ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createElement("div");
+        var el5 = dom.createTextNode("\n        ");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createElement("button");
+        dom.setAttribute(el5, "class", "btn btn-primary");
+        var el6 = dom.createTextNode("\n          ");
+        dom.appendChild(el5, el6);
+        var el6 = dom.createElement("i");
+        dom.setAttribute(el6, "class", "fa fa-save");
+        dom.appendChild(el5, el6);
+        var el6 = dom.createTextNode("\n          Salvar\n        ");
+        dom.appendChild(el5, el6);
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("\n      ");
+        dom.appendChild(el4, el5);
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n    ");
+        dom.appendChild(el3, el4);
+        dom.appendChild(el2, el3);
+        var el3 = dom.createTextNode("\n  ");
+        dom.appendChild(el2, el3);
+        dom.appendChild(el1, el2);
+        var el2 = dom.createTextNode("\n");
+        dom.appendChild(el1, el2);
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+        var element0 = dom.childAt(fragment, [0, 3, 1]);
+        var element1 = dom.childAt(element0, [1]);
+        var morphs = new Array(6);
+        morphs[0] = dom.createElementMorph(element0);
+        morphs[1] = dom.createMorphAt(dom.childAt(element1, [1]), 3, 3);
+        morphs[2] = dom.createMorphAt(dom.childAt(element1, [3]), 3, 3);
+        morphs[3] = dom.createMorphAt(dom.childAt(element1, [5]), 3, 3);
+        morphs[4] = dom.createMorphAt(dom.childAt(element1, [7]), 3, 3);
+        morphs[5] = dom.createMorphAt(element1, 9, 9);
+        return morphs;
+      },
+      statements: [["element", "action", ["registrarUsuario", ["get", "model.user", ["loc", [null, [6, 38], [6, 48]]]]], ["on", "submit"], ["loc", [null, [6, 10], [6, 62]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.user.username", ["loc", [null, [10, 24], [10, 43]]]]], [], []], "class", "form-control", "placeholder", "Nome do usuário", "required", "required"], ["loc", [null, [10, 10], [10, 116]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.user.displayName", ["loc", [null, [14, 24], [14, 46]]]]], [], []], "class", "form-control", "placeholder", "Nome de exibição", "required", "required"], ["loc", [null, [14, 10], [14, 120]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.user.email", ["loc", [null, [18, 24], [18, 40]]]]], [], []], "class", "form-control", "placeholder", "Email", "required", "required"], ["loc", [null, [18, 10], [18, 103]]]], ["inline", "textarea", [], ["value", ["subexpr", "@mut", [["get", "model.user.biography", ["loc", [null, [22, 27], [22, 47]]]]], [], []], "class", "form-control", "rows", "4"], ["loc", [null, [22, 10], [22, 79]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.user.active", ["loc", [null, [25, 22], [25, 39]]]]], [], []], "type", "hidden", "value", true], ["loc", [null, [25, 8], [25, 66]]]]],
+      locals: [],
+      templates: []
+    };
+  })());
+});
+define("we-admin-blog/templates/article/index", ["exports"], function (exports) {
+  exports["default"] = Ember.HTMLBars.template((function () {
+    var child0 = (function () {
+      return {
+        meta: {
+          "fragmentReason": false,
+          "revision": "Ember@2.6.2",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 4,
+              "column": 2
+            },
+            "end": {
+              "line": 6,
+              "column": 2
+            }
+          },
+          "moduleName": "we-admin-blog/templates/article/index.hbs"
+        },
+        isEmpty: false,
+        arity: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createTextNode("    ");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createElement("i");
+          dom.setAttribute(el1, "class", "glyphicon glyphicon-plus");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode(" Criar artigo\n");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes() {
+          return [];
+        },
+        statements: [],
+        locals: [],
+        templates: []
+      };
+    })();
+    return {
+      meta: {
+        "fragmentReason": {
+          "name": "missing-wrapper",
+          "problems": ["multiple-nodes", "wrong-type"]
+        },
+        "revision": "Ember@2.6.2",
+        "loc": {
+          "source": null,
+          "start": {
+            "line": 1,
+            "column": 0
+          },
+          "end": {
+            "line": 10,
+            "column": 100
+          }
+        },
+        "moduleName": "we-admin-blog/templates/article/index.hbs"
+      },
+      isEmpty: false,
+      arity: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      buildFragment: function buildFragment(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createElement("h1");
+        dom.setAttribute(el1, "class", "page-header");
+        var el2 = dom.createTextNode("Artigos");
+        dom.appendChild(el1, el2);
+        dom.appendChild(el0, el1);
+        var el1 = dom.createTextNode("\n\n");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createElement("div");
+        dom.setAttribute(el1, "class", "actions");
+        var el2 = dom.createTextNode("\n");
+        dom.appendChild(el1, el2);
+        var el2 = dom.createComment("");
+        dom.appendChild(el1, el2);
+        dom.appendChild(el0, el1);
+        var el1 = dom.createTextNode("\n");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createElement("br");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createTextNode("\n\n");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createComment("");
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+        var morphs = new Array(2);
+        morphs[0] = dom.createMorphAt(dom.childAt(fragment, [2]), 1, 1);
+        morphs[1] = dom.createMorphAt(fragment, 6, 6, contextualElement);
+        dom.insertBoundary(fragment, null);
+        return morphs;
+      },
+      statements: [["block", "link-to", ["article.create"], ["class", "btn btn-default"], 0, null, ["loc", [null, [4, 2], [6, 14]]]], ["inline", "conteudos-table", [], ["data", ["subexpr", "@mut", [["get", "model.records", ["loc", [null, [10, 23], [10, 36]]]]], [], []], "columns", ["subexpr", "@mut", [["get", "model.columns", ["loc", [null, [10, 45], [10, 58]]]]], [], []], "pageSize", 25, "useFilteringByColumns", false], ["loc", [null, [10, 0], [10, 100]]]]],
+      locals: [],
+      templates: [child0]
+    };
+  })());
+});
+define("we-admin-blog/templates/article/item", ["exports"], function (exports) {
+  exports["default"] = Ember.HTMLBars.template((function () {
+    return {
+      meta: {
+        "fragmentReason": {
+          "name": "missing-wrapper",
+          "problems": ["multiple-nodes"]
+        },
+        "revision": "Ember@2.6.2",
+        "loc": {
+          "source": null,
+          "start": {
+            "line": 1,
+            "column": 0
+          },
+          "end": {
+            "line": 25,
+            "column": 7
+          }
+        },
+        "moduleName": "we-admin-blog/templates/article/item.hbs"
+      },
+      isEmpty: false,
+      arity: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      buildFragment: function buildFragment(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createElement("h1");
+        dom.setAttribute(el1, "class", "page-header");
+        var el2 = dom.createTextNode("Editar artigo");
+        dom.appendChild(el1, el2);
+        dom.appendChild(el0, el1);
+        var el1 = dom.createTextNode("\n\n");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createElement("form");
+        var el2 = dom.createTextNode("\n  ");
+        dom.appendChild(el1, el2);
+        var el2 = dom.createElement("fieldset");
+        var el3 = dom.createTextNode("\n    ");
+        dom.appendChild(el2, el3);
+        var el3 = dom.createElement("div");
+        dom.setAttribute(el3, "class", "form-group");
+        var el4 = dom.createTextNode("\n      ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createElement("label");
+        var el5 = dom.createTextNode("Título*");
+        dom.appendChild(el4, el5);
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n      ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createComment("");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n    ");
+        dom.appendChild(el3, el4);
+        dom.appendChild(el2, el3);
+        var el3 = dom.createTextNode("\n    ");
+        dom.appendChild(el2, el3);
+        var el3 = dom.createElement("div");
+        dom.setAttribute(el3, "class", "form-group");
+        var el4 = dom.createTextNode("\n      ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createElement("label");
+        var el5 = dom.createTextNode("Sobre:");
+        dom.appendChild(el4, el5);
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n      ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createComment("");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n    ");
+        dom.appendChild(el3, el4);
+        dom.appendChild(el2, el3);
+        var el3 = dom.createTextNode("\n    ");
+        dom.appendChild(el2, el3);
+        var el3 = dom.createElement("div");
+        dom.setAttribute(el3, "class", "form-group");
+        var el4 = dom.createTextNode("\n      ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createElement("label");
+        var el5 = dom.createTextNode("Texto:");
+        dom.appendChild(el4, el5);
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n      ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createComment("");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n    ");
+        dom.appendChild(el3, el4);
+        dom.appendChild(el2, el3);
+        var el3 = dom.createTextNode("\n    ");
+        dom.appendChild(el2, el3);
+        var el3 = dom.createComment("");
+        dom.appendChild(el2, el3);
+        var el3 = dom.createTextNode("\n  ");
+        dom.appendChild(el2, el3);
+        dom.appendChild(el1, el2);
+        var el2 = dom.createTextNode("\n  ");
+        dom.appendChild(el1, el2);
+        var el2 = dom.createElement("div");
+        var el3 = dom.createTextNode("\n    ");
+        dom.appendChild(el2, el3);
+        var el3 = dom.createElement("button");
+        dom.setAttribute(el3, "class", "btn btn-primary");
+        var el4 = dom.createTextNode("\n      ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createElement("i");
+        dom.setAttribute(el4, "class", "fa fa-save");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n      Salvar\n    ");
+        dom.appendChild(el3, el4);
+        dom.appendChild(el2, el3);
+        var el3 = dom.createTextNode("\n  ");
+        dom.appendChild(el2, el3);
+        dom.appendChild(el1, el2);
+        var el2 = dom.createTextNode("\n");
+        dom.appendChild(el1, el2);
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+        var element0 = dom.childAt(fragment, [2]);
+        var element1 = dom.childAt(element0, [1]);
+        var morphs = new Array(5);
+        morphs[0] = dom.createElementMorph(element0);
+        morphs[1] = dom.createMorphAt(dom.childAt(element1, [1]), 3, 3);
+        morphs[2] = dom.createMorphAt(dom.childAt(element1, [3]), 3, 3);
+        morphs[3] = dom.createMorphAt(dom.childAt(element1, [5]), 3, 3);
+        morphs[4] = dom.createMorphAt(element1, 7, 7);
+        return morphs;
+      },
+      statements: [["element", "action", ["save", ["get", "model.record", ["loc", [null, [3, 22], [3, 34]]]]], ["on", "submit"], ["loc", [null, [3, 6], [3, 48]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.record.title", ["loc", [null, [7, 20], [7, 38]]]]], [], []], "class", "form-control", "placeholder", "Título do artigo", "required", "required"], ["loc", [null, [7, 6], [7, 112]]]], ["inline", "textarea", [], ["value", ["subexpr", "@mut", [["get", "model.record.about", ["loc", [null, [11, 23], [11, 41]]]]], [], []], "class", "form-control"], ["loc", [null, [11, 6], [11, 64]]]], ["inline", "tinymce-editor", [], ["value", ["subexpr", "@mut", [["get", "model.record.body", ["loc", [null, [15, 29], [15, 46]]]]], [], []]], ["loc", [null, [15, 6], [15, 48]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.user.active", ["loc", [null, [17, 18], [17, 35]]]]], [], []], "type", "hidden", "value", true], ["loc", [null, [17, 4], [17, 62]]]]],
       locals: [],
       templates: []
     };
@@ -6904,7 +7419,48 @@ define("we-admin-blog/templates/partials/header", ["exports"], function (exports
                     "column": 11
                   },
                   "end": {
-                    "line": 22,
+                    "line": 21,
+                    "column": 11
+                  }
+                },
+                "moduleName": "we-admin-blog/templates/partials/header.hbs"
+              },
+              isEmpty: false,
+              arity: 0,
+              cachedFragment: null,
+              hasRendered: false,
+              buildFragment: function buildFragment(dom) {
+                var el0 = dom.createDocumentFragment();
+                var el1 = dom.createTextNode("			          ");
+                dom.appendChild(el0, el1);
+                var el1 = dom.createElement("i");
+                dom.setAttribute(el1, "class", "fa fa-file-text");
+                dom.appendChild(el0, el1);
+                var el1 = dom.createTextNode(" Artigos\n");
+                dom.appendChild(el0, el1);
+                return el0;
+              },
+              buildRenderNodes: function buildRenderNodes() {
+                return [];
+              },
+              statements: [],
+              locals: [],
+              templates: []
+            };
+          })();
+          var child1 = (function () {
+            return {
+              meta: {
+                "fragmentReason": false,
+                "revision": "Ember@2.6.2",
+                "loc": {
+                  "source": null,
+                  "start": {
+                    "line": 24,
+                    "column": 11
+                  },
+                  "end": {
+                    "line": 27,
                     "column": 11
                   }
                 },
@@ -6927,47 +7483,6 @@ define("we-admin-blog/templates/partials/header", ["exports"], function (exports
                 dom.setAttribute(el1, "class", "fa arrow");
                 dom.appendChild(el0, el1);
                 var el1 = dom.createTextNode("\n");
-                dom.appendChild(el0, el1);
-                return el0;
-              },
-              buildRenderNodes: function buildRenderNodes() {
-                return [];
-              },
-              statements: [],
-              locals: [],
-              templates: []
-            };
-          })();
-          var child1 = (function () {
-            return {
-              meta: {
-                "fragmentReason": false,
-                "revision": "Ember@2.6.2",
-                "loc": {
-                  "source": null,
-                  "start": {
-                    "line": 25,
-                    "column": 10
-                  },
-                  "end": {
-                    "line": 27,
-                    "column": 10
-                  }
-                },
-                "moduleName": "we-admin-blog/templates/partials/header.hbs"
-              },
-              isEmpty: false,
-              arity: 0,
-              cachedFragment: null,
-              hasRendered: false,
-              buildFragment: function buildFragment(dom) {
-                var el0 = dom.createDocumentFragment();
-                var el1 = dom.createTextNode("								  	");
-                dom.appendChild(el0, el1);
-                var el1 = dom.createElement("i");
-                dom.setAttribute(el1, "class", "fa fa-plus");
-                dom.appendChild(el0, el1);
-                var el1 = dom.createTextNode(" Cadastrar\n");
                 dom.appendChild(el0, el1);
                 return el0;
               },
@@ -7008,7 +7523,7 @@ define("we-admin-blog/templates/partials/header", ["exports"], function (exports
                 var el1 = dom.createElement("i");
                 dom.setAttribute(el1, "class", "fa fa-plus");
                 dom.appendChild(el0, el1);
-                var el1 = dom.createTextNode(" Perfis\n");
+                var el1 = dom.createTextNode(" Cadastrar\n");
                 dom.appendChild(el0, el1);
                 return el0;
               },
@@ -7049,6 +7564,47 @@ define("we-admin-blog/templates/partials/header", ["exports"], function (exports
                 var el1 = dom.createElement("i");
                 dom.setAttribute(el1, "class", "fa fa-plus");
                 dom.appendChild(el0, el1);
+                var el1 = dom.createTextNode(" Perfis\n");
+                dom.appendChild(el0, el1);
+                return el0;
+              },
+              buildRenderNodes: function buildRenderNodes() {
+                return [];
+              },
+              statements: [],
+              locals: [],
+              templates: []
+            };
+          })();
+          var child4 = (function () {
+            return {
+              meta: {
+                "fragmentReason": false,
+                "revision": "Ember@2.6.2",
+                "loc": {
+                  "source": null,
+                  "start": {
+                    "line": 40,
+                    "column": 10
+                  },
+                  "end": {
+                    "line": 42,
+                    "column": 10
+                  }
+                },
+                "moduleName": "we-admin-blog/templates/partials/header.hbs"
+              },
+              isEmpty: false,
+              arity: 0,
+              cachedFragment: null,
+              hasRendered: false,
+              buildFragment: function buildFragment(dom) {
+                var el0 = dom.createDocumentFragment();
+                var el1 = dom.createTextNode("								  	");
+                dom.appendChild(el0, el1);
+                var el1 = dom.createElement("i");
+                dom.setAttribute(el1, "class", "fa fa-plus");
+                dom.appendChild(el0, el1);
                 var el1 = dom.createTextNode(" Permissões\n");
                 dom.appendChild(el0, el1);
                 return el0;
@@ -7072,7 +7628,7 @@ define("we-admin-blog/templates/partials/header", ["exports"], function (exports
                   "column": 5
                 },
                 "end": {
-                  "line": 42,
+                  "line": 47,
                   "column": 5
                 }
               },
@@ -7085,6 +7641,16 @@ define("we-admin-blog/templates/partials/header", ["exports"], function (exports
             buildFragment: function buildFragment(dom) {
               var el0 = dom.createDocumentFragment();
               var el1 = dom.createTextNode("			      ");
+              dom.appendChild(el0, el1);
+              var el1 = dom.createElement("li");
+              var el2 = dom.createTextNode("\n");
+              dom.appendChild(el1, el2);
+              var el2 = dom.createComment("");
+              dom.appendChild(el1, el2);
+              var el2 = dom.createTextNode("			       ");
+              dom.appendChild(el1, el2);
+              dom.appendChild(el0, el1);
+              var el1 = dom.createTextNode("\n			      ");
               dom.appendChild(el0, el1);
               var el1 = dom.createElement("li");
               var el2 = dom.createTextNode("\n");
@@ -7137,18 +7703,19 @@ define("we-admin-blog/templates/partials/header", ["exports"], function (exports
               return el0;
             },
             buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-              var element0 = dom.childAt(fragment, [1]);
+              var element0 = dom.childAt(fragment, [3]);
               var element1 = dom.childAt(element0, [3]);
-              var morphs = new Array(4);
-              morphs[0] = dom.createMorphAt(element0, 1, 1);
-              morphs[1] = dom.createMorphAt(dom.childAt(element1, [1]), 1, 1);
-              morphs[2] = dom.createMorphAt(dom.childAt(element1, [3]), 1, 1);
-              morphs[3] = dom.createMorphAt(dom.childAt(element1, [5]), 1, 1);
+              var morphs = new Array(5);
+              morphs[0] = dom.createMorphAt(dom.childAt(fragment, [1]), 1, 1);
+              morphs[1] = dom.createMorphAt(element0, 1, 1);
+              morphs[2] = dom.createMorphAt(dom.childAt(element1, [1]), 1, 1);
+              morphs[3] = dom.createMorphAt(dom.childAt(element1, [3]), 1, 1);
+              morphs[4] = dom.createMorphAt(dom.childAt(element1, [5]), 1, 1);
               return morphs;
             },
-            statements: [["block", "link-to", ["users.index"], [], 0, null, ["loc", [null, [19, 11], [22, 23]]]], ["block", "link-to", ["users.create"], [], 1, null, ["loc", [null, [25, 10], [27, 22]]]], ["block", "link-to", ["users.create"], [], 2, null, ["loc", [null, [30, 10], [32, 22]]]], ["block", "link-to", ["users.create"], [], 3, null, ["loc", [null, [35, 10], [37, 22]]]]],
+            statements: [["block", "link-to", ["article.index"], [], 0, null, ["loc", [null, [19, 11], [21, 23]]]], ["block", "link-to", ["users.index"], [], 1, null, ["loc", [null, [24, 11], [27, 23]]]], ["block", "link-to", ["users.create"], [], 2, null, ["loc", [null, [30, 10], [32, 22]]]], ["block", "link-to", ["users.create"], [], 3, null, ["loc", [null, [35, 10], [37, 22]]]], ["block", "link-to", ["users.create"], [], 4, null, ["loc", [null, [40, 10], [42, 22]]]]],
             locals: [],
-            templates: [child0, child1, child2, child3]
+            templates: [child0, child1, child2, child3, child4]
           };
         })();
         return {
@@ -7162,7 +7729,7 @@ define("we-admin-blog/templates/partials/header", ["exports"], function (exports
                 "column": 2
               },
               "end": {
-                "line": 46,
+                "line": 51,
                 "column": 1
               }
             },
@@ -7211,7 +7778,7 @@ define("we-admin-blog/templates/partials/header", ["exports"], function (exports
             morphs[1] = dom.createMorphAt(dom.childAt(fragment, [3, 1]), 1, 1);
             return morphs;
           },
-          statements: [["inline", "partial", ["partials/navbar-top-links"], [], ["loc", [null, [14, 2], [14, 41]]]], ["block", "ember-metismenu", [], ["classNames", "nav"], 0, null, ["loc", [null, [17, 5], [42, 25]]]]],
+          statements: [["inline", "partial", ["partials/navbar-top-links"], [], ["loc", [null, [14, 2], [14, 41]]]], ["block", "ember-metismenu", [], ["classNames", "nav"], 0, null, ["loc", [null, [17, 5], [47, 25]]]]],
           locals: [],
           templates: [child0]
         };
@@ -7230,7 +7797,7 @@ define("we-admin-blog/templates/partials/header", ["exports"], function (exports
               "column": 0
             },
             "end": {
-              "line": 47,
+              "line": 52,
               "column": 0
             }
           },
@@ -7270,7 +7837,7 @@ define("we-admin-blog/templates/partials/header", ["exports"], function (exports
           dom.insertBoundary(fragment, null);
           return morphs;
         },
-        statements: [["block", "navbar.toggle", [], [], 0, null, ["loc", [null, [3, 4], [8, 22]]]], ["block", "link-to", ["index"], ["class", "navbar-brand"], 1, null, ["loc", [null, [9, 2], [11, 14]]]], ["block", "navbar.content", [], [], 2, null, ["loc", [null, [13, 2], [46, 20]]]]],
+        statements: [["block", "navbar.toggle", [], [], 0, null, ["loc", [null, [3, 4], [8, 22]]]], ["block", "link-to", ["index"], ["class", "navbar-brand"], 1, null, ["loc", [null, [9, 2], [11, 14]]]], ["block", "navbar.content", [], [], 2, null, ["loc", [null, [13, 2], [51, 20]]]]],
         locals: ["navbar"],
         templates: [child0, child1, child2]
       };
@@ -7289,7 +7856,7 @@ define("we-admin-blog/templates/partials/header", ["exports"], function (exports
             "column": 0
           },
           "end": {
-            "line": 47,
+            "line": 52,
             "column": 14
           }
         },
@@ -7312,7 +7879,7 @@ define("we-admin-blog/templates/partials/header", ["exports"], function (exports
         dom.insertBoundary(fragment, null);
         return morphs;
       },
-      statements: [["block", "bs-navbar", [], ["position", "static-top"], 0, null, ["loc", [null, [1, 0], [47, 14]]]]],
+      statements: [["block", "bs-navbar", [], ["position", "static-top"], 0, null, ["loc", [null, [1, 0], [52, 14]]]]],
       locals: [],
       templates: [child0]
     };
@@ -8010,6 +8577,54 @@ define("we-admin-blog/templates/partials/navbar-top-links", ["exports"], functio
     };
   })());
 });
+define("we-admin-blog/templates/profile", ["exports"], function (exports) {
+  exports["default"] = Ember.HTMLBars.template((function () {
+    return {
+      meta: {
+        "fragmentReason": {
+          "name": "triple-curlies"
+        },
+        "revision": "Ember@2.6.2",
+        "loc": {
+          "source": null,
+          "start": {
+            "line": 1,
+            "column": 0
+          },
+          "end": {
+            "line": 1,
+            "column": 62
+          }
+        },
+        "moduleName": "we-admin-blog/templates/profile.hbs"
+      },
+      isEmpty: false,
+      arity: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      buildFragment: function buildFragment(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createElement("div");
+        dom.setAttribute(el1, "class", "row");
+        var el2 = dom.createElement("div");
+        dom.setAttribute(el2, "class", "col-md-12");
+        var el3 = dom.createComment("");
+        dom.appendChild(el2, el3);
+        dom.appendChild(el1, el2);
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+        var morphs = new Array(1);
+        morphs[0] = dom.createMorphAt(dom.childAt(fragment, [0, 0]), 0, 0);
+        return morphs;
+      },
+      statements: [["content", "outlet", ["loc", [null, [1, 40], [1, 50]]]]],
+      locals: [],
+      templates: []
+    };
+  })());
+});
 define("we-admin-blog/templates/profile/change-password", ["exports"], function (exports) {
   exports["default"] = Ember.HTMLBars.template((function () {
     return {
@@ -8336,8 +8951,7 @@ define("we-admin-blog/templates/term", ["exports"], function (exports) {
     return {
       meta: {
         "fragmentReason": {
-          "name": "missing-wrapper",
-          "problems": ["wrong-type"]
+          "name": "triple-curlies"
         },
         "revision": "Ember@2.6.2",
         "loc": {
@@ -8347,8 +8961,8 @@ define("we-admin-blog/templates/term", ["exports"], function (exports) {
             "column": 0
           },
           "end": {
-            "line": 2,
-            "column": 0
+            "line": 1,
+            "column": 62
           }
         },
         "moduleName": "we-admin-blog/templates/term.hbs"
@@ -8359,19 +8973,22 @@ define("we-admin-blog/templates/term", ["exports"], function (exports) {
       hasRendered: false,
       buildFragment: function buildFragment(dom) {
         var el0 = dom.createDocumentFragment();
-        var el1 = dom.createComment("");
-        dom.appendChild(el0, el1);
-        var el1 = dom.createTextNode("\n");
+        var el1 = dom.createElement("div");
+        dom.setAttribute(el1, "class", "row");
+        var el2 = dom.createElement("div");
+        dom.setAttribute(el2, "class", "col-md-12");
+        var el3 = dom.createComment("");
+        dom.appendChild(el2, el3);
+        dom.appendChild(el1, el2);
         dom.appendChild(el0, el1);
         return el0;
       },
       buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
         var morphs = new Array(1);
-        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-        dom.insertBoundary(fragment, 0);
+        morphs[0] = dom.createMorphAt(dom.childAt(fragment, [0, 0]), 0, 0);
         return morphs;
       },
-      statements: [["content", "outlet", ["loc", [null, [1, 0], [1, 10]]]]],
+      statements: [["content", "outlet", ["loc", [null, [1, 40], [1, 50]]]]],
       locals: [],
       templates: []
     };
@@ -8523,7 +9140,7 @@ define("we-admin-blog/templates/users", ["exports"], function (exports) {
           },
           "end": {
             "line": 1,
-            "column": 44
+            "column": 62
           }
         },
         "moduleName": "we-admin-blog/templates/users.hbs"
@@ -8535,18 +9152,21 @@ define("we-admin-blog/templates/users", ["exports"], function (exports) {
       buildFragment: function buildFragment(dom) {
         var el0 = dom.createDocumentFragment();
         var el1 = dom.createElement("div");
-        dom.setAttribute(el1, "class", "container main");
-        var el2 = dom.createComment("");
+        dom.setAttribute(el1, "class", "row");
+        var el2 = dom.createElement("div");
+        dom.setAttribute(el2, "class", "col-md-12");
+        var el3 = dom.createComment("");
+        dom.appendChild(el2, el3);
         dom.appendChild(el1, el2);
         dom.appendChild(el0, el1);
         return el0;
       },
       buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
         var morphs = new Array(1);
-        morphs[0] = dom.createMorphAt(dom.childAt(fragment, [0]), 0, 0);
+        morphs[0] = dom.createMorphAt(dom.childAt(fragment, [0, 0]), 0, 0);
         return morphs;
       },
-      statements: [["content", "outlet", ["loc", [null, [1, 28], [1, 38]]]]],
+      statements: [["content", "outlet", ["loc", [null, [1, 40], [1, 50]]]]],
       locals: [],
       templates: []
     };
@@ -8587,8 +9207,8 @@ define("we-admin-blog/templates/users/create", ["exports"], function (exports) {
         dom.setAttribute(el2, "class", "panel-heading");
         var el3 = dom.createTextNode("\n    ");
         dom.appendChild(el2, el3);
-        var el3 = dom.createElement("div");
-        dom.setAttribute(el3, "class", "panel-title");
+        var el3 = dom.createElement("h1");
+        dom.setAttribute(el3, "class", "page-header");
         var el4 = dom.createTextNode("Registrar do usuário");
         dom.appendChild(el3, el4);
         dom.appendChild(el2, el3);
@@ -8737,12 +9357,12 @@ define("we-admin-blog/templates/users/index", ["exports"], function (exports) {
           "loc": {
             "source": null,
             "start": {
-              "line": 7,
-              "column": 6
+              "line": 4,
+              "column": 2
             },
             "end": {
-              "line": 9,
-              "column": 6
+              "line": 6,
+              "column": 2
             }
           },
           "moduleName": "we-admin-blog/templates/users/index.hbs"
@@ -8753,7 +9373,7 @@ define("we-admin-blog/templates/users/index", ["exports"], function (exports) {
         hasRendered: false,
         buildFragment: function buildFragment(dom) {
           var el0 = dom.createDocumentFragment();
-          var el1 = dom.createTextNode("        ");
+          var el1 = dom.createTextNode("    ");
           dom.appendChild(el0, el1);
           var el1 = dom.createElement("i");
           dom.setAttribute(el1, "class", "glyphicon glyphicon-plus");
@@ -8773,7 +9393,8 @@ define("we-admin-blog/templates/users/index", ["exports"], function (exports) {
     return {
       meta: {
         "fragmentReason": {
-          "name": "triple-curlies"
+          "name": "missing-wrapper",
+          "problems": ["multiple-nodes", "wrong-type"]
         },
         "revision": "Ember@2.6.2",
         "loc": {
@@ -8783,8 +9404,8 @@ define("we-admin-blog/templates/users/index", ["exports"], function (exports) {
             "column": 0
           },
           "end": {
-            "line": 15,
-            "column": 6
+            "line": 11,
+            "column": 0
           }
         },
         "moduleName": "we-admin-blog/templates/users/index.hbs"
@@ -8795,61 +9416,39 @@ define("we-admin-blog/templates/users/index", ["exports"], function (exports) {
       hasRendered: false,
       buildFragment: function buildFragment(dom) {
         var el0 = dom.createDocumentFragment();
+        var el1 = dom.createElement("h1");
+        dom.setAttribute(el1, "class", "page-header");
+        var el2 = dom.createTextNode("Usuários");
+        dom.appendChild(el1, el2);
+        dom.appendChild(el0, el1);
+        var el1 = dom.createTextNode("\n\n");
+        dom.appendChild(el0, el1);
         var el1 = dom.createElement("div");
-        dom.setAttribute(el1, "class", "content-box-large");
-        var el2 = dom.createTextNode("\n  ");
-        dom.appendChild(el1, el2);
-        var el2 = dom.createElement("div");
-        dom.setAttribute(el2, "class", "panel-heading");
-        var el3 = dom.createTextNode("\n    ");
-        dom.appendChild(el2, el3);
-        var el3 = dom.createElement("h1");
-        dom.setAttribute(el3, "class", "panel-title");
-        var el4 = dom.createTextNode("Usuários");
-        dom.appendChild(el3, el4);
-        dom.appendChild(el2, el3);
-        var el3 = dom.createTextNode("\n  ");
-        dom.appendChild(el2, el3);
-        dom.appendChild(el1, el2);
-        var el2 = dom.createTextNode("\n  ");
-        dom.appendChild(el1, el2);
-        var el2 = dom.createElement("div");
-        dom.setAttribute(el2, "class", "panel-body");
-        var el3 = dom.createTextNode("\n    ");
-        dom.appendChild(el2, el3);
-        var el3 = dom.createElement("div");
-        dom.setAttribute(el3, "class", "actions");
-        var el4 = dom.createTextNode("\n");
-        dom.appendChild(el3, el4);
-        var el4 = dom.createComment("");
-        dom.appendChild(el3, el4);
-        var el4 = dom.createTextNode("    ");
-        dom.appendChild(el3, el4);
-        dom.appendChild(el2, el3);
-        var el3 = dom.createTextNode("\n    ");
-        dom.appendChild(el2, el3);
-        var el3 = dom.createElement("br");
-        dom.appendChild(el2, el3);
-        var el3 = dom.createTextNode("\n\n    ");
-        dom.appendChild(el2, el3);
-        var el3 = dom.createComment("");
-        dom.appendChild(el2, el3);
-        var el3 = dom.createTextNode("\n  ");
-        dom.appendChild(el2, el3);
-        dom.appendChild(el1, el2);
+        dom.setAttribute(el1, "class", "actions");
         var el2 = dom.createTextNode("\n");
         dom.appendChild(el1, el2);
+        var el2 = dom.createComment("");
+        dom.appendChild(el1, el2);
+        dom.appendChild(el0, el1);
+        var el1 = dom.createTextNode("\n");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createElement("br");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createTextNode("\n\n");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createComment("");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createTextNode("\n");
         dom.appendChild(el0, el1);
         return el0;
       },
       buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-        var element0 = dom.childAt(fragment, [0, 3]);
         var morphs = new Array(2);
-        morphs[0] = dom.createMorphAt(dom.childAt(element0, [1]), 1, 1);
-        morphs[1] = dom.createMorphAt(element0, 5, 5);
+        morphs[0] = dom.createMorphAt(dom.childAt(fragment, [2]), 1, 1);
+        morphs[1] = dom.createMorphAt(fragment, 6, 6, contextualElement);
         return morphs;
       },
-      statements: [["block", "link-to", ["users.create"], ["class", "btn btn-default"], 0, null, ["loc", [null, [7, 6], [9, 18]]]], ["inline", "conteudos-table", [], ["data", ["subexpr", "@mut", [["get", "model.users", ["loc", [null, [13, 27], [13, 38]]]]], [], []], "columns", ["subexpr", "@mut", [["get", "model.columns", ["loc", [null, [13, 47], [13, 60]]]]], [], []], "pageSize", 25, "useFilteringByColumns", false], ["loc", [null, [13, 4], [13, 102]]]]],
+      statements: [["block", "link-to", ["users.create"], ["class", "btn btn-default"], 0, null, ["loc", [null, [4, 2], [6, 14]]]], ["inline", "conteudos-table", [], ["data", ["subexpr", "@mut", [["get", "model.users", ["loc", [null, [10, 23], [10, 34]]]]], [], []], "columns", ["subexpr", "@mut", [["get", "model.columns", ["loc", [null, [10, 43], [10, 56]]]]], [], []], "pageSize", 25, "useFilteringByColumns", false], ["loc", [null, [10, 0], [10, 98]]]]],
       locals: [],
       templates: [child0]
     };
@@ -8985,8 +9584,8 @@ define("we-admin-blog/templates/users/item", ["exports"], function (exports) {
         dom.setAttribute(el2, "class", "panel-heading");
         var el3 = dom.createTextNode("\n    ");
         dom.appendChild(el2, el3);
-        var el3 = dom.createElement("div");
-        dom.setAttribute(el3, "class", "panel-title");
+        var el3 = dom.createElement("h1");
+        dom.setAttribute(el3, "class", "page-header");
         var el4 = dom.createTextNode("Dados do usuário");
         dom.appendChild(el3, el4);
         dom.appendChild(el2, el3);
@@ -9237,8 +9836,7 @@ define("we-admin-blog/templates/vocabulary", ["exports"], function (exports) {
     return {
       meta: {
         "fragmentReason": {
-          "name": "missing-wrapper",
-          "problems": ["wrong-type"]
+          "name": "triple-curlies"
         },
         "revision": "Ember@2.6.2",
         "loc": {
@@ -9248,8 +9846,8 @@ define("we-admin-blog/templates/vocabulary", ["exports"], function (exports) {
             "column": 0
           },
           "end": {
-            "line": 2,
-            "column": 0
+            "line": 1,
+            "column": 62
           }
         },
         "moduleName": "we-admin-blog/templates/vocabulary.hbs"
@@ -9260,19 +9858,22 @@ define("we-admin-blog/templates/vocabulary", ["exports"], function (exports) {
       hasRendered: false,
       buildFragment: function buildFragment(dom) {
         var el0 = dom.createDocumentFragment();
-        var el1 = dom.createComment("");
-        dom.appendChild(el0, el1);
-        var el1 = dom.createTextNode("\n");
+        var el1 = dom.createElement("div");
+        dom.setAttribute(el1, "class", "row");
+        var el2 = dom.createElement("div");
+        dom.setAttribute(el2, "class", "col-md-12");
+        var el3 = dom.createComment("");
+        dom.appendChild(el2, el3);
+        dom.appendChild(el1, el2);
         dom.appendChild(el0, el1);
         return el0;
       },
       buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
         var morphs = new Array(1);
-        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-        dom.insertBoundary(fragment, 0);
+        morphs[0] = dom.createMorphAt(dom.childAt(fragment, [0, 0]), 0, 0);
         return morphs;
       },
-      statements: [["content", "outlet", ["loc", [null, [1, 0], [1, 10]]]]],
+      statements: [["content", "outlet", ["loc", [null, [1, 40], [1, 50]]]]],
       locals: [],
       templates: []
     };
@@ -9318,7 +9919,7 @@ catch(err) {
 /* jshint ignore:start */
 
 if (!runningTests) {
-  require("we-admin-blog/app")["default"].create({"name":"we-admin-blog","version":"0.0.0+9168f61f"});
+  require("we-admin-blog/app")["default"].create({"name":"we-admin-blog","version":"0.0.0+a33f83d8"});
 }
 
 /* jshint ignore:end */

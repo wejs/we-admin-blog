@@ -1,0 +1,15 @@
+<div class="content-box-large">
+  <div class="panel-heading">
+    <h1 class="panel-title">Usuários</h1>
+  </div>
+  <div class="panel-body">
+    <div class="actions">
+      {{#link-to 'users.create' class="btn btn-default"}}
+        <i class="glyphicon glyphicon-plus"></i> Registrar usuário
+      {{/link-to}}
+    </div>
+    <br>
+
+    {{conteudos-table data=model.users columns=model.columns pageSize=25 useFilteringByColumns=false}}
+  </div>
+</div>

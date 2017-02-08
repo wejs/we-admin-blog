@@ -43,6 +43,15 @@ define('we-admin-blog/tests/components/bootstrap-loading.jshint', ['exports'], f
     assert.ok(true, 'components/bootstrap-loading.js should pass jshint.');
   });
 });
+define('we-admin-blog/tests/components/conteudos-table.jshint', ['exports'], function (exports) {
+  'use strict';
+
+  QUnit.module('JSHint | components/conteudos-table.js');
+  QUnit.test('should pass jshint', function (assert) {
+    assert.expect(1);
+    assert.ok(true, 'components/conteudos-table.js should pass jshint.');
+  });
+});
 define('we-admin-blog/tests/controllers/application.jshint', ['exports'], function (exports) {
   'use strict';
 
@@ -458,6 +467,15 @@ define('we-admin-blog/tests/routes/logout.jshint', ['exports'], function (export
     assert.ok(true, 'routes/logout.js should pass jshint.');
   });
 });
+define('we-admin-blog/tests/routes/profile.jshint', ['exports'], function (exports) {
+  'use strict';
+
+  QUnit.module('JSHint | routes/profile.js');
+  QUnit.test('should pass jshint', function (assert) {
+    assert.expect(1);
+    assert.ok(true, 'routes/profile.js should pass jshint.');
+  });
+});
 define('we-admin-blog/tests/routes/term.jshint', ['exports'], function (exports) {
   'use strict';
 
@@ -474,6 +492,33 @@ define('we-admin-blog/tests/routes/user.jshint', ['exports'], function (exports)
   QUnit.test('should pass jshint', function (assert) {
     assert.expect(1);
     assert.ok(true, 'routes/user.js should pass jshint.');
+  });
+});
+define('we-admin-blog/tests/routes/users/create.jshint', ['exports'], function (exports) {
+  'use strict';
+
+  QUnit.module('JSHint | routes/users/create.js');
+  QUnit.test('should pass jshint', function (assert) {
+    assert.expect(1);
+    assert.ok(true, 'routes/users/create.js should pass jshint.');
+  });
+});
+define('we-admin-blog/tests/routes/users/index.jshint', ['exports'], function (exports) {
+  'use strict';
+
+  QUnit.module('JSHint | routes/users/index.js');
+  QUnit.test('should pass jshint', function (assert) {
+    assert.expect(1);
+    assert.ok(true, 'routes/users/index.js should pass jshint.');
+  });
+});
+define('we-admin-blog/tests/routes/users/item.jshint', ['exports'], function (exports) {
+  'use strict';
+
+  QUnit.module('JSHint | routes/users/item.js');
+  QUnit.test('should pass jshint', function (assert) {
+    assert.expect(1);
+    assert.ok(true, 'routes/users/item.js should pass jshint.');
   });
 });
 define('we-admin-blog/tests/routes/vocabulary.jshint', ['exports'], function (exports) {

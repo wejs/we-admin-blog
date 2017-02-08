@@ -1,0 +1,36 @@
+<div class="content-box-large">
+  <div class="panel-heading">
+    <div class="panel-title">Registrar do usuário</div>
+  </div>
+  <div class="panel-body">
+    <form {{action "registrarUsuario" model.user on="submit"}}>
+      <fieldset>
+        <div class="form-group">
+          <label>Username*</label>
+          {{input value=model.user.username class="form-control" placeholder="Nome do usuário" required="required"}}
+        </div>
+        <div class="form-group">
+          <label>DisplayName*</label>
+          {{input value=model.user.displayName class="form-control" placeholder="Nome de exibição" required="required"}}
+        </div>
+        <div class="form-group">
+          <label>Email*</label>
+          {{input value=model.user.email class="form-control" placeholder="Email" required="required"}}
+        </div>
+        <div class="form-group">
+          <label>Biografia / sobre</label>
+          {{textarea value=model.user.biography class="form-control" rows="4"}}
+        </div>
+
+        {{input value=model.user.active type="hidden" value=true}}
+
+      </fieldset>
+      <div>
+        <button class="btn btn-primary">
+          <i class="fa fa-save"></i>
+          Salvar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

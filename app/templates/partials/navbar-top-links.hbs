@@ -1,4 +1,4 @@
-{{#navbar.nav class="navbar-right" as |nav|}}
+{{#navbar.nav class="navbar-top-links navbar-right" as |nav|}}
   <li class="dropdown">
     <a class="dropdown-toggle" data-toggle="dropdown" href="#">
       <i class="fa fa-envelope fa-fw"></i> <i class="fa fa-caret-down"></i>
@@ -201,7 +201,7 @@
   </li>
   {{#bs-dropdown tagName="li" as |dd|}}
     {{#dd.toggle}}
-      <i class="glyphicon glyphicon-user"></i>
+      <i class="fa fa-user fa-fw"></i>
       {{settings.user.displayName}} <span class="caret"></span>
     {{/dd.toggle}}
     {{#dd.menu as |ddm|}}

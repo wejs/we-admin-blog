@@ -1,4 +1,4 @@
-{{#bs-navbar as |navbar|}}
+{{#bs-navbar position="static-top" as |navbar|}}
 	<div class="navbar-header">
     {{#navbar.toggle}}
 			<span class="sr-only">Toggle navigation</span>
@@ -11,8 +11,7 @@
 		{{/link-to}}
 	</div>
   {{#navbar.content}}
-	{{partial 'partials/navbar-top-links'}}
-
+		{{partial 'partials/navbar-top-links'}}
 		<div class="navbar-default sidebar" role="navigation">
 				<div class="sidebar-nav navbar-collapse">
 					{{#ember-metismenu classNames="nav"}}
@@ -118,6 +117,5 @@
 				</div>
 				<!-- /.sidebar-collapse -->
 		</div>
-
  {{/navbar.content}}
 {{/bs-navbar}}

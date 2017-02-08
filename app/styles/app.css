@@ -5,3 +5,8 @@
 .navbar-default {
   margin-bottom: 0px;
 }
+
+nav.navbar.navbar-default > .container-fluid {
+  padding-right: 0px;
+  padding-left: 0px;
+}

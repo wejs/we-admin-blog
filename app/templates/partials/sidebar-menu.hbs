@@ -1,0 +1,21 @@
+<div class="navbar-default sidebar" role="navigation">
+  <div class="sidebar-nav navbar-collapse">
+    {{#ember-metismenu classNames="nav"}}
+      <li>
+        {{#link-to 'articles.index'}}
+          <i class="fa fa-file-text"></i> Artigos
+        {{/link-to}}
+       </li>
+      <li>
+        {{#link-to 'url-alia.index'}}
+          <i class="fa fa-random"></i> Url alias
+        {{/link-to}}
+      </li>
+      <li>
+        {{#link-to 'users.index'}}
+          <i class="fa fa-users"></i> Usuários
+        {{/link-to}}
+      </li>
+    {{/ember-metismenu}}
+  </div>
+</div>

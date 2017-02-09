@@ -12,7 +12,6 @@ export default Ember.Route.extend(AuthenticatedRouteMixin, {
           return null;
         });
       }
-
     },
     changePublishedStatus(record, status) {
       record.published = status;
@@ -30,7 +29,6 @@ export default Ember.Route.extend(AuthenticatedRouteMixin, {
         this.send('queryError', err);
       });
     },
-
     save(record) {
       record.save()
       .then( (r)=> {

@@ -386,6 +386,15 @@ define('we-admin-blog/tests/models/term.jshint', ['exports'], function (exports)
     assert.ok(true, 'models/term.js should pass jshint.');
   });
 });
+define('we-admin-blog/tests/models/url-alia.jshint', ['exports'], function (exports) {
+  'use strict';
+
+  QUnit.module('JSHint | models/url-alia.js');
+  QUnit.test('should pass jshint', function (assert) {
+    assert.expect(1);
+    assert.ok(true, 'models/url-alia.js should pass jshint.');
+  });
+});
 define('we-admin-blog/tests/models/user.jshint', ['exports'], function (exports) {
   'use strict';
 
@@ -512,6 +521,42 @@ define('we-admin-blog/tests/routes/term.jshint', ['exports'], function (exports)
     assert.ok(true, 'routes/term.js should pass jshint.');
   });
 });
+define('we-admin-blog/tests/routes/url-alia.jshint', ['exports'], function (exports) {
+  'use strict';
+
+  QUnit.module('JSHint | routes/url-alia.js');
+  QUnit.test('should pass jshint', function (assert) {
+    assert.expect(1);
+    assert.ok(true, 'routes/url-alia.js should pass jshint.');
+  });
+});
+define('we-admin-blog/tests/routes/url-alia/create.jshint', ['exports'], function (exports) {
+  'use strict';
+
+  QUnit.module('JSHint | routes/url-alia/create.js');
+  QUnit.test('should pass jshint', function (assert) {
+    assert.expect(1);
+    assert.ok(true, 'routes/url-alia/create.js should pass jshint.');
+  });
+});
+define('we-admin-blog/tests/routes/url-alia/index.jshint', ['exports'], function (exports) {
+  'use strict';
+
+  QUnit.module('JSHint | routes/url-alia/index.js');
+  QUnit.test('should pass jshint', function (assert) {
+    assert.expect(1);
+    assert.ok(true, 'routes/url-alia/index.js should pass jshint.');
+  });
+});
+define('we-admin-blog/tests/routes/url-alia/item.jshint', ['exports'], function (exports) {
+  'use strict';
+
+  QUnit.module('JSHint | routes/url-alia/item.js');
+  QUnit.test('should pass jshint', function (assert) {
+    assert.expect(1);
+    assert.ok(true, 'routes/url-alia/item.js should pass jshint.');
+  });
+});
 define('we-admin-blog/tests/routes/user.jshint', ['exports'], function (exports) {
   'use strict';
 
@@ -632,6 +677,28 @@ define('we-admin-blog/tests/unit/models/term-test.jshint', ['exports'], function
     assert.ok(true, 'unit/models/term-test.js should pass jshint.');
   });
 });
+define('we-admin-blog/tests/unit/models/url-alium-test', ['exports', 'ember-qunit'], function (exports, _emberQunit) {
+
+  (0, _emberQunit.moduleForModel)('url-alium', 'Unit | Model | url alium', {
+    // Specify the other units that are required for this test.
+    needs: []
+  });
+
+  (0, _emberQunit.test)('it exists', function (assert) {
+    var model = this.subject();
+    // let store = this.store();
+    assert.ok(!!model);
+  });
+});
+define('we-admin-blog/tests/unit/models/url-alium-test.jshint', ['exports'], function (exports) {
+  'use strict';
+
+  QUnit.module('JSHint | unit/models/url-alium-test.js');
+  QUnit.test('should pass jshint', function (assert) {
+    assert.expect(1);
+    assert.ok(true, 'unit/models/url-alium-test.js should pass jshint.');
+  });
+});
 define('we-admin-blog/tests/unit/models/user-test', ['exports', 'ember-qunit'], function (exports, _emberQunit) {
 
   (0, _emberQunit.moduleForModel)('user', 'Unit | Model | user', {
@@ -716,6 +783,27 @@ define('we-admin-blog/tests/unit/routes/term-test.jshint', ['exports'], function
   QUnit.test('should pass jshint', function (assert) {
     assert.expect(1);
     assert.ok(true, 'unit/routes/term-test.js should pass jshint.');
+  });
+});
+define('we-admin-blog/tests/unit/routes/url-alia-test', ['exports', 'ember-qunit'], function (exports, _emberQunit) {
+
+  (0, _emberQunit.moduleFor)('route:url-alia', 'Unit | Route | url alia', {
+    // Specify the other units that are required for this test.
+    // needs: ['controller:foo']
+  });
+
+  (0, _emberQunit.test)('it exists', function (assert) {
+    var route = this.subject();
+    assert.ok(route);
+  });
+});
+define('we-admin-blog/tests/unit/routes/url-alia-test.jshint', ['exports'], function (exports) {
+  'use strict';
+
+  QUnit.module('JSHint | unit/routes/url-alia-test.js');
+  QUnit.test('should pass jshint', function (assert) {
+    assert.expect(1);
+    assert.ok(true, 'unit/routes/url-alia-test.js should pass jshint.');
   });
 });
 define('we-admin-blog/tests/unit/routes/user-test', ['exports', 'ember-qunit'], function (exports, _emberQunit) {

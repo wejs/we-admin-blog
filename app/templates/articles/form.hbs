@@ -4,7 +4,6 @@
 <h1 class="page-header">Criar artigo</h1>
 {{/if}}
 
-
 <form {{action "save" model.record on="submit"}}>
   <fieldset>
     <div class="form-group">
@@ -19,7 +18,6 @@
       <label>Texto:</label>
       {{tinymce-editor value=model.record.body}}
     </div>
-    {{input value=model.user.active type="hidden" value=true}}
   </fieldset>
   <div>
     <button class="btn btn-primary">

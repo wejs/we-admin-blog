@@ -10,4 +10,7 @@ export default JSONAPISerializer.extend({
   payloadTypeFromModelName(modelName) {
     return modelName;
   },
+  modelNameFromPayloadKey(name) {
+    return name;
+  }
 });

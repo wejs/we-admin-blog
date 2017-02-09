@@ -3,12 +3,10 @@ import ApplicationRouteMixin from 'ember-simple-auth/mixins/application-route-mi
 
 export default Ember.Route.extend(ApplicationRouteMixin, {
   session: Ember.inject.service('session'),
-
   beforeModel() {
     this.get('notifications').setDefaultAutoClear(true);
     this.get('notifications').setDefaultClearDuration(5200);
   },
-
   model() {
     return Ember.RSVP.hash({
       loadedSettings: this.get('settings').getUserSettings(),
@@ -19,7 +17,6 @@ export default Ember.Route.extend(ApplicationRouteMixin, {
       })
     });
   },
-
   actions: {
     goTo(route, params) {
       if (params) {
@@ -31,7 +28,6 @@ export default Ember.Route.extend(ApplicationRouteMixin, {
     showLoginModal() {
       this.set('showLoginModal', true);
     },
-
     /**
      * Application error handler
      *
@@ -62,7 +58,6 @@ export default Ember.Route.extend(ApplicationRouteMixin, {
         Ember.Logger.error(err);
       }
     },
-
     queryError(err) {
       // todo! add an better validation handling here...
       if (err && err.errors) {

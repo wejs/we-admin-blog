@@ -1,0 +1,32 @@
+<form {{action "onSaveLink" model.editingRecord modal on="submit"}}>
+  <fieldset>
+    <div class="form-group">
+      <label>HREF*</label>
+      {{input value=model.editingRecord.href class="form-control" placeholder="Url do link" required="required"}}
+    </div>
+    <div class="form-group">
+      <label>Text*</label>
+      {{input value=model.editingRecord.text class="form-control" placeholder="Texto do link" required="required"}}
+    </div>
+    <div class="form-group">
+      <label>Título</label>
+      {{input value=model.editingRecord.title class="form-control" placeholder="Título do link"}}
+    </div>
+    <div class="form-group">
+      <label>Class</label>
+      {{input value=model.editingRecord.class class="form-control" placeholder="Classe de css do link"}}
+    </div>
+    <div class="form-group">
+      <label>Target</label>
+      {{input value=model.editingRecord.target class="form-control" placeholder="Target do link"}}
+    </div>
+    <div class="form-group">
+      <label>Rel</label>
+      {{input value=model.editingRecord.rel class="form-control" placeholder="Rel do link"}}
+    </div>
+    <div class="form-group">
+      <label>Tecla</label>
+      {{input value=model.editingRecord.key class="form-control" placeholder="Tecla do link"}}
+    </div>
+  </fieldset>
+</form>

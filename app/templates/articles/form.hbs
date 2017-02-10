@@ -1,7 +1,7 @@
 {{#if model.record.id}}
 <h1 class="page-header">Editar artigo #{{model.record.id}}</h1>
 {{else}}
-<h1 class="page-header">Criar artigo</h1>
+<h1 class="page-header">Criar</h1>
 {{/if}}
 
 <form {{action "save" model.record on="submit"}}>
@@ -26,7 +26,7 @@
     </button>
     <button {{action 'goTo' 'articles.index'}} type="button" class="btn btn-default">
       <i class="fa fa-step-backward"></i>
-      Cancelar
+      Artigos
     </button>
   </div>
 </form>

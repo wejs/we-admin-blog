@@ -37,6 +37,13 @@ Router.map(function() {
     });
   });
 
+  this.route('menus', function() {
+    this.route('create');
+    this.route('item', { path: ':id' }, function(){
+
+    });
+  });
+
   this.route('not-found', { path: '/*path' });
 });
 

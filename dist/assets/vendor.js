@@ -102496,6 +102496,107 @@ define('ember-inflector/lib/utils/make-helper', ['exports', 'ember'], function (
     return _ember['default'].Handlebars.makeBoundHelper(helperFunction);
   }
 });
+define('ember-invoke-action/index', ['exports', 'ember'], function (exports, _ember) {
+  'use strict';
+
+  var _slice = Array.prototype.slice;
+
+  var assert = _ember['default'].assert;
+  var get = _ember['default'].get;
+
+  var makeInvokeAction = function makeInvokeAction() {
+    var _ref = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
+
+    var _ref$strict = _ref.strict;
+    var strict = _ref$strict === undefined ? false : _ref$strict;
+
+    return function (object, actionName) {
+      for (var _len = arguments.length, args = Array(_len > 2 ? _len - 2 : 0), _key = 2; _key < _len; _key++) {
+        args[_key - 2] = arguments[_key];
+      }
+
+      assert('The first argument passed to invokeAction must be an object', typeof object === 'object');
+
+      var action = undefined;
+      if (typeof actionName === 'string') {
+        action = get(object, actionName);
+      } else if (typeof actionName === 'function') {
+        action = actionName;
+      } else {
+        assert('The second argument passed to invokeAction must be a string as actionName or a function', false);
+      }
+
+      if (typeof action === 'string') {
+        object.sendAction.apply(object, [actionName].concat(args));
+      } else if (typeof action === 'function') {
+        return action.apply(undefined, args);
+      } else if (strict) {
+        assert('No invokable action ' + actionName + ' was found', false);
+      }
+    };
+  };
+
+  var getActions = function getActions(object) {
+    return object._actions ? object._actions : object.actions;
+  };
+
+  var makeInvoke = function makeInvoke() {
+    var _ref2 = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
+
+    var _ref2$strict = _ref2.strict;
+    var strict = _ref2$strict === undefined ? false : _ref2$strict;
+
+    return function (object, actionName) {
+      for (var _len2 = arguments.length, args = Array(_len2 > 2 ? _len2 - 2 : 0), _key2 = 2; _key2 < _len2; _key2++) {
+        args[_key2 - 2] = arguments[_key2];
+      }
+
+      var actions = getActions(object);
+      var action = actions && actions[actionName];
+
+      if (typeof action === 'function') {
+        return action.call.apply(action, [object].concat(args));
+      } else if (strict) {
+        assert('No invokable action ' + actionName + ' was found', false);
+      }
+    };
+  };
+
+  var _invokeAction = makeInvokeAction();
+  exports.invokeAction = _invokeAction;
+
+  var _strictInvokeAction = makeInvokeAction({ strict: true });
+
+  exports.strictInvokeAction = _strictInvokeAction;
+
+  var _invoke = makeInvoke();
+  exports.invoke = _invoke;
+
+  var _strictInvoke = makeInvoke({ strict: true });
+
+  exports.strictInvoke = _strictInvoke;
+
+  var InvokeActionMixin = _ember['default'].Mixin.create({
+    invokeAction: function invokeAction() {
+      return _invokeAction.apply(undefined, [this].concat(_slice.call(arguments)));
+    },
+
+    strictInvokeAction: function strictInvokeAction() {
+      return _strictInvokeAction.apply(undefined, [this].concat(_slice.call(arguments)));
+    },
+
+    invoke: function invoke() {
+      return _invoke.apply(undefined, [this].concat(_slice.call(arguments)));
+    },
+
+    strictInvoke: function strictInvoke() {
+      return _strictInvoke.apply(undefined, [this].concat(_slice.call(arguments)));
+    }
+  });
+
+  exports.InvokeActionMixin = InvokeActionMixin;
+  exports['default'] = _invokeAction;
+});
 define('ember-load-initializers/index', ['exports', 'ember'], function (exports, _ember) {
   'use strict';
 
@@ -106700,6 +106801,69 @@ define('ember-moment/utils/helper-compute', ['exports', 'ember'], function (expo
     };
   };
 });
+define('ember-new-computed/index', ['exports', 'ember', 'ember-new-computed/utils/can-use-new-syntax'], function (exports, _ember, _emberNewComputedUtilsCanUseNewSyntax) {
+  'use strict';
+
+  exports['default'] = newComputed;
+
+  var computed = _ember['default'].computed;
+
+  function newComputed() {
+    var polyfillArguments = [];
+    var config = arguments[arguments.length - 1];
+
+    if (typeof config === 'function' || _emberNewComputedUtilsCanUseNewSyntax['default']) {
+      return computed.apply(undefined, arguments);
+    }
+
+    for (var i = 0, l = arguments.length - 1; i < l; i++) {
+      polyfillArguments.push(arguments[i]);
+    }
+
+    var func;
+    if (config.set) {
+      func = function (key, value) {
+        if (arguments.length > 1) {
+          return config.set.call(this, key, value);
+        } else {
+          return config.get.call(this, key);
+        }
+      };
+    } else {
+      func = function (key) {
+        return config.get.call(this, key);
+      };
+    }
+
+    polyfillArguments.push(func);
+
+    return computed.apply(undefined, polyfillArguments);
+  }
+
+  var getKeys = Object.keys || _ember['default'].keys;
+  var computedKeys = getKeys(computed);
+
+  for (var i = 0, l = computedKeys.length; i < l; i++) {
+    newComputed[computedKeys[i]] = computed[computedKeys[i]];
+  }
+});
+define('ember-new-computed/utils/can-use-new-syntax', ['exports', 'ember'], function (exports, _ember) {
+  'use strict';
+
+  var supportsSetterGetter;
+
+  try {
+    _ember['default'].computed({
+      set: function set() {},
+      get: function get() {}
+    });
+    supportsSetterGetter = true;
+  } catch (e) {
+    supportsSetterGetter = false;
+  }
+
+  exports['default'] = supportsSetterGetter;
+});
 define('ember-resolver/container-debug-adapter', ['exports', 'ember', 'ember-resolver/utils/module-registry'], function (exports, _ember, _emberResolverUtilsModuleRegistry) {
   'use strict';
 
@@ -110248,6 +110412,1360 @@ define('ember-simple-auth/utils/objects-are-equal', ['exports'], function (expor
 
     return compare(a, b);
   }
+});
+define('ember-sortable/components/sortable-group', ['exports', 'ember', 'ember-sortable/templates/components/sortable-group', 'ember-new-computed', 'ember-invoke-action'], function (exports, _ember, _emberSortableTemplatesComponentsSortableGroup, _emberNewComputed, _emberInvokeAction) {
+  'use strict';
+
+  var A = _ember['default'].A;
+  var Component = _ember['default'].Component;
+  var get = _ember['default'].get;
+  var set = _ember['default'].set;
+  var run = _ember['default'].run;
+
+  var a = A;
+  var NO_MODEL = {};
+
+  exports['default'] = Component.extend({
+    layout: _emberSortableTemplatesComponentsSortableGroup['default'],
+
+    attributeBindings: ['data-test-selector'],
+
+    /**
+      @property direction
+      @type string
+      @default y
+    */
+    direction: 'y',
+
+    /**
+      @property model
+      @type Any
+      @default null
+    */
+    model: NO_MODEL,
+
+    /**
+      @property items
+      @type Ember.NativeArray
+    */
+    items: (0, _emberNewComputed['default'])(function () {
+      return a();
+    }),
+
+    /**
+      Position for the first item.
+      If spacing is present, first item's position will have to change as well.
+      @property itemPosition
+      @type Number
+    */
+    itemPosition: (0, _emberNewComputed['default'])(function () {
+      var direction = this.get('direction');
+
+      return this.get('sortedItems.firstObject.' + direction) - this.get('sortedItems.firstObject.spacing');
+    }).volatile(),
+
+    /**
+      @property sortedItems
+      @type Array
+    */
+    sortedItems: (0, _emberNewComputed['default'])(function () {
+      var items = a(this.get('items'));
+      var direction = this.get('direction');
+
+      return items.sortBy(direction);
+    }).volatile(),
+
+    /**
+      Register an item with this group.
+      @method registerItem
+      @param {SortableItem} [item]
+    */
+    registerItem: function registerItem(item) {
+      this.get('items').addObject(item);
+    },
+
+    /**
+      De-register an item with this group.
+      @method deregisterItem
+      @param {SortableItem} [item]
+    */
+    deregisterItem: function deregisterItem(item) {
+      this.get('items').removeObject(item);
+    },
+
+    /**
+      Prepare for sorting.
+      Main purpose is to stash the current itemPosition so
+      we don’t incur expensive re-layouts.
+      @method prepare
+    */
+    prepare: function prepare() {
+      this._itemPosition = this.get('itemPosition');
+    },
+
+    /**
+      Update item positions (relatively to the first element position).
+      @method update
+    */
+    update: function update() {
+      var _this = this;
+
+      var sortedItems = this.get('sortedItems');
+      // Position of the first element
+      var position = this._itemPosition;
+
+      // Just in case we haven’t called prepare first.
+      if (position === undefined) {
+        position = this.get('itemPosition');
+      }
+
+      sortedItems.forEach(function (item) {
+        var dimension = undefined;
+        var direction = _this.get('direction');
+
+        if (!get(item, 'isDragging')) {
+          set(item, direction, position);
+        }
+
+        // add additional spacing around active element
+        if (get(item, 'isBusy')) {
+          position += get(item, 'spacing') * 2;
+        }
+
+        if (direction === 'x') {
+          dimension = 'width';
+        }
+        if (direction === 'y') {
+          dimension = 'height';
+        }
+
+        position += get(item, dimension);
+      });
+    },
+
+    /**
+      @method commit
+    */
+    commit: function commit() {
+      var items = this.get('sortedItems');
+      var groupModel = this.get('model');
+      var itemModels = items.mapBy('model');
+      var draggedItem = items.findBy('wasDropped', true);
+      var draggedModel = undefined;
+
+      if (draggedItem) {
+        set(draggedItem, 'wasDropped', false); // Reset
+        draggedModel = get(draggedItem, 'model');
+      }
+
+      delete this._itemPosition;
+
+      run.schedule('render', function () {
+        items.invoke('freeze');
+      });
+
+      run.schedule('afterRender', function () {
+        items.invoke('reset');
+      });
+
+      run.next(function () {
+        run.schedule('render', function () {
+          items.invoke('thaw');
+        });
+      });
+
+      if (groupModel !== NO_MODEL) {
+        (0, _emberInvokeAction.invokeAction)(this, 'onChange', groupModel, itemModels, draggedModel);
+      } else {
+        (0, _emberInvokeAction.invokeAction)(this, 'onChange', itemModels, draggedModel);
+      }
+    }
+  });
+});
+define('ember-sortable/components/sortable-item', ['exports', 'ember', 'ember-sortable/templates/components/sortable-item', 'ember-sortable/mixins/sortable-item'], function (exports, _ember, _emberSortableTemplatesComponentsSortableItem, _emberSortableMixinsSortableItem) {
+  'use strict';
+
+  exports['default'] = _ember['default'].Component.extend(_emberSortableMixinsSortableItem['default'], {
+    layout: _emberSortableTemplatesComponentsSortableItem['default']
+  });
+});
+define('ember-sortable/helpers/drag', ['exports', 'ember'], function (exports, _ember) {
+  'use strict';
+
+  exports.drag = drag;
+
+  var $ = _ember['default'].$;
+
+  /**
+    Drags elements by an offset specified in pixels.
+  
+    Examples
+  
+        drag(
+          'mouse',
+          '.some-list li[data-item=uno]',
+          function() {
+            return { dy: 50, dx: 20 };
+          }
+        );
+  
+    @method drag
+    @param {'mouse'|'touch'} [mode]
+      event mode
+    @param {String} [itemSelector]
+      selector for the element to drag
+    @param {Function} [offsetFn]
+      function returning the offset by which to drag
+    @param {Object} [callbacks]
+      callbacks that are fired at the different stages of the interaction
+    @return {Promise}
+  */
+
+  function drag(app, mode, itemSelector, offsetFn) {
+    var callbacks = arguments.length <= 4 || arguments[4] === undefined ? {} : arguments[4];
+
+    var start = undefined,
+        move = undefined,
+        end = undefined,
+        which = undefined;
+
+    var _app$testHelpers = app.testHelpers;
+    var andThen = _app$testHelpers.andThen;
+    var findWithAssert = _app$testHelpers.findWithAssert;
+    var wait = _app$testHelpers.wait;
+
+    if (mode === 'mouse') {
+      start = 'mousedown';
+      move = 'mousemove';
+      end = 'mouseup';
+      which = 1;
+    } else if (mode === 'touch') {
+      start = 'touchstart';
+      move = 'touchmove';
+      end = 'touchend';
+    } else {
+      throw new Error('Unsupported mode: \'' + mode + '\'');
+    }
+
+    andThen(function () {
+      var item = findWithAssert(itemSelector);
+      var itemOffset = item.offset();
+      var offset = offsetFn();
+      var itemElement = item.get(0);
+      var rect = itemElement.getBoundingClientRect();
+      var scale = itemElement.clientHeight / (rect.bottom - rect.top);
+      var targetX = itemOffset.left + offset.dx * scale;
+      var targetY = itemOffset.top + offset.dy * scale;
+
+      triggerEvent(app, item, start, {
+        pageX: itemOffset.left,
+        pageY: itemOffset.top,
+        which: which
+      });
+
+      if (callbacks.dragstart) {
+        andThen(callbacks.dragstart);
+      }
+
+      triggerEvent(app, item, move, {
+        pageX: itemOffset.left,
+        pageY: itemOffset.top
+      });
+
+      if (callbacks.dragmove) {
+        andThen(callbacks.dragmove);
+      }
+
+      triggerEvent(app, item, move, {
+        pageX: targetX,
+        pageY: targetY
+      });
+
+      triggerEvent(app, item, end, {
+        pageX: targetX,
+        pageY: targetY
+      });
+
+      if (callbacks.dragend) {
+        andThen(callbacks.dragend);
+      }
+    });
+
+    return wait();
+  }
+
+  function triggerEvent(app, el, type, props) {
+    return app.testHelpers.andThen(function () {
+      var event = $.Event(type, props);
+      $(el).trigger(event);
+    });
+  }
+
+  exports['default'] = _ember['default'].Test.registerAsyncHelper('drag', drag);
+});
+define('ember-sortable/helpers/reorder', ['exports', 'ember'], function (exports, _ember) {
+  'use strict';
+
+  exports.reorder = reorder;
+
+  /**
+    In tests, the dummy app is rendered at half size.
+    To avoid rounding errors, we must therefore double
+    the overshoot.
+  */
+  var OVERSHOOT = 2;
+
+  /**
+    Reorders elements to the specified state.
+  
+    Examples
+  
+        reorder(
+          'mouse',
+          '.some-list li',
+          '[data-id="66278893"]',
+          '[data-id="66278894"]',
+          '[data-id="66278892"]'
+        );
+  
+    @method reorder
+    @param {'mouse'|'touch'} [mode]
+      event mode
+    @param {String} [itemSelector]
+      selector for all items
+    @param {...String} [resultSelectors]
+      selectors for the resultant order
+    @return {Promise}
+  */
+
+  function reorder(app, mode, itemSelector) {
+    var _app$testHelpers = app.testHelpers;
+    var andThen = _app$testHelpers.andThen;
+    var drag = _app$testHelpers.drag;
+    var findWithAssert = _app$testHelpers.findWithAssert;
+    var wait = _app$testHelpers.wait;
+
+    for (var _len = arguments.length, resultSelectors = Array(_len > 3 ? _len - 3 : 0), _key = 3; _key < _len; _key++) {
+      resultSelectors[_key - 3] = arguments[_key];
+    }
+
+    resultSelectors.forEach(function (selector, targetIndex) {
+      andThen(function () {
+        var items = findWithAssert(itemSelector);
+        var element = items.filter(selector);
+        var targetElement = items.eq(targetIndex);
+        var dx = targetElement.offset().left - OVERSHOOT - element.offset().left;
+        var dy = targetElement.offset().top - OVERSHOOT - element.offset().top;
+
+        drag(mode, element, function () {
+          return { dx: dx, dy: dy };
+        });
+      });
+    });
+
+    return wait();
+  }
+
+  exports['default'] = _ember['default'].Test.registerAsyncHelper('reorder', reorder);
+});
+define('ember-sortable/mixins/sortable-item', ['exports', 'ember', 'ember-new-computed', 'ember-sortable/system/scroll-parent', 'ember-sortable/system/scroll-container', 'ember-invoke-action'], function (exports, _ember, _emberNewComputed, _emberSortableSystemScrollParent, _emberSortableSystemScrollContainer, _emberInvokeAction) {
+  'use strict';
+
+  var _slicedToArray = (function () {
+    function sliceIterator(arr, i) {
+      var _arr = [];var _n = true;var _d = false;var _e = undefined;try {
+        for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) {
+          _arr.push(_s.value);if (i && _arr.length === i) break;
+        }
+      } catch (err) {
+        _d = true;_e = err;
+      } finally {
+        try {
+          if (!_n && _i['return']) _i['return']();
+        } finally {
+          if (_d) throw _e;
+        }
+      }return _arr;
+    }return function (arr, i) {
+      if (Array.isArray(arr)) {
+        return arr;
+      } else if (Symbol.iterator in Object(arr)) {
+        return sliceIterator(arr, i);
+      } else {
+        throw new TypeError('Invalid attempt to destructure non-iterable instance');
+      }
+    };
+  })();
+
+  var Mixin = _ember['default'].Mixin;
+  var $ = _ember['default'].$;
+  var run = _ember['default'].run;
+  var Promise = _ember['default'].RSVP.Promise;
+
+  exports['default'] = Mixin.create({
+    classNames: ['sortable-item'],
+    classNameBindings: ['isDragging', 'isDropping'],
+
+    attributeBindings: ['data-test-selector'],
+
+    /**
+      Group to which the item belongs.
+      @property group
+      @type SortableGroup
+      @default null
+    */
+    group: null,
+
+    /**
+      Model which the item represents.
+      @property model
+      @type Object
+      @default null
+    */
+    model: null,
+
+    /**
+      Selector for the element to use as handle.
+      If unset, the entire element will be used as the handle.
+      @property handle
+      @type String
+      @default null
+    */
+    handle: null,
+
+    /**
+      True if the item is currently being dragged.
+      @property isDragging
+      @type Boolean
+      @default false
+    */
+    isDragging: false,
+
+    /**
+      Action that fires when the item starts being dragged.
+      @property onDragStart
+      @type Action
+      @default null
+    */
+    onDragStart: null,
+
+    /**
+      Action that fires when the item stops being dragged.
+      @property onDragStop
+      @type Action
+      @default null
+    */
+    onDragStop: null,
+
+    /**
+      True if the item is currently dropping.
+      @property isDropping
+      @type Boolean
+      @default false
+    */
+    isDropping: false,
+
+    /**
+      True if the item was dropped during the interaction
+      @property wasDropped
+      @type Boolean
+      @default false
+    */
+    wasDropped: false,
+
+    /**
+      @property isBusy
+      @type Boolean
+    */
+    isBusy: _emberNewComputed['default'].or('isDragging', 'isDropping'),
+
+    /**
+      The frequency with which the group is informed
+      that an update is required.
+      @property updateInterval
+      @type Number
+      @default 125
+    */
+    updateInterval: 125,
+
+    /**
+      Additional spacing between active item and the rest of the elements.
+      @property spacing
+      @type Number
+      @default 0[px]
+    */
+    spacing: 0,
+
+    /**
+      True if the item transitions with animation.
+      @property isAnimated
+      @type Boolean
+    */
+    isAnimated: (0, _emberNewComputed['default'])(function () {
+      if (!this.element || !this.$()) {
+        return;
+      }
+
+      var el = this.$();
+      var property = el.css('transition-property');
+
+      return (/all|transform/.test(property)
+      );
+    }).volatile(),
+
+    /**
+      The current transition duration in milliseconds.
+      @property transitionDuration
+      @type Number
+    */
+    transitionDuration: (0, _emberNewComputed['default'])(function () {
+      var el = this.$();
+      var rule = el.css('transition-duration');
+      var match = rule.match(/([\d\.]+)([ms]*)/);
+
+      if (match) {
+        var value = parseFloat(match[1]);
+        var unit = match[2];
+
+        if (unit === 's') {
+          value = value * 1000;
+        }
+
+        return value;
+      }
+
+      return 0;
+    }).volatile(),
+
+    /**
+      Horizontal position of the item.
+      @property x
+      @type Number
+    */
+    x: (0, _emberNewComputed['default'])({
+      get: function get() {
+        if (this._x === undefined) {
+          var marginLeft = parseFloat(this.$().css('margin-left'));
+          this._x = this.element.scrollLeft + this.element.offsetLeft - marginLeft;
+        }
+
+        return this._x;
+      },
+      set: function set(_, value) {
+        if (value !== this._x) {
+          this._x = value;
+          this._scheduleApplyPosition();
+        }
+      }
+    }).volatile(),
+
+    /**
+      Vertical position of the item relative to its offset parent.
+      @property y
+      @type Number
+    */
+    y: (0, _emberNewComputed['default'])({
+      get: function get() {
+        if (this._y === undefined) {
+          this._y = this.element.offsetTop;
+        }
+
+        return this._y;
+      },
+      set: function set(key, value) {
+        if (value !== this._y) {
+          this._y = value;
+          this._scheduleApplyPosition();
+        }
+      }
+    }).volatile(),
+
+    /**
+      Width of the item.
+      @property height
+      @type Number
+    */
+    width: (0, _emberNewComputed['default'])(function () {
+      var el = this.$();
+      var width = el.outerWidth(true);
+
+      width += getBorderSpacing(el).horizontal;
+
+      return width;
+    }).volatile(),
+
+    /**
+      Height of the item including margins.
+      @property height
+      @type Number
+    */
+    height: (0, _emberNewComputed['default'])(function () {
+      var el = this.$();
+      var height = el.outerHeight();
+
+      var marginBottom = parseFloat(el.css('margin-bottom'));
+      height += marginBottom;
+
+      height += getBorderSpacing(el).vertical;
+
+      return height;
+    }).volatile(),
+
+    /**
+      @method didInsertElement
+    */
+    didInsertElement: function didInsertElement() {
+      this._super();
+      // scheduled to prevent deprecation warning:
+      // "never change properties on components, services or models during didInsertElement because it causes significant performance degradation"
+      run.schedule("afterRender", this, "_tellGroup", "registerItem", this);
+    },
+
+    /**
+      @method willDestroyElement
+    */
+    willDestroyElement: function willDestroyElement() {
+      // scheduled to prevent deprecation warning:
+      // "never change properties on components, services or models during didInsertElement because it causes significant performance degradation"
+      run.schedule("afterRender", this, "_tellGroup", "deregisterItem", this);
+
+      // remove event listeners that may still be attached
+      $(window).off('mousemove touchmove', this._startDragListener);
+      $(window).off('click mouseup touchend', this._cancelStartDragListener);
+    },
+
+    /**
+      @method mouseDown
+    */
+    mouseDown: function mouseDown(event) {
+      if (event.which !== 1) {
+        return;
+      }
+      if (event.ctrlKey) {
+        return;
+      }
+
+      this._primeDrag(event);
+    },
+
+    /**
+      @method touchStart
+    */
+    touchStart: function touchStart(event) {
+      this._primeDrag(event);
+    },
+
+    /**
+      @method freeze
+    */
+    freeze: function freeze() {
+      var el = this.$();
+      if (!el) {
+        return;
+      }
+
+      el.css({ transition: 'none' });
+      el.height(); // Force-apply styles
+    },
+
+    /**
+      @method reset
+    */
+    reset: function reset() {
+      var el = this.$();
+      if (!el) {
+        return;
+      }
+
+      delete this._y;
+      delete this._x;
+
+      el.css({ transform: '' });
+      el.height(); // Force-apply styles
+    },
+
+    /**
+      @method thaw
+    */
+    thaw: function thaw() {
+      var el = this.$();
+      if (!el) {
+        return;
+      }
+
+      el.css({ transition: '' });
+      el.height(); // Force-apply styles
+    },
+
+    /**
+      @method _primeDrag
+      @private
+    */
+    _primeDrag: function _primeDrag(event) {
+      var _this = this;
+
+      var handle = this.get('handle');
+
+      if (handle && !$(event.target).closest(handle).length) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      this._startDragListener = function (event) {
+        return _this._startDrag(event);
+      };
+
+      this._cancelStartDragListener = function () {
+        $(window).off('mousemove touchmove', _this._startDragListener);
+      };
+
+      $(window).one('mousemove touchmove', this._startDragListener);
+      $(window).one('click mouseup touchend', this._cancelStartDragListener);
+    },
+
+    /**
+      @method _startDrag
+      @private
+    */
+    _startDrag: function _startDrag(event) {
+      var _this2 = this;
+
+      if (this.get('isBusy')) {
+        return;
+      }
+
+      var drag = this._makeDragHandler(event);
+
+      var drop = function drop() {
+        $(window).off('mousemove touchmove', drag).off('click mouseup touchend', drop);
+
+        _this2._drop();
+      };
+
+      $(window).on('mousemove touchmove', drag).on('click mouseup touchend', drop);
+
+      this._tellGroup('prepare');
+      this.set('isDragging', true);
+      (0, _emberInvokeAction.invokeAction)(this, 'onDragStart', this.get('model'));
+
+      this._scrollOnEdges(drag);
+    },
+
+    /**
+      The maximum scroll speed when dragging element.
+      @property maxScrollSpeed
+      @default 20
+     */
+    maxScrollSpeed: 20,
+
+    _scrollOnEdges: function _scrollOnEdges(drag) {
+      var _this3 = this;
+
+      var groupDirection = this.get('group.direction');
+      var $element = this.$();
+      var scrollContainer = new _emberSortableSystemScrollContainer['default']((0, _emberSortableSystemScrollParent['default'])($element)[0]);
+      var itemContainer = Object.defineProperties({
+        width: $element.width(),
+        height: $element.height()
+      }, {
+        left: {
+          get: function get() {
+            return $element.offset().left;
+          },
+          configurable: true,
+          enumerable: true
+        },
+        right: {
+          get: function get() {
+            return this.left + this.width;
+          },
+          configurable: true,
+          enumerable: true
+        },
+        top: {
+          get: function get() {
+            return $element.offset().top;
+          },
+          configurable: true,
+          enumerable: true
+        },
+        bottom: {
+          get: function get() {
+            return this.top + this.height;
+          },
+          configurable: true,
+          enumerable: true
+        }
+      });
+
+      var leadingEdgeKey = undefined,
+          trailingEdgeKey = undefined,
+          scrollKey = undefined,
+          pageKey = undefined;
+      if (groupDirection === 'x') {
+        leadingEdgeKey = 'left';
+        trailingEdgeKey = 'right';
+        scrollKey = 'scrollLeft';
+        pageKey = 'pageX';
+      } else {
+        leadingEdgeKey = 'top';
+        trailingEdgeKey = 'bottom';
+        scrollKey = 'scrollTop';
+        pageKey = 'pageY';
+      }
+
+      var createFakeEvent = function createFakeEvent() {
+        if (_this3._pageX == null && _this3._pageY == null) {
+          return;
+        }
+        return {
+          pageX: _this3._pageX,
+          pageY: _this3._pageY
+        };
+      };
+
+      // Set a trigger padding that will start scrolling
+      // the box when the item reaches within padding pixels
+      // of the edge of the scroll container.
+      var checkScrollBounds = function checkScrollBounds() {
+        var leadingEdge = itemContainer[leadingEdgeKey];
+        var trailingEdge = itemContainer[trailingEdgeKey];
+        var scroll = scrollContainer[scrollKey]();
+
+        var delta = 0;
+        if (trailingEdge >= scrollContainer[trailingEdgeKey]) {
+          delta = trailingEdge - scrollContainer[trailingEdgeKey];
+        } else if (leadingEdge <= scrollContainer[leadingEdgeKey]) {
+          delta = leadingEdge - scrollContainer[leadingEdgeKey];
+        }
+
+        if (delta !== 0) {
+          (function () {
+            var speed = _this3.get('maxScrollSpeed');
+            delta = Math.min(Math.max(delta, -1 * speed), speed);
+
+            delta = scrollContainer[scrollKey](scroll + delta) - scroll;
+
+            var event = createFakeEvent();
+            if (event) {
+              if (scrollContainer.isWindow) {
+                event[pageKey] += delta;
+              }
+              run(function () {
+                return drag(event);
+              });
+            }
+          })();
+        }
+        if (_this3.get('isDragging')) {
+          requestAnimationFrame(checkScrollBounds);
+        }
+      };
+
+      if (!_ember['default'].testing) {
+        requestAnimationFrame(checkScrollBounds);
+      }
+    },
+
+    /**
+      @method _makeDragHandler
+      @param {Event} startEvent
+      @return {Function}
+      @private
+    */
+    _makeDragHandler: function _makeDragHandler(startEvent) {
+      var _this4 = this;
+
+      var groupDirection = this.get('group.direction');
+      var dragOrigin = undefined;
+      var elementOrigin = undefined;
+      var scrollOrigin = undefined;
+      var parentElement = $(this.element.parentNode);
+
+      if (groupDirection === 'x') {
+        dragOrigin = getX(startEvent);
+        elementOrigin = this.get('x');
+        scrollOrigin = parentElement.offset().left;
+
+        return function (event) {
+          _this4._pageX = getX(event);
+          var dx = _this4._pageX - dragOrigin;
+          var scrollX = parentElement.offset().left;
+          var x = elementOrigin + dx + (scrollOrigin - scrollX);
+
+          _this4._drag(x);
+        };
+      }
+
+      if (groupDirection === 'y') {
+        dragOrigin = getY(startEvent);
+        elementOrigin = this.get('y');
+        scrollOrigin = parentElement.offset().top;
+
+        return function (event) {
+          _this4._pageY = getY(event);
+          var dy = _this4._pageY - dragOrigin;
+          var scrollY = parentElement.offset().top;
+          var y = elementOrigin + dy + (scrollOrigin - scrollY);
+
+          _this4._drag(y);
+        };
+      }
+    },
+
+    /**
+      @method _tellGroup
+      @private
+    */
+    _tellGroup: function _tellGroup(method) {
+      var group = this.get('group');
+
+      if (group) {
+        for (var _len = arguments.length, args = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+          args[_key - 1] = arguments[_key];
+        }
+
+        group[method].apply(group, args);
+      }
+    },
+
+    /**
+      @method _scheduleApplyPosition
+      @private
+    */
+    _scheduleApplyPosition: function _scheduleApplyPosition() {
+      run.scheduleOnce('render', this, '_applyPosition');
+    },
+
+    /**
+      @method _applyPosition
+      @private
+    */
+    _applyPosition: function _applyPosition() {
+      if (!this.element || !this.$()) {
+        return;
+      }
+
+      var groupDirection = this.get('group.direction');
+
+      if (groupDirection === 'x') {
+        var x = this.get('x');
+        var dx = x - this.element.offsetLeft + parseFloat(this.$().css('margin-left'));
+
+        this.$().css({
+          transform: 'translateX(' + dx + 'px)'
+        });
+      }
+      if (groupDirection === 'y') {
+        var y = this.get('y');
+        var dy = y - this.element.offsetTop;
+
+        this.$().css({
+          transform: 'translateY(' + dy + 'px)'
+        });
+      }
+    },
+
+    /**
+      @method _drag
+      @private
+    */
+    _drag: function _drag(dimension) {
+      var updateInterval = this.get('updateInterval');
+      var groupDirection = this.get('group.direction');
+
+      if (groupDirection === 'x') {
+        this.set('x', dimension);
+      }
+      if (groupDirection === 'y') {
+        this.set('y', dimension);
+      }
+
+      run.throttle(this, '_tellGroup', 'update', updateInterval);
+    },
+
+    /**
+      @method _drop
+      @private
+    */
+    _drop: function _drop() {
+      if (!this.element || !this.$()) {
+        return;
+      }
+
+      this._preventClick(this.element);
+
+      this.set('isDragging', false);
+      this.set('isDropping', true);
+
+      this._tellGroup('update');
+
+      this._waitForTransition().then(run.bind(this, '_complete'));
+    },
+
+    /**
+      @method _preventClick
+      @private
+    */
+    _preventClick: function _preventClick(element) {
+      $(element).one('click', function (e) {
+        e.stopImmediatePropagation();
+      });
+    },
+
+    /**
+      @method _waitForTransition
+      @private
+      @return Promise
+    */
+    _waitForTransition: function _waitForTransition() {
+      var _this5 = this;
+
+      return new Promise(function (resolve) {
+        run.next(function () {
+          var duration = 0;
+
+          if (_this5.get('isAnimated')) {
+            duration = _this5.get('transitionDuration');
+          }
+
+          run.later(_this5, resolve, duration);
+        });
+      });
+    },
+
+    /**
+      @method _complete
+      @private
+    */
+    _complete: function _complete() {
+      (0, _emberInvokeAction.invokeAction)(this, 'onDragStop', this.get('model'));
+      this.set('isDropping', false);
+      this.set('wasDropped', true);
+      this._tellGroup('commit');
+    }
+  });
+
+  /**
+    Gets the y offset for a given event.
+    Work for touch and mouse events.
+    @method getY
+    @return {Number}
+    @private
+  */
+  function getY(event) {
+    var originalEvent = event.originalEvent;
+    var touches = originalEvent && originalEvent.changedTouches;
+    var touch = touches && touches[0];
+
+    if (touch) {
+      return touch.screenY;
+    } else {
+      return event.pageY;
+    }
+  }
+
+  /**
+    Gets the x offset for a given event.
+    @method getX
+    @return {Number}
+    @private
+  */
+  function getX(event) {
+    var originalEvent = event.originalEvent;
+    var touches = originalEvent && originalEvent.changedTouches;
+    var touch = touches && touches[0];
+
+    if (touch) {
+      return touch.screenX;
+    } else {
+      return event.pageX;
+    }
+  }
+
+  /**
+    Gets a numeric border-spacing values for a given element.
+  
+    @method getBorderSpacing
+    @param {Element} element
+    @return {Object}
+    @private
+  */
+  function getBorderSpacing(el) {
+    el = $(el);
+
+    var css = el.css('border-spacing'); // '0px 0px'
+
+    var _css$split = css.split(' ');
+
+    var _css$split2 = _slicedToArray(_css$split, 2);
+
+    var horizontal = _css$split2[0];
+    var vertical = _css$split2[1];
+
+    return {
+      horizontal: parseFloat(horizontal),
+      vertical: parseFloat(vertical)
+    };
+  }
+});
+define('ember-sortable/system/scroll-container', ['exports', 'ember'], function (exports, _ember) {
+  'use strict';
+
+  var _createClass = (function () {
+    function defineProperties(target, props) {
+      for (var i = 0; i < props.length; i++) {
+        var descriptor = props[i];descriptor.enumerable = descriptor.enumerable || false;descriptor.configurable = true;if ('value' in descriptor) descriptor.writable = true;Object.defineProperty(target, descriptor.key, descriptor);
+      }
+    }return function (Constructor, protoProps, staticProps) {
+      if (protoProps) defineProperties(Constructor.prototype, protoProps);if (staticProps) defineProperties(Constructor, staticProps);return Constructor;
+    };
+  })();
+
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError('Cannot call a class as a function');
+    }
+  }
+
+  var _$ = _ember['default'].$;
+
+  var ScrollContainer = (function () {
+    function ScrollContainer(element) {
+      _classCallCheck(this, ScrollContainer);
+
+      this.element = element;
+      this.isWindow = element === document;
+      if (this.isWindow) {
+        this.top = this.scrollTop();
+        this.left = this.scrollLeft();
+        this.width = _$(window).width();
+        this.height = _$(window).height();
+        this.scrollWidth = this.$().width();
+        this.scrollHeight = this.$().height();
+      } else {
+        var _$$offset = this.$().offset();
+
+        var _top = _$$offset.top;
+        var left = _$$offset.left;
+
+        this.top = _top;
+        this.left = left;
+        this.width = this.$().width();
+        this.height = this.$().height();
+        this.scrollWidth = element.scrollWidth;
+        this.scrollHeight = element.scrollHeight;
+      }
+      this.maxScrollTop = this.scrollHeight - this.height;
+      this.maxScrollLeft = this.scrollWidth - this.width;
+    }
+
+    _createClass(ScrollContainer, [{
+      key: 'scrollTop',
+      value: function scrollTop(value) {
+        if (value) {
+          value = Math.max(0, Math.min(this.maxScrollTop, value));
+          this.$().scrollTop(value);
+          if (this.isWindow) {
+            this.top = value;
+          }
+          return value;
+        }
+        return this.$().scrollTop();
+      }
+    }, {
+      key: 'scrollLeft',
+      value: function scrollLeft(value) {
+        if (value) {
+          value = Math.max(0, Math.min(this.maxScrollLeft, value));
+          this.$().scrollLeft(value);
+          if (this.isWindow) {
+            this.left = value;
+          }
+          return value;
+        }
+        return this.$().scrollLeft();
+      }
+    }, {
+      key: '$',
+      value: function $(selector) {
+        var element = this.element;
+        if (selector) {
+          return _$(element).find(selector);
+        } else {
+          return _$(element);
+        }
+      }
+    }, {
+      key: 'bottom',
+      get: function get() {
+        return this.top + this.height;
+      }
+    }, {
+      key: 'right',
+      get: function get() {
+        return this.left + this.width;
+      }
+    }]);
+
+    return ScrollContainer;
+  })();
+
+  exports['default'] = ScrollContainer;
+});
+define('ember-sortable/system/scroll-parent', ['exports', 'ember'], function (exports, _ember) {
+  'use strict';
+
+  var $ = _ember['default'].$;
+
+  exports['default'] = function ($element) {
+    var position = $element.css('position');
+    var excludeStaticParent = position === 'absolute';
+    var $scrollParent = $element.parents().filter(function () {
+      var $parent = $(this);
+      if (excludeStaticParent && $parent.css('position') === 'static') {
+        return false;
+      }
+
+      var _$parent$css = $parent.css(['overflow', 'overflowX', 'overflowY']);
+
+      var overflow = _$parent$css.overflow;
+      var overflowX = _$parent$css.overflowX;
+      var overflowY = _$parent$css.overflowY;
+
+      return (/(auto|scroll)/.test(overflow + overflowX + overflowY)
+      );
+    }).eq(0);
+
+    if ($scrollParent.length === 0 || $scrollParent[0] === document.body) {
+      $scrollParent = $(document);
+    }
+    return position === 'fixed' || $scrollParent;
+  };
+});
+define("ember-sortable/templates/components/sortable-group", ["exports"], function (exports) {
+  "use strict";
+
+  exports["default"] = Ember.HTMLBars.template((function () {
+    return {
+      meta: {
+        "fragmentReason": {
+          "name": "missing-wrapper",
+          "problems": ["wrong-type"]
+        },
+        "revision": "Ember@2.6.2",
+        "loc": {
+          "source": null,
+          "start": {
+            "line": 1,
+            "column": 0
+          },
+          "end": {
+            "line": 2,
+            "column": 0
+          }
+        },
+        "moduleName": "modules/ember-sortable/templates/components/sortable-group.hbs"
+      },
+      isEmpty: false,
+      arity: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      buildFragment: function buildFragment(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createComment("");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createTextNode("\n");
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+        var morphs = new Array(1);
+        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+        dom.insertBoundary(fragment, 0);
+        return morphs;
+      },
+      statements: [["inline", "yield", [["get", "this", ["loc", [null, [1, 8], [1, 12]]]]], [], ["loc", [null, [1, 0], [1, 14]]]]],
+      locals: [],
+      templates: []
+    };
+  })());
+});
+define("ember-sortable/templates/components/sortable-item", ["exports"], function (exports) {
+  "use strict";
+
+  exports["default"] = Ember.HTMLBars.template((function () {
+    return {
+      meta: {
+        "fragmentReason": {
+          "name": "missing-wrapper",
+          "problems": ["wrong-type"]
+        },
+        "revision": "Ember@2.6.2",
+        "loc": {
+          "source": null,
+          "start": {
+            "line": 1,
+            "column": 0
+          },
+          "end": {
+            "line": 2,
+            "column": 0
+          }
+        },
+        "moduleName": "modules/ember-sortable/templates/components/sortable-item.hbs"
+      },
+      isEmpty: false,
+      arity: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      buildFragment: function buildFragment(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createComment("");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createTextNode("\n");
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+        var morphs = new Array(1);
+        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+        dom.insertBoundary(fragment, 0);
+        return morphs;
+      },
+      statements: [["inline", "yield", [["get", "this", ["loc", [null, [1, 8], [1, 12]]]]], [], ["loc", [null, [1, 0], [1, 14]]]]],
+      locals: [],
+      templates: []
+    };
+  })());
+});
+define('ember-sortable/utils/transitionend', ['exports'], function (exports) {
+  // Thanks to http://davidwalsh.name/css-animation-callback
+
+  'use strict';
+
+  function whichTransitionEvent() {
+    var t;
+    var el = document.createElement('fake-element');
+    var transitions = {
+      'transition': 'transitionend',
+      'OTransition': 'oTransitionEnd',
+      'MozTransition': 'transitionend',
+      'WebkitTransition': 'webkitTransitionEnd'
+    };
+
+    for (t in transitions) {
+      if (el.style[t] !== undefined) {
+        return transitions[t];
+      }
+    }
+  }
+
+  var transitionend = whichTransitionEvent();
+
+  exports['default'] = transitionend;
 });
 define('ember-wormhole/components/ember-wormhole', ['exports', 'ember', 'ember-wormhole/templates/components/ember-wormhole', 'ember-wormhole/utils/dom'], function (exports, _ember, _emberWormholeTemplatesComponentsEmberWormhole, _emberWormholeUtilsDom) {
   'use strict';

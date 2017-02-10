@@ -1,10 +1,8 @@
 <h1 class="page-header">Artigos</h1>
-
 <div class="actions">
   {{#link-to 'articles.create' class="btn btn-default"}}
-    <i class="glyphicon glyphicon-plus"></i> Criar artigo
+    <i class="glyphicon glyphicon-plus"></i> Criar
   {{/link-to}}
 </div>
 <br>
-
 {{conteudos-table data=model.records columns=model.columns pageSize=25 useFilteringByColumns=false deleteRecord='deleteRecord' changePublishedStatus='changePublishedStatus'}}

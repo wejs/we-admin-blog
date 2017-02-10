@@ -70,6 +70,15 @@ define('we-admin-blog/tests/controllers/login.jshint', ['exports'], function (ex
     assert.ok(true, 'controllers/login.js should pass jshint.');
   });
 });
+define('we-admin-blog/tests/controllers/menus/item.jshint', ['exports'], function (exports) {
+  'use strict';
+
+  QUnit.module('JSHint | controllers/menus/item.js');
+  QUnit.test('should pass jshint', function (assert) {
+    assert.expect(1);
+    assert.ok(true, 'controllers/menus/item.js should pass jshint.');
+  });
+});
 define('we-admin-blog/tests/helpers/destroy-app', ['exports', 'ember'], function (exports, _ember) {
   exports['default'] = destroyApp;
 
@@ -127,6 +136,7 @@ define('we-admin-blog/tests/helpers/ember-simple-auth', ['exports', 'ember-simpl
 
   ;
 });
+define('we-admin-blog/tests/helpers/ember-sortable/test-helpers', ['exports', 'ember-sortable/helpers/drag', 'ember-sortable/helpers/reorder'], function (exports, _emberSortableHelpersDrag, _emberSortableHelpersReorder) {});
 define('we-admin-blog/tests/helpers/module-for-acceptance', ['exports', 'qunit', 'ember', 'we-admin-blog/tests/helpers/start-app', 'we-admin-blog/tests/helpers/destroy-app'], function (exports, _qunit, _ember, _weAdminBlogTestsHelpersStartApp, _weAdminBlogTestsHelpersDestroyApp) {
   var Promise = _ember['default'].RSVP.Promise;
 
@@ -377,6 +387,24 @@ define('we-admin-blog/tests/models/article.jshint', ['exports'], function (expor
     assert.ok(true, 'models/article.js should pass jshint.');
   });
 });
+define('we-admin-blog/tests/models/link.jshint', ['exports'], function (exports) {
+  'use strict';
+
+  QUnit.module('JSHint | models/link.js');
+  QUnit.test('should pass jshint', function (assert) {
+    assert.expect(1);
+    assert.ok(true, 'models/link.js should pass jshint.');
+  });
+});
+define('we-admin-blog/tests/models/menu.jshint', ['exports'], function (exports) {
+  'use strict';
+
+  QUnit.module('JSHint | models/menu.js');
+  QUnit.test('should pass jshint', function (assert) {
+    assert.expect(1);
+    assert.ok(true, 'models/menu.js should pass jshint.');
+  });
+});
 define('we-admin-blog/tests/models/term.jshint', ['exports'], function (exports) {
   'use strict';
 
@@ -501,6 +529,42 @@ define('we-admin-blog/tests/routes/logout.jshint', ['exports'], function (export
   QUnit.test('should pass jshint', function (assert) {
     assert.expect(1);
     assert.ok(true, 'routes/logout.js should pass jshint.');
+  });
+});
+define('we-admin-blog/tests/routes/menus.jshint', ['exports'], function (exports) {
+  'use strict';
+
+  QUnit.module('JSHint | routes/menus.js');
+  QUnit.test('should pass jshint', function (assert) {
+    assert.expect(1);
+    assert.ok(true, 'routes/menus.js should pass jshint.');
+  });
+});
+define('we-admin-blog/tests/routes/menus/create.jshint', ['exports'], function (exports) {
+  'use strict';
+
+  QUnit.module('JSHint | routes/menus/create.js');
+  QUnit.test('should pass jshint', function (assert) {
+    assert.expect(1);
+    assert.ok(true, 'routes/menus/create.js should pass jshint.');
+  });
+});
+define('we-admin-blog/tests/routes/menus/index.jshint', ['exports'], function (exports) {
+  'use strict';
+
+  QUnit.module('JSHint | routes/menus/index.js');
+  QUnit.test('should pass jshint', function (assert) {
+    assert.expect(1);
+    assert.ok(true, 'routes/menus/index.js should pass jshint.');
+  });
+});
+define('we-admin-blog/tests/routes/menus/item.jshint', ['exports'], function (exports) {
+  'use strict';
+
+  QUnit.module('JSHint | routes/menus/item.js');
+  QUnit.test('should pass jshint', function (assert) {
+    assert.expect(1);
+    assert.ok(true, 'routes/menus/item.js should pass jshint.');
   });
 });
 define('we-admin-blog/tests/routes/profile.jshint', ['exports'], function (exports) {
@@ -655,6 +719,28 @@ define('we-admin-blog/tests/unit/models/article-test.jshint', ['exports'], funct
     assert.ok(true, 'unit/models/article-test.js should pass jshint.');
   });
 });
+define('we-admin-blog/tests/unit/models/menu-test', ['exports', 'ember-qunit'], function (exports, _emberQunit) {
+
+  (0, _emberQunit.moduleForModel)('menu', 'Unit | Model | menu', {
+    // Specify the other units that are required for this test.
+    needs: []
+  });
+
+  (0, _emberQunit.test)('it exists', function (assert) {
+    var model = this.subject();
+    // let store = this.store();
+    assert.ok(!!model);
+  });
+});
+define('we-admin-blog/tests/unit/models/menu-test.jshint', ['exports'], function (exports) {
+  'use strict';
+
+  QUnit.module('JSHint | unit/models/menu-test.js');
+  QUnit.test('should pass jshint', function (assert) {
+    assert.expect(1);
+    assert.ok(true, 'unit/models/menu-test.js should pass jshint.');
+  });
+});
 define('we-admin-blog/tests/unit/models/term-test', ['exports', 'ember-qunit'], function (exports, _emberQunit) {
 
   (0, _emberQunit.moduleForModel)('term', 'Unit | Model | term', {
@@ -762,6 +848,27 @@ define('we-admin-blog/tests/unit/routes/article-test.jshint', ['exports'], funct
   QUnit.test('should pass jshint', function (assert) {
     assert.expect(1);
     assert.ok(true, 'unit/routes/article-test.js should pass jshint.');
+  });
+});
+define('we-admin-blog/tests/unit/routes/menu-test', ['exports', 'ember-qunit'], function (exports, _emberQunit) {
+
+  (0, _emberQunit.moduleFor)('route:menu', 'Unit | Route | menu', {
+    // Specify the other units that are required for this test.
+    // needs: ['controller:foo']
+  });
+
+  (0, _emberQunit.test)('it exists', function (assert) {
+    var route = this.subject();
+    assert.ok(route);
+  });
+});
+define('we-admin-blog/tests/unit/routes/menu-test.jshint', ['exports'], function (exports) {
+  'use strict';
+
+  QUnit.module('JSHint | unit/routes/menu-test.js');
+  QUnit.test('should pass jshint', function (assert) {
+    assert.expect(1);
+    assert.ok(true, 'unit/routes/menu-test.js should pass jshint.');
   });
 });
 define('we-admin-blog/tests/unit/routes/term-test', ['exports', 'ember-qunit'], function (exports, _emberQunit) {

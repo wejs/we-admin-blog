@@ -501,6 +501,12 @@ define('we-admin-blog/components/notification-message', ['exports', 'ember-cli-n
     icons: config.icons || 'font-awesome'
   });
 });
+define('we-admin-blog/components/sortable-group', ['exports', 'ember-sortable/components/sortable-group'], function (exports, _emberSortableComponentsSortableGroup) {
+  exports['default'] = _emberSortableComponentsSortableGroup['default'];
+});
+define('we-admin-blog/components/sortable-item', ['exports', 'ember-sortable/components/sortable-item'], function (exports, _emberSortableComponentsSortableItem) {
+  exports['default'] = _emberSortableComponentsSortableItem['default'];
+});
 define('we-admin-blog/components/tinymce-editor', ['exports', 'ember-cli-tinymce/components/tinymce-editor'], function (exports, _emberCliTinymceComponentsTinymceEditor) {
   Object.defineProperty(exports, 'default', {
     enumerable: true,
@@ -532,6 +538,18 @@ define('we-admin-blog/controllers/login', ['exports', 'ember'], function (export
         this.get('session').authenticate('authenticator:oauth2', identification, password)['catch'](function (reason) {
           _this.set('errorMessage', reason.error || reason);
         });
+      }
+    }
+  });
+});
+define('we-admin-blog/controllers/menus/item', ['exports', 'ember'], function (exports, _ember) {
+  exports['default'] = _ember['default'].Controller.extend({
+    actions: {
+      onSaveLink: function onSaveLink(link, modal) {
+        this.send('saveLink', link, modal);
+      },
+      onCloseLinkEditModal: function onCloseLinkEditModal() {
+        this.send('onCloseLinkModal');
       }
     }
   });
@@ -1026,6 +1044,36 @@ define('we-admin-blog/models/article', ['exports', 'ember-data'], function (expo
     category: _emberData['default'].attr()
   });
 });
+define('we-admin-blog/models/link', ['exports', 'ember-data'], function (exports, _emberData) {
+  exports['default'] = _emberData['default'].Model.extend({
+    href: _emberData['default'].attr('string'),
+    text: _emberData['default'].attr('string'),
+    title: _emberData['default'].attr('string'),
+    'class': _emberData['default'].attr('string'),
+    style: _emberData['default'].attr('string'),
+    target: _emberData['default'].attr('string'),
+    rel: _emberData['default'].attr('string'),
+    key: _emberData['default'].attr('string'),
+    depth: _emberData['default'].attr('number'),
+    weight: _emberData['default'].attr('number'),
+    parent: _emberData['default'].attr('number'),
+    menu: _emberData['default'].belongsTo('menu', {
+      inverse: 'links',
+      async: true
+    })
+  });
+});
+define('we-admin-blog/models/menu', ['exports', 'ember-data'], function (exports, _emberData) {
+  exports['default'] = _emberData['default'].Model.extend({
+    name: _emberData['default'].attr('string'),
+    'class': _emberData['default'].attr('string'),
+    sorted: _emberData['default'].attr('boolean'),
+    links: _emberData['default'].hasMany('link', {
+      inverse: 'menu',
+      async: true
+    })
+  });
+});
 define('we-admin-blog/models/term', ['exports', 'ember-data'], function (exports, _emberData) {
   exports['default'] = _emberData['default'].Model.extend({
     text: _emberData['default'].attr('string')
@@ -1093,6 +1141,11 @@ define('we-admin-blog/router', ['exports', 'ember', 'we-admin-blog/config/enviro
     });
 
     this.route('url-alia', function () {
+      this.route('create');
+      this.route('item', { path: ':id' }, function () {});
+    });
+
+    this.route('menus', function () {
       this.route('create');
       this.route('item', { path: ':id' }, function () {});
     });
@@ -1292,15 +1345,12 @@ define('we-admin-blog/routes/articles/index', ['exports', 'ember', 'ember-simple
   });
 });
 define('we-admin-blog/routes/articles/item', ['exports', 'ember', 'ember-simple-auth/mixins/authenticated-route-mixin'], function (exports, _ember, _emberSimpleAuthMixinsAuthenticatedRouteMixin) {
-  // import ENV from "../../config/environment";
-
   exports['default'] = _ember['default'].Route.extend(_emberSimpleAuthMixinsAuthenticatedRouteMixin['default'], {
     model: function model(params) {
       return _ember['default'].RSVP.hash({
         record: this.get('store').findRecord('article', params.id)
       });
-    },
-    actions: {}
+    }
   });
 });
 define('we-admin-blog/routes/index', ['exports', 'ember', 'ember-simple-auth/mixins/authenticated-route-mixin'], function (exports, _ember, _emberSimpleAuthMixinsAuthenticatedRouteMixin) {
@@ -1320,6 +1370,143 @@ define('we-admin-blog/routes/logout', ['exports', 'ember', 'ember-simple-auth/mi
     session: _ember['default'].inject.service('session'),
     afterModel: function afterModel() {
       this.get('session').invalidate();
+    }
+  });
+});
+define('we-admin-blog/routes/menus', ['exports', 'ember', 'ember-simple-auth/mixins/authenticated-route-mixin'], function (exports, _ember, _emberSimpleAuthMixinsAuthenticatedRouteMixin) {
+  exports['default'] = _ember['default'].Route.extend(_emberSimpleAuthMixinsAuthenticatedRouteMixin['default'], {
+    actions: {
+      deleteRecord: function deleteRecord(record) {
+        var _this = this;
+
+        if (confirm('Tem certeza que deseja deletar o menu "' + record.get('name') + '"? \nEssa ação não pode ser desfeita.')) {
+          record.destroyRecord().then(function () {
+            _this.get('notifications').success('O menu "' + record.get('name') + '" foi deletado.');
+            _this.transitionTo('menus.index');
+            return null;
+          });
+        }
+      },
+      save: function save(record) {
+        var _this2 = this;
+
+        record.save().then(function (r) {
+          _this2.get('notifications').success('Menu salvo');
+          // success
+          return r;
+        })['catch'](function (err) {
+          _this2.send('queryError', err);
+        });
+      }
+    }
+  });
+});
+define('we-admin-blog/routes/menus/create', ['exports', 'ember', 'ember-simple-auth/mixins/authenticated-route-mixin'], function (exports, _ember, _emberSimpleAuthMixinsAuthenticatedRouteMixin) {
+  exports['default'] = _ember['default'].Route.extend(_emberSimpleAuthMixinsAuthenticatedRouteMixin['default'], {
+    model: function model() {
+      return {
+        record: this.store.createRecord('menu')
+      };
+    },
+    actions: {
+      save: function save(record) {
+        var _this = this;
+
+        record.save().then(function (r) {
+          _this.get('notifications').success('Menu criado com sucesso.');
+
+          _this.transitionTo('menus.item', r.id);
+          // success
+          return r;
+        })['catch'](function (err) {
+          _this.send('queryError', err);
+        });
+      }
+    }
+  });
+});
+define('we-admin-blog/routes/menus/index', ['exports', 'ember', 'ember-simple-auth/mixins/authenticated-route-mixin'], function (exports, _ember, _emberSimpleAuthMixinsAuthenticatedRouteMixin) {
+  exports['default'] = _ember['default'].Route.extend(_emberSimpleAuthMixinsAuthenticatedRouteMixin['default'], {
+    model: function model() {
+      return _ember['default'].RSVP.hash({
+        records: this.get('store').query('menu', {}),
+        columns: [{
+          propertyName: 'id',
+          title: 'ID'
+        }, {
+          propertyName: 'name',
+          filteredBy: 'name_starts-with',
+          title: 'Name'
+        }, {
+          propertyName: 'createdAt',
+          filteredBy: 'createdAt',
+          title: 'Criado em'
+        }, {
+          propertyName: 'actions',
+          disableSorting: true,
+          disableFiltering: true,
+          title: 'Actions',
+          template: 'menus/list-item-actions'
+        }]
+      });
+    }
+  });
+});
+define('we-admin-blog/routes/menus/item', ['exports', 'ember', 'ember-simple-auth/mixins/authenticated-route-mixin'], function (exports, _ember, _emberSimpleAuthMixinsAuthenticatedRouteMixin) {
+  exports['default'] = _ember['default'].Route.extend(_emberSimpleAuthMixinsAuthenticatedRouteMixin['default'], {
+    model: function model(params) {
+      return _ember['default'].RSVP.hash({
+        record: this.get('store').findRecord('menu', params.id),
+        sorted: false,
+        newLinkRecord: null,
+        editingRecord: null
+      });
+    },
+
+    getNewLinkRecord: function getNewLinkRecord() {
+      var link = this.get('store').createRecord('link');
+      link.set('menu', this.get('currentModel.record'));
+      return link;
+    },
+    actions: {
+      reorderItems: function reorderItems(itemModels, draggedModel) {
+        this.set('currentModel.record.links', itemModels);
+        this.set('currentModel.justDragged', draggedModel);
+        this.set('currentModel.record.sorted', true);
+      },
+      saveLinksOrder: function saveLinksOrder(menu) {
+        console.log('todo!', menu);
+      },
+      openLinkForm: function openLinkForm(link) {
+        if (!link) {
+          // create
+          this.set('currentModel.newLinkRecord', this.getNewLinkRecord());
+          this.set('currentModel.editingRecord', this.get('currentModel.newLinkRecord'));
+        } else {
+          // edit
+          this.set('currentModel.editingRecord', link);
+        }
+      },
+      onCloseLinkModal: function onCloseLinkModal() {
+        var record = this.get('currentModel.editingRecord');
+        if (record) {
+          window.test = record;
+          // reset record data:
+          record.rollbackAttributes();
+          // cleanup editing record:
+          this.set('currentModel.editingRecord', null);
+        }
+
+        return null;
+      },
+      saveLink: function saveLink(link, modal) {
+        var _this = this;
+
+        link.save().then(function (r) {
+          _this.get('notifications').success('Link salvo');
+          return r;
+        }).then(modal.close);
+      }
     }
   });
 });
@@ -2170,7 +2357,7 @@ define("we-admin-blog/templates/articles/form", ["exports"], function (exports) 
           var el0 = dom.createDocumentFragment();
           var el1 = dom.createElement("h1");
           dom.setAttribute(el1, "class", "page-header");
-          var el2 = dom.createTextNode("Criar artigo");
+          var el2 = dom.createTextNode("Criar");
           dom.appendChild(el1, el2);
           dom.appendChild(el0, el1);
           var el1 = dom.createTextNode("\n");
@@ -2298,7 +2485,7 @@ define("we-admin-blog/templates/articles/form", ["exports"], function (exports) 
         var el4 = dom.createElement("i");
         dom.setAttribute(el4, "class", "fa fa-step-backward");
         dom.appendChild(el3, el4);
-        var el4 = dom.createTextNode("\n      Cancelar\n    ");
+        var el4 = dom.createTextNode("\n      Artigos\n    ");
         dom.appendChild(el3, el4);
         dom.appendChild(el2, el3);
         var el3 = dom.createTextNode("\n  ");
@@ -2339,11 +2526,11 @@ define("we-admin-blog/templates/articles/index", ["exports"], function (exports)
           "loc": {
             "source": null,
             "start": {
-              "line": 4,
+              "line": 3,
               "column": 2
             },
             "end": {
-              "line": 6,
+              "line": 5,
               "column": 2
             }
           },
@@ -2360,7 +2547,7 @@ define("we-admin-blog/templates/articles/index", ["exports"], function (exports)
           var el1 = dom.createElement("i");
           dom.setAttribute(el1, "class", "glyphicon glyphicon-plus");
           dom.appendChild(el0, el1);
-          var el1 = dom.createTextNode(" Criar artigo\n");
+          var el1 = dom.createTextNode(" Criar\n");
           dom.appendChild(el0, el1);
           return el0;
         },
@@ -2386,7 +2573,7 @@ define("we-admin-blog/templates/articles/index", ["exports"], function (exports)
             "column": 0
           },
           "end": {
-            "line": 10,
+            "line": 8,
             "column": 174
           }
         },
@@ -2403,7 +2590,7 @@ define("we-admin-blog/templates/articles/index", ["exports"], function (exports)
         var el2 = dom.createTextNode("Artigos");
         dom.appendChild(el1, el2);
         dom.appendChild(el0, el1);
-        var el1 = dom.createTextNode("\n\n");
+        var el1 = dom.createTextNode("\n");
         dom.appendChild(el0, el1);
         var el1 = dom.createElement("div");
         dom.setAttribute(el1, "class", "actions");
@@ -2416,7 +2603,7 @@ define("we-admin-blog/templates/articles/index", ["exports"], function (exports)
         dom.appendChild(el0, el1);
         var el1 = dom.createElement("br");
         dom.appendChild(el0, el1);
-        var el1 = dom.createTextNode("\n\n");
+        var el1 = dom.createTextNode("\n");
         dom.appendChild(el0, el1);
         var el1 = dom.createComment("");
         dom.appendChild(el0, el1);
@@ -2429,7 +2616,7 @@ define("we-admin-blog/templates/articles/index", ["exports"], function (exports)
         dom.insertBoundary(fragment, null);
         return morphs;
       },
-      statements: [["block", "link-to", ["articles.create"], ["class", "btn btn-default"], 0, null, ["loc", [null, [4, 2], [6, 14]]]], ["inline", "conteudos-table", [], ["data", ["subexpr", "@mut", [["get", "model.records", ["loc", [null, [10, 23], [10, 36]]]]], [], []], "columns", ["subexpr", "@mut", [["get", "model.columns", ["loc", [null, [10, 45], [10, 58]]]]], [], []], "pageSize", 25, "useFilteringByColumns", false, "deleteRecord", "deleteRecord", "changePublishedStatus", "changePublishedStatus"], ["loc", [null, [10, 0], [10, 174]]]]],
+      statements: [["block", "link-to", ["articles.create"], ["class", "btn btn-default"], 0, null, ["loc", [null, [3, 2], [5, 14]]]], ["inline", "conteudos-table", [], ["data", ["subexpr", "@mut", [["get", "model.records", ["loc", [null, [8, 23], [8, 36]]]]], [], []], "columns", ["subexpr", "@mut", [["get", "model.columns", ["loc", [null, [8, 45], [8, 58]]]]], [], []], "pageSize", 25, "useFilteringByColumns", false, "deleteRecord", "deleteRecord", "changePublishedStatus", "changePublishedStatus"], ["loc", [null, [8, 0], [8, 174]]]]],
       locals: [],
       templates: [child0]
     };
@@ -7447,6 +7634,185 @@ define("we-admin-blog/templates/components/models-table/table-footer", ["exports
   })());
 });
 define("we-admin-blog/templates/index",["exports"],function(exports){exports["default"] = Ember.HTMLBars.template((function(){return {meta:{"fragmentReason":{"name":"missing-wrapper","problems":["multiple-nodes","wrong-type"]},"revision":"Ember@2.6.2","loc":{"source":null,"start":{"line":1,"column":0},"end":{"line":538,"column":14}},"moduleName":"we-admin-blog/templates/index.hbs"},isEmpty:false,arity:0,cachedFragment:null,hasRendered:false,buildFragment:function buildFragment(dom){var el0=dom.createDocumentFragment();var el1=dom.createElement("div");dom.setAttribute(el1,"class","row");var el2=dom.createTextNode("\n    ");dom.appendChild(el1,el2);var el2=dom.createElement("div");dom.setAttribute(el2,"class","col-lg-12");var el3=dom.createTextNode("\n        ");dom.appendChild(el2,el3);var el3=dom.createElement("h1");dom.setAttribute(el3,"class","page-header");var el4=dom.createTextNode("Dashboard");dom.appendChild(el3,el4);dom.appendChild(el2,el3);var el3=dom.createTextNode("\n    ");dom.appendChild(el2,el3);dom.appendChild(el1,el2);var el2=dom.createTextNode("\n    ");dom.appendChild(el1,el2);var el2=dom.createComment(" /.col-lg-12 ");dom.appendChild(el1,el2);var el2=dom.createTextNode("\n");dom.appendChild(el1,el2);dom.appendChild(el0,el1);var el1=dom.createTextNode("\n");dom.appendChild(el0,el1);var el1=dom.createComment(" /.row ");dom.appendChild(el0,el1);var el1=dom.createTextNode("\n");dom.appendChild(el0,el1);var el1=dom.createElement("div");dom.setAttribute(el1,"class","row");var el2=dom.createTextNode("\n    ");dom.appendChild(el1,el2);var el2=dom.createElement("div");dom.setAttribute(el2,"class","col-lg-3 col-md-6");var el3=dom.createTextNode("\n        ");dom.appendChild(el2,el3);var el3=dom.createElement("div");dom.setAttribute(el3,"class","panel panel-primary");var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("div");dom.setAttribute(el4,"class","panel-heading");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("div");dom.setAttribute(el5,"class","row");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("div");dom.setAttribute(el6,"class","col-xs-3");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("i");dom.setAttribute(el7,"class","fa fa-comments fa-5x");dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("div");dom.setAttribute(el6,"class","col-xs-9 text-right");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","huge");var el8=dom.createTextNode("26");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");var el8=dom.createTextNode("New Comments!");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("a");dom.setAttribute(el4,"href","#");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("div");dom.setAttribute(el5,"class","panel-footer");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("span");dom.setAttribute(el6,"class","pull-left");var el7=dom.createTextNode("View Details");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("span");dom.setAttribute(el6,"class","pull-right");var el7=dom.createElement("i");dom.setAttribute(el7,"class","fa fa-arrow-circle-right");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("div");dom.setAttribute(el6,"class","clearfix");dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n        ");dom.appendChild(el3,el4);dom.appendChild(el2,el3);var el3=dom.createTextNode("\n    ");dom.appendChild(el2,el3);dom.appendChild(el1,el2);var el2=dom.createTextNode("\n    ");dom.appendChild(el1,el2);var el2=dom.createElement("div");dom.setAttribute(el2,"class","col-lg-3 col-md-6");var el3=dom.createTextNode("\n        ");dom.appendChild(el2,el3);var el3=dom.createElement("div");dom.setAttribute(el3,"class","panel panel-green");var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("div");dom.setAttribute(el4,"class","panel-heading");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("div");dom.setAttribute(el5,"class","row");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("div");dom.setAttribute(el6,"class","col-xs-3");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("i");dom.setAttribute(el7,"class","fa fa-tasks fa-5x");dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("div");dom.setAttribute(el6,"class","col-xs-9 text-right");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","huge");var el8=dom.createTextNode("12");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");var el8=dom.createTextNode("New Tasks!");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("a");dom.setAttribute(el4,"href","#");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("div");dom.setAttribute(el5,"class","panel-footer");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("span");dom.setAttribute(el6,"class","pull-left");var el7=dom.createTextNode("View Details");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("span");dom.setAttribute(el6,"class","pull-right");var el7=dom.createElement("i");dom.setAttribute(el7,"class","fa fa-arrow-circle-right");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("div");dom.setAttribute(el6,"class","clearfix");dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n        ");dom.appendChild(el3,el4);dom.appendChild(el2,el3);var el3=dom.createTextNode("\n    ");dom.appendChild(el2,el3);dom.appendChild(el1,el2);var el2=dom.createTextNode("\n    ");dom.appendChild(el1,el2);var el2=dom.createElement("div");dom.setAttribute(el2,"class","col-lg-3 col-md-6");var el3=dom.createTextNode("\n        ");dom.appendChild(el2,el3);var el3=dom.createElement("div");dom.setAttribute(el3,"class","panel panel-yellow");var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("div");dom.setAttribute(el4,"class","panel-heading");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("div");dom.setAttribute(el5,"class","row");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("div");dom.setAttribute(el6,"class","col-xs-3");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("i");dom.setAttribute(el7,"class","fa fa-shopping-cart fa-5x");dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("div");dom.setAttribute(el6,"class","col-xs-9 text-right");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","huge");var el8=dom.createTextNode("124");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");var el8=dom.createTextNode("New Orders!");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("a");dom.setAttribute(el4,"href","#");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("div");dom.setAttribute(el5,"class","panel-footer");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("span");dom.setAttribute(el6,"class","pull-left");var el7=dom.createTextNode("View Details");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("span");dom.setAttribute(el6,"class","pull-right");var el7=dom.createElement("i");dom.setAttribute(el7,"class","fa fa-arrow-circle-right");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("div");dom.setAttribute(el6,"class","clearfix");dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n        ");dom.appendChild(el3,el4);dom.appendChild(el2,el3);var el3=dom.createTextNode("\n    ");dom.appendChild(el2,el3);dom.appendChild(el1,el2);var el2=dom.createTextNode("\n    ");dom.appendChild(el1,el2);var el2=dom.createElement("div");dom.setAttribute(el2,"class","col-lg-3 col-md-6");var el3=dom.createTextNode("\n        ");dom.appendChild(el2,el3);var el3=dom.createElement("div");dom.setAttribute(el3,"class","panel panel-red");var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("div");dom.setAttribute(el4,"class","panel-heading");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("div");dom.setAttribute(el5,"class","row");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("div");dom.setAttribute(el6,"class","col-xs-3");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("i");dom.setAttribute(el7,"class","fa fa-support fa-5x");dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("div");dom.setAttribute(el6,"class","col-xs-9 text-right");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","huge");var el8=dom.createTextNode("13");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");var el8=dom.createTextNode("Support Tickets!");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("a");dom.setAttribute(el4,"href","#");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("div");dom.setAttribute(el5,"class","panel-footer");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("span");dom.setAttribute(el6,"class","pull-left");var el7=dom.createTextNode("View Details");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("span");dom.setAttribute(el6,"class","pull-right");var el7=dom.createElement("i");dom.setAttribute(el7,"class","fa fa-arrow-circle-right");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("div");dom.setAttribute(el6,"class","clearfix");dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n        ");dom.appendChild(el3,el4);dom.appendChild(el2,el3);var el3=dom.createTextNode("\n    ");dom.appendChild(el2,el3);dom.appendChild(el1,el2);var el2=dom.createTextNode("\n");dom.appendChild(el1,el2);dom.appendChild(el0,el1);var el1=dom.createTextNode("\n");dom.appendChild(el0,el1);var el1=dom.createComment(" /.row ");dom.appendChild(el0,el1);var el1=dom.createTextNode("\n");dom.appendChild(el0,el1);var el1=dom.createElement("div");dom.setAttribute(el1,"class","row");var el2=dom.createTextNode("\n    ");dom.appendChild(el1,el2);var el2=dom.createElement("div");dom.setAttribute(el2,"class","col-lg-8");var el3=dom.createTextNode("\n        ");dom.appendChild(el2,el3);var el3=dom.createElement("div");dom.setAttribute(el3,"class","panel panel-default");var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("div");dom.setAttribute(el4,"class","panel-heading");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("i");dom.setAttribute(el5,"class","fa fa-bar-chart-o fa-fw");dom.appendChild(el4,el5);var el5=dom.createTextNode(" Area Chart Example\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("div");dom.setAttribute(el5,"class","pull-right");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("div");dom.setAttribute(el6,"class","btn-group");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("button");dom.setAttribute(el7,"type","button");dom.setAttribute(el7,"class","btn btn-default btn-xs dropdown-toggle");dom.setAttribute(el7,"data-toggle","dropdown");var el8=dom.createTextNode("\n                            Actions\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("span");dom.setAttribute(el8,"class","caret");dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("ul");dom.setAttribute(el7,"class","dropdown-menu pull-right");dom.setAttribute(el7,"role","menu");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("li");var el9=dom.createElement("a");dom.setAttribute(el9,"href","#");var el10=dom.createTextNode("Action");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("li");var el9=dom.createElement("a");dom.setAttribute(el9,"href","#");var el10=dom.createTextNode("Another action");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("li");var el9=dom.createElement("a");dom.setAttribute(el9,"href","#");var el10=dom.createTextNode("Something else here");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("li");dom.setAttribute(el8,"class","divider");dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("li");var el9=dom.createElement("a");dom.setAttribute(el9,"href","#");var el10=dom.createTextNode("Separated link");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createComment(" /.panel-heading ");dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("div");dom.setAttribute(el4,"class","panel-body");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("div");dom.setAttribute(el5,"id","morris-area-chart");dom.appendChild(el4,el5);var el5=dom.createTextNode("\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createComment(" /.panel-body ");dom.appendChild(el3,el4);var el4=dom.createTextNode("\n        ");dom.appendChild(el3,el4);dom.appendChild(el2,el3);var el3=dom.createTextNode("\n        ");dom.appendChild(el2,el3);var el3=dom.createComment(" /.panel ");dom.appendChild(el2,el3);var el3=dom.createTextNode("\n        ");dom.appendChild(el2,el3);var el3=dom.createElement("div");dom.setAttribute(el3,"class","panel panel-default");var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("div");dom.setAttribute(el4,"class","panel-heading");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("i");dom.setAttribute(el5,"class","fa fa-bar-chart-o fa-fw");dom.appendChild(el4,el5);var el5=dom.createTextNode(" Bar Chart Example\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("div");dom.setAttribute(el5,"class","pull-right");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("div");dom.setAttribute(el6,"class","btn-group");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("button");dom.setAttribute(el7,"type","button");dom.setAttribute(el7,"class","btn btn-default btn-xs dropdown-toggle");dom.setAttribute(el7,"data-toggle","dropdown");var el8=dom.createTextNode("\n                            Actions\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("span");dom.setAttribute(el8,"class","caret");dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("ul");dom.setAttribute(el7,"class","dropdown-menu pull-right");dom.setAttribute(el7,"role","menu");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("li");var el9=dom.createElement("a");dom.setAttribute(el9,"href","#");var el10=dom.createTextNode("Action");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("li");var el9=dom.createElement("a");dom.setAttribute(el9,"href","#");var el10=dom.createTextNode("Another action");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("li");var el9=dom.createElement("a");dom.setAttribute(el9,"href","#");var el10=dom.createTextNode("Something else here");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("li");dom.setAttribute(el8,"class","divider");dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("li");var el9=dom.createElement("a");dom.setAttribute(el9,"href","#");var el10=dom.createTextNode("Separated link");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createComment(" /.panel-heading ");dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("div");dom.setAttribute(el4,"class","panel-body");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("div");dom.setAttribute(el5,"class","row");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("div");dom.setAttribute(el6,"class","col-lg-4");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","table-responsive");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("table");dom.setAttribute(el8,"class","table table-bordered table-hover table-striped");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("thead");var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("tr");var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("th");var el12=dom.createTextNode("#");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("th");var el12=dom.createTextNode("Date");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("th");var el12=dom.createTextNode("Time");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("th");var el12=dom.createTextNode("Amount");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                    ");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                ");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("tbody");var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("tr");var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("3326");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("10/21/2013");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("3:29 PM");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("$321.33");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                    ");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("tr");var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("3325");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("10/21/2013");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("3:20 PM");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("$234.34");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                    ");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("tr");var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("3324");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("10/21/2013");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("3:03 PM");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("$724.17");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                    ");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("tr");var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("3323");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("10/21/2013");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("3:00 PM");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("$23.71");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                    ");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("tr");var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("3322");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("10/21/2013");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("2:49 PM");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("$8345.23");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                    ");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("tr");var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("3321");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("10/21/2013");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("2:23 PM");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("$245.12");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                    ");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("tr");var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("3320");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("10/21/2013");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("2:15 PM");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("$5663.54");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                    ");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("tr");var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("3319");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("10/21/2013");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("2:13 PM");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("$943.45");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                    ");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                ");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createComment(" /.table-responsive ");dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createComment(" /.col-lg-4 (nested) ");dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("div");dom.setAttribute(el6,"class","col-lg-8");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"id","morris-bar-chart");dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createComment(" /.col-lg-8 (nested) ");dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createComment(" /.row ");dom.appendChild(el4,el5);var el5=dom.createTextNode("\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createComment(" /.panel-body ");dom.appendChild(el3,el4);var el4=dom.createTextNode("\n        ");dom.appendChild(el3,el4);dom.appendChild(el2,el3);var el3=dom.createTextNode("\n        ");dom.appendChild(el2,el3);var el3=dom.createComment(" /.panel ");dom.appendChild(el2,el3);var el3=dom.createTextNode("\n        ");dom.appendChild(el2,el3);var el3=dom.createElement("div");dom.setAttribute(el3,"class","panel panel-default");var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("div");dom.setAttribute(el4,"class","panel-heading");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("i");dom.setAttribute(el5,"class","fa fa-clock-o fa-fw");dom.appendChild(el4,el5);var el5=dom.createTextNode(" Responsive Timeline\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createComment(" /.panel-heading ");dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("div");dom.setAttribute(el4,"class","panel-body");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("ul");dom.setAttribute(el5,"class","timeline");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("li");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","timeline-badge");var el8=dom.createElement("i");dom.setAttribute(el8,"class","fa fa-check");dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","timeline-panel");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","timeline-heading");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("h4");dom.setAttribute(el9,"class","timeline-title");var el10=dom.createTextNode("Lorem ipsum dolor");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("p");var el10=dom.createElement("small");dom.setAttribute(el10,"class","text-muted");var el11=dom.createElement("i");dom.setAttribute(el11,"class","fa fa-clock-o");dom.appendChild(el10,el11);var el11=dom.createTextNode(" 11 hours ago via Twitter");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                ");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","timeline-body");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("p");var el10=dom.createTextNode("Lorem ipsum dolor sit amet, consectetur adipisicing elit. Libero laboriosam dolor perspiciatis omnis exercitationem. Beatae, officia pariatur? Est cum veniam excepturi. Maiores praesentium, porro voluptas suscipit facere rem dicta, debitis.");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("li");dom.setAttribute(el6,"class","timeline-inverted");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","timeline-badge warning");var el8=dom.createElement("i");dom.setAttribute(el8,"class","fa fa-credit-card");dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","timeline-panel");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","timeline-heading");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("h4");dom.setAttribute(el9,"class","timeline-title");var el10=dom.createTextNode("Lorem ipsum dolor");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","timeline-body");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("p");var el10=dom.createTextNode("Lorem ipsum dolor sit amet, consectetur adipisicing elit. Autem dolorem quibusdam, tenetur commodi provident cumque magni voluptatem libero, quis rerum. Fugiat esse debitis optio, tempore. Animi officiis alias, officia repellendus.");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("p");var el10=dom.createTextNode("Lorem ipsum dolor sit amet, consectetur adipisicing elit. Laudantium maiores odit qui est tempora eos, nostrum provident explicabo dignissimos debitis vel! Adipisci eius voluptates, ad aut recusandae minus eaque facere.");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("li");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","timeline-badge danger");var el8=dom.createElement("i");dom.setAttribute(el8,"class","fa fa-bomb");dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","timeline-panel");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","timeline-heading");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("h4");dom.setAttribute(el9,"class","timeline-title");var el10=dom.createTextNode("Lorem ipsum dolor");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","timeline-body");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("p");var el10=dom.createTextNode("Lorem ipsum dolor sit amet, consectetur adipisicing elit. Repellendus numquam facilis enim eaque, tenetur nam id qui vel velit similique nihil iure molestias aliquam, voluptatem totam quaerat, magni commodi quisquam.");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("li");dom.setAttribute(el6,"class","timeline-inverted");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","timeline-panel");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","timeline-heading");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("h4");dom.setAttribute(el9,"class","timeline-title");var el10=dom.createTextNode("Lorem ipsum dolor");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","timeline-body");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("p");var el10=dom.createTextNode("Lorem ipsum dolor sit amet, consectetur adipisicing elit. Voluptates est quaerat asperiores sapiente, eligendi, nihil. Itaque quos, alias sapiente rerum quas odit! Aperiam officiis quidem delectus libero, omnis ut debitis!");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("li");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","timeline-badge info");var el8=dom.createElement("i");dom.setAttribute(el8,"class","fa fa-save");dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","timeline-panel");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","timeline-heading");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("h4");dom.setAttribute(el9,"class","timeline-title");var el10=dom.createTextNode("Lorem ipsum dolor");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","timeline-body");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("p");var el10=dom.createTextNode("Lorem ipsum dolor sit amet, consectetur adipisicing elit. Nobis minus modi quam ipsum alias at est molestiae excepturi delectus nesciunt, quibusdam debitis amet, beatae consequuntur impedit nulla qui! Laborum, atque.");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("hr");dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("div");dom.setAttribute(el9,"class","btn-group");var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("button");dom.setAttribute(el10,"type","button");dom.setAttribute(el10,"class","btn btn-primary btn-sm dropdown-toggle");dom.setAttribute(el10,"data-toggle","dropdown");var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("i");dom.setAttribute(el11,"class","fa fa-gear");dom.appendChild(el10,el11);var el11=dom.createTextNode(" ");dom.appendChild(el10,el11);var el11=dom.createElement("span");dom.setAttribute(el11,"class","caret");dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                    ");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("ul");dom.setAttribute(el10,"class","dropdown-menu");dom.setAttribute(el10,"role","menu");var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("li");var el12=dom.createElement("a");dom.setAttribute(el12,"href","#");var el13=dom.createTextNode("Action");dom.appendChild(el12,el13);dom.appendChild(el11,el12);var el12=dom.createTextNode("\n                                        ");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("li");var el12=dom.createElement("a");dom.setAttribute(el12,"href","#");var el13=dom.createTextNode("Another action");dom.appendChild(el12,el13);dom.appendChild(el11,el12);var el12=dom.createTextNode("\n                                        ");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("li");var el12=dom.createElement("a");dom.setAttribute(el12,"href","#");var el13=dom.createTextNode("Something else here");dom.appendChild(el12,el13);dom.appendChild(el11,el12);var el12=dom.createTextNode("\n                                        ");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("li");dom.setAttribute(el11,"class","divider");dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("li");var el12=dom.createElement("a");dom.setAttribute(el12,"href","#");var el13=dom.createTextNode("Separated link");dom.appendChild(el12,el13);dom.appendChild(el11,el12);var el12=dom.createTextNode("\n                                        ");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                    ");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                ");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("li");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","timeline-panel");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","timeline-heading");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("h4");dom.setAttribute(el9,"class","timeline-title");var el10=dom.createTextNode("Lorem ipsum dolor");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","timeline-body");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("p");var el10=dom.createTextNode("Lorem ipsum dolor sit amet, consectetur adipisicing elit. Sequi fuga odio quibusdam. Iure expedita, incidunt unde quis nam! Quod, quisquam. Officia quam qui adipisci quas consequuntur nostrum sequi. Consequuntur, commodi.");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("li");dom.setAttribute(el6,"class","timeline-inverted");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","timeline-badge success");var el8=dom.createElement("i");dom.setAttribute(el8,"class","fa fa-graduation-cap");dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","timeline-panel");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","timeline-heading");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("h4");dom.setAttribute(el9,"class","timeline-title");var el10=dom.createTextNode("Lorem ipsum dolor");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","timeline-body");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("p");var el10=dom.createTextNode("Lorem ipsum dolor sit amet, consectetur adipisicing elit. Deserunt obcaecati, quaerat tempore officia voluptas debitis consectetur culpa amet, accusamus dolorum fugiat, animi dicta aperiam, enim incidunt quisquam maxime neque eaque.");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createComment(" /.panel-body ");dom.appendChild(el3,el4);var el4=dom.createTextNode("\n        ");dom.appendChild(el3,el4);dom.appendChild(el2,el3);var el3=dom.createTextNode("\n        ");dom.appendChild(el2,el3);var el3=dom.createComment(" /.panel ");dom.appendChild(el2,el3);var el3=dom.createTextNode("\n    ");dom.appendChild(el2,el3);dom.appendChild(el1,el2);var el2=dom.createTextNode("\n    ");dom.appendChild(el1,el2);var el2=dom.createComment(" /.col-lg-8 ");dom.appendChild(el1,el2);var el2=dom.createTextNode("\n    ");dom.appendChild(el1,el2);var el2=dom.createElement("div");dom.setAttribute(el2,"class","col-lg-4");var el3=dom.createTextNode("\n        ");dom.appendChild(el2,el3);var el3=dom.createElement("div");dom.setAttribute(el3,"class","panel panel-default");var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("div");dom.setAttribute(el4,"class","panel-heading");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("i");dom.setAttribute(el5,"class","fa fa-bell fa-fw");dom.appendChild(el4,el5);var el5=dom.createTextNode(" Notifications Panel\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createComment(" /.panel-heading ");dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("div");dom.setAttribute(el4,"class","panel-body");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("div");dom.setAttribute(el5,"class","list-group");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("a");dom.setAttribute(el6,"href","#");dom.setAttribute(el6,"class","list-group-item");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("i");dom.setAttribute(el7,"class","fa fa-comment fa-fw");dom.appendChild(el6,el7);var el7=dom.createTextNode(" New Comment\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("span");dom.setAttribute(el7,"class","pull-right text-muted small");var el8=dom.createElement("em");var el9=dom.createTextNode("4 minutes ago");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("a");dom.setAttribute(el6,"href","#");dom.setAttribute(el6,"class","list-group-item");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("i");dom.setAttribute(el7,"class","fa fa-twitter fa-fw");dom.appendChild(el6,el7);var el7=dom.createTextNode(" 3 New Followers\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("span");dom.setAttribute(el7,"class","pull-right text-muted small");var el8=dom.createElement("em");var el9=dom.createTextNode("12 minutes ago");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("a");dom.setAttribute(el6,"href","#");dom.setAttribute(el6,"class","list-group-item");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("i");dom.setAttribute(el7,"class","fa fa-envelope fa-fw");dom.appendChild(el6,el7);var el7=dom.createTextNode(" Message Sent\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("span");dom.setAttribute(el7,"class","pull-right text-muted small");var el8=dom.createElement("em");var el9=dom.createTextNode("27 minutes ago");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("a");dom.setAttribute(el6,"href","#");dom.setAttribute(el6,"class","list-group-item");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("i");dom.setAttribute(el7,"class","fa fa-tasks fa-fw");dom.appendChild(el6,el7);var el7=dom.createTextNode(" New Task\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("span");dom.setAttribute(el7,"class","pull-right text-muted small");var el8=dom.createElement("em");var el9=dom.createTextNode("43 minutes ago");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("a");dom.setAttribute(el6,"href","#");dom.setAttribute(el6,"class","list-group-item");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("i");dom.setAttribute(el7,"class","fa fa-upload fa-fw");dom.appendChild(el6,el7);var el7=dom.createTextNode(" Server Rebooted\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("span");dom.setAttribute(el7,"class","pull-right text-muted small");var el8=dom.createElement("em");var el9=dom.createTextNode("11:32 AM");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("a");dom.setAttribute(el6,"href","#");dom.setAttribute(el6,"class","list-group-item");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("i");dom.setAttribute(el7,"class","fa fa-bolt fa-fw");dom.appendChild(el6,el7);var el7=dom.createTextNode(" Server Crashed!\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("span");dom.setAttribute(el7,"class","pull-right text-muted small");var el8=dom.createElement("em");var el9=dom.createTextNode("11:13 AM");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("a");dom.setAttribute(el6,"href","#");dom.setAttribute(el6,"class","list-group-item");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("i");dom.setAttribute(el7,"class","fa fa-warning fa-fw");dom.appendChild(el6,el7);var el7=dom.createTextNode(" Server Not Responding\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("span");dom.setAttribute(el7,"class","pull-right text-muted small");var el8=dom.createElement("em");var el9=dom.createTextNode("10:57 AM");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("a");dom.setAttribute(el6,"href","#");dom.setAttribute(el6,"class","list-group-item");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("i");dom.setAttribute(el7,"class","fa fa-shopping-cart fa-fw");dom.appendChild(el6,el7);var el7=dom.createTextNode(" New Order Placed\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("span");dom.setAttribute(el7,"class","pull-right text-muted small");var el8=dom.createElement("em");var el9=dom.createTextNode("9:49 AM");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("a");dom.setAttribute(el6,"href","#");dom.setAttribute(el6,"class","list-group-item");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("i");dom.setAttribute(el7,"class","fa fa-money fa-fw");dom.appendChild(el6,el7);var el7=dom.createTextNode(" Payment Received\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("span");dom.setAttribute(el7,"class","pull-right text-muted small");var el8=dom.createElement("em");var el9=dom.createTextNode("Yesterday");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createComment(" /.list-group ");dom.appendChild(el4,el5);var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("a");dom.setAttribute(el5,"href","#");dom.setAttribute(el5,"class","btn btn-default btn-block");var el6=dom.createTextNode("View All Alerts");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createComment(" /.panel-body ");dom.appendChild(el3,el4);var el4=dom.createTextNode("\n        ");dom.appendChild(el3,el4);dom.appendChild(el2,el3);var el3=dom.createTextNode("\n        ");dom.appendChild(el2,el3);var el3=dom.createComment(" /.panel ");dom.appendChild(el2,el3);var el3=dom.createTextNode("\n        ");dom.appendChild(el2,el3);var el3=dom.createElement("div");dom.setAttribute(el3,"class","panel panel-default");var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("div");dom.setAttribute(el4,"class","panel-heading");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("i");dom.setAttribute(el5,"class","fa fa-bar-chart-o fa-fw");dom.appendChild(el4,el5);var el5=dom.createTextNode(" Donut Chart Example\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("div");dom.setAttribute(el4,"class","panel-body");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("div");dom.setAttribute(el5,"id","morris-donut-chart");dom.appendChild(el4,el5);var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("a");dom.setAttribute(el5,"href","#");dom.setAttribute(el5,"class","btn btn-default btn-block");var el6=dom.createTextNode("View Details");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createComment(" /.panel-body ");dom.appendChild(el3,el4);var el4=dom.createTextNode("\n        ");dom.appendChild(el3,el4);dom.appendChild(el2,el3);var el3=dom.createTextNode("\n        ");dom.appendChild(el2,el3);var el3=dom.createComment(" /.panel ");dom.appendChild(el2,el3);var el3=dom.createTextNode("\n        ");dom.appendChild(el2,el3);var el3=dom.createElement("div");dom.setAttribute(el3,"class","chat-panel panel panel-default");var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("div");dom.setAttribute(el4,"class","panel-heading");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("i");dom.setAttribute(el5,"class","fa fa-comments fa-fw");dom.appendChild(el4,el5);var el5=dom.createTextNode(" Chat\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("div");dom.setAttribute(el5,"class","btn-group pull-right");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("button");dom.setAttribute(el6,"type","button");dom.setAttribute(el6,"class","btn btn-default btn-xs dropdown-toggle");dom.setAttribute(el6,"data-toggle","dropdown");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("i");dom.setAttribute(el7,"class","fa fa-chevron-down");dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("ul");dom.setAttribute(el6,"class","dropdown-menu slidedown");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("li");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("a");dom.setAttribute(el8,"href","#");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("i");dom.setAttribute(el9,"class","fa fa-refresh fa-fw");dom.appendChild(el8,el9);var el9=dom.createTextNode(" Refresh\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("li");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("a");dom.setAttribute(el8,"href","#");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("i");dom.setAttribute(el9,"class","fa fa-check-circle fa-fw");dom.appendChild(el8,el9);var el9=dom.createTextNode(" Available\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("li");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("a");dom.setAttribute(el8,"href","#");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("i");dom.setAttribute(el9,"class","fa fa-times fa-fw");dom.appendChild(el8,el9);var el9=dom.createTextNode(" Busy\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("li");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("a");dom.setAttribute(el8,"href","#");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("i");dom.setAttribute(el9,"class","fa fa-clock-o fa-fw");dom.appendChild(el8,el9);var el9=dom.createTextNode(" Away\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("li");dom.setAttribute(el7,"class","divider");dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("li");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("a");dom.setAttribute(el8,"href","#");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("i");dom.setAttribute(el9,"class","fa fa-sign-out fa-fw");dom.appendChild(el8,el9);var el9=dom.createTextNode(" Sign Out\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createComment(" /.panel-heading ");dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("div");dom.setAttribute(el4,"class","panel-body");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("ul");dom.setAttribute(el5,"class","chat");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("li");dom.setAttribute(el6,"class","left clearfix");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("span");dom.setAttribute(el7,"class","chat-img pull-left");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("img");dom.setAttribute(el8,"src","http://placehold.it/50/55C1E7/fff");dom.setAttribute(el8,"alt","User Avatar");dom.setAttribute(el8,"class","img-circle");dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","chat-body clearfix");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","header");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("strong");dom.setAttribute(el9,"class","primary-font");var el10=dom.createTextNode("Jack Sparrow");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("small");dom.setAttribute(el9,"class","pull-right text-muted");var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("i");dom.setAttribute(el10,"class","fa fa-clock-o fa-fw");dom.appendChild(el9,el10);var el10=dom.createTextNode(" 12 mins ago\n                                ");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("p");var el9=dom.createTextNode("\n                                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur bibendum ornare dolor, quis ullamcorper ligula sodales.\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("li");dom.setAttribute(el6,"class","right clearfix");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("span");dom.setAttribute(el7,"class","chat-img pull-right");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("img");dom.setAttribute(el8,"src","http://placehold.it/50/FA6F57/fff");dom.setAttribute(el8,"alt","User Avatar");dom.setAttribute(el8,"class","img-circle");dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","chat-body clearfix");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","header");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("small");dom.setAttribute(el9,"class"," text-muted");var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("i");dom.setAttribute(el10,"class","fa fa-clock-o fa-fw");dom.appendChild(el9,el10);var el10=dom.createTextNode(" 13 mins ago");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("strong");dom.setAttribute(el9,"class","pull-right primary-font");var el10=dom.createTextNode("Bhaumik Patel");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("p");var el9=dom.createTextNode("\n                                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur bibendum ornare dolor, quis ullamcorper ligula sodales.\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("li");dom.setAttribute(el6,"class","left clearfix");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("span");dom.setAttribute(el7,"class","chat-img pull-left");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("img");dom.setAttribute(el8,"src","http://placehold.it/50/55C1E7/fff");dom.setAttribute(el8,"alt","User Avatar");dom.setAttribute(el8,"class","img-circle");dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","chat-body clearfix");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","header");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("strong");dom.setAttribute(el9,"class","primary-font");var el10=dom.createTextNode("Jack Sparrow");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("small");dom.setAttribute(el9,"class","pull-right text-muted");var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("i");dom.setAttribute(el10,"class","fa fa-clock-o fa-fw");dom.appendChild(el9,el10);var el10=dom.createTextNode(" 14 mins ago");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("p");var el9=dom.createTextNode("\n                                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur bibendum ornare dolor, quis ullamcorper ligula sodales.\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("li");dom.setAttribute(el6,"class","right clearfix");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("span");dom.setAttribute(el7,"class","chat-img pull-right");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("img");dom.setAttribute(el8,"src","http://placehold.it/50/FA6F57/fff");dom.setAttribute(el8,"alt","User Avatar");dom.setAttribute(el8,"class","img-circle");dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","chat-body clearfix");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","header");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("small");dom.setAttribute(el9,"class"," text-muted");var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("i");dom.setAttribute(el10,"class","fa fa-clock-o fa-fw");dom.appendChild(el9,el10);var el10=dom.createTextNode(" 15 mins ago");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("strong");dom.setAttribute(el9,"class","pull-right primary-font");var el10=dom.createTextNode("Bhaumik Patel");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("p");var el9=dom.createTextNode("\n                                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur bibendum ornare dolor, quis ullamcorper ligula sodales.\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createComment(" /.panel-body ");dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("div");dom.setAttribute(el4,"class","panel-footer");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("div");dom.setAttribute(el5,"class","input-group");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("input");dom.setAttribute(el6,"id","btn-input");dom.setAttribute(el6,"type","text");dom.setAttribute(el6,"class","form-control input-sm");dom.setAttribute(el6,"placeholder","Type your message here...");dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("span");dom.setAttribute(el6,"class","input-group-btn");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("button");dom.setAttribute(el7,"class","btn btn-warning btn-sm");dom.setAttribute(el7,"id","btn-chat");var el8=dom.createTextNode("\n                            Send\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createComment(" /.panel-footer ");dom.appendChild(el3,el4);var el4=dom.createTextNode("\n        ");dom.appendChild(el3,el4);dom.appendChild(el2,el3);var el3=dom.createTextNode("\n        ");dom.appendChild(el2,el3);var el3=dom.createComment(" /.panel .chat-panel ");dom.appendChild(el2,el3);var el3=dom.createTextNode("\n    ");dom.appendChild(el2,el3);dom.appendChild(el1,el2);var el2=dom.createTextNode("\n    ");dom.appendChild(el1,el2);var el2=dom.createComment(" /.col-lg-4 ");dom.appendChild(el1,el2);var el2=dom.createTextNode("\n");dom.appendChild(el1,el2);dom.appendChild(el0,el1);var el1=dom.createTextNode("\n");dom.appendChild(el0,el1);var el1=dom.createComment(" /.row ");dom.appendChild(el0,el1);return el0;},buildRenderNodes:function buildRenderNodes(){return [];},statements:[],locals:[],templates:[]};})());});
+define("we-admin-blog/templates/links/form", ["exports"], function (exports) {
+  exports["default"] = Ember.HTMLBars.template((function () {
+    return {
+      meta: {
+        "fragmentReason": {
+          "name": "modifiers",
+          "modifiers": ["action"]
+        },
+        "revision": "Ember@2.6.2",
+        "loc": {
+          "source": null,
+          "start": {
+            "line": 1,
+            "column": 0
+          },
+          "end": {
+            "line": 32,
+            "column": 7
+          }
+        },
+        "moduleName": "we-admin-blog/templates/links/form.hbs"
+      },
+      isEmpty: false,
+      arity: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      buildFragment: function buildFragment(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createElement("form");
+        var el2 = dom.createTextNode("\n  ");
+        dom.appendChild(el1, el2);
+        var el2 = dom.createElement("fieldset");
+        var el3 = dom.createTextNode("\n    ");
+        dom.appendChild(el2, el3);
+        var el3 = dom.createElement("div");
+        dom.setAttribute(el3, "class", "form-group");
+        var el4 = dom.createTextNode("\n      ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createElement("label");
+        var el5 = dom.createTextNode("HREF*");
+        dom.appendChild(el4, el5);
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n      ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createComment("");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n    ");
+        dom.appendChild(el3, el4);
+        dom.appendChild(el2, el3);
+        var el3 = dom.createTextNode("\n    ");
+        dom.appendChild(el2, el3);
+        var el3 = dom.createElement("div");
+        dom.setAttribute(el3, "class", "form-group");
+        var el4 = dom.createTextNode("\n      ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createElement("label");
+        var el5 = dom.createTextNode("Text*");
+        dom.appendChild(el4, el5);
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n      ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createComment("");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n    ");
+        dom.appendChild(el3, el4);
+        dom.appendChild(el2, el3);
+        var el3 = dom.createTextNode("\n    ");
+        dom.appendChild(el2, el3);
+        var el3 = dom.createElement("div");
+        dom.setAttribute(el3, "class", "form-group");
+        var el4 = dom.createTextNode("\n      ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createElement("label");
+        var el5 = dom.createTextNode("Título");
+        dom.appendChild(el4, el5);
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n      ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createComment("");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n    ");
+        dom.appendChild(el3, el4);
+        dom.appendChild(el2, el3);
+        var el3 = dom.createTextNode("\n    ");
+        dom.appendChild(el2, el3);
+        var el3 = dom.createElement("div");
+        dom.setAttribute(el3, "class", "form-group");
+        var el4 = dom.createTextNode("\n      ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createElement("label");
+        var el5 = dom.createTextNode("Class");
+        dom.appendChild(el4, el5);
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n      ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createComment("");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n    ");
+        dom.appendChild(el3, el4);
+        dom.appendChild(el2, el3);
+        var el3 = dom.createTextNode("\n    ");
+        dom.appendChild(el2, el3);
+        var el3 = dom.createElement("div");
+        dom.setAttribute(el3, "class", "form-group");
+        var el4 = dom.createTextNode("\n      ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createElement("label");
+        var el5 = dom.createTextNode("Target");
+        dom.appendChild(el4, el5);
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n      ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createComment("");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n    ");
+        dom.appendChild(el3, el4);
+        dom.appendChild(el2, el3);
+        var el3 = dom.createTextNode("\n    ");
+        dom.appendChild(el2, el3);
+        var el3 = dom.createElement("div");
+        dom.setAttribute(el3, "class", "form-group");
+        var el4 = dom.createTextNode("\n      ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createElement("label");
+        var el5 = dom.createTextNode("Rel");
+        dom.appendChild(el4, el5);
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n      ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createComment("");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n    ");
+        dom.appendChild(el3, el4);
+        dom.appendChild(el2, el3);
+        var el3 = dom.createTextNode("\n    ");
+        dom.appendChild(el2, el3);
+        var el3 = dom.createElement("div");
+        dom.setAttribute(el3, "class", "form-group");
+        var el4 = dom.createTextNode("\n      ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createElement("label");
+        var el5 = dom.createTextNode("Tecla");
+        dom.appendChild(el4, el5);
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n      ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createComment("");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n    ");
+        dom.appendChild(el3, el4);
+        dom.appendChild(el2, el3);
+        var el3 = dom.createTextNode("\n  ");
+        dom.appendChild(el2, el3);
+        dom.appendChild(el1, el2);
+        var el2 = dom.createTextNode("\n");
+        dom.appendChild(el1, el2);
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+        var element0 = dom.childAt(fragment, [0]);
+        var element1 = dom.childAt(element0, [1]);
+        var morphs = new Array(8);
+        morphs[0] = dom.createElementMorph(element0);
+        morphs[1] = dom.createMorphAt(dom.childAt(element1, [1]), 3, 3);
+        morphs[2] = dom.createMorphAt(dom.childAt(element1, [3]), 3, 3);
+        morphs[3] = dom.createMorphAt(dom.childAt(element1, [5]), 3, 3);
+        morphs[4] = dom.createMorphAt(dom.childAt(element1, [7]), 3, 3);
+        morphs[5] = dom.createMorphAt(dom.childAt(element1, [9]), 3, 3);
+        morphs[6] = dom.createMorphAt(dom.childAt(element1, [11]), 3, 3);
+        morphs[7] = dom.createMorphAt(dom.childAt(element1, [13]), 3, 3);
+        return morphs;
+      },
+      statements: [["element", "action", ["onSaveLink", ["get", "model.editingRecord", ["loc", [null, [1, 28], [1, 47]]]], ["get", "modal", ["loc", [null, [1, 48], [1, 53]]]]], ["on", "submit"], ["loc", [null, [1, 6], [1, 67]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.editingRecord.href", ["loc", [null, [5, 20], [5, 44]]]]], [], []], "class", "form-control", "placeholder", "Url do link", "required", "required"], ["loc", [null, [5, 6], [5, 113]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.editingRecord.text", ["loc", [null, [9, 20], [9, 44]]]]], [], []], "class", "form-control", "placeholder", "Texto do link", "required", "required"], ["loc", [null, [9, 6], [9, 115]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.editingRecord.title", ["loc", [null, [13, 20], [13, 45]]]]], [], []], "class", "form-control", "placeholder", "Título do link"], ["loc", [null, [13, 6], [13, 97]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.editingRecord.class", ["loc", [null, [17, 20], [17, 45]]]]], [], []], "class", "form-control", "placeholder", "Classe de css do link"], ["loc", [null, [17, 6], [17, 104]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.editingRecord.target", ["loc", [null, [21, 20], [21, 46]]]]], [], []], "class", "form-control", "placeholder", "Target do link"], ["loc", [null, [21, 6], [21, 98]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.editingRecord.rel", ["loc", [null, [25, 20], [25, 43]]]]], [], []], "class", "form-control", "placeholder", "Rel do link"], ["loc", [null, [25, 6], [25, 92]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.editingRecord.key", ["loc", [null, [29, 20], [29, 43]]]]], [], []], "class", "form-control", "placeholder", "Tecla do link"], ["loc", [null, [29, 6], [29, 94]]]]],
+      locals: [],
+      templates: []
+    };
+  })());
+});
 define("we-admin-blog/templates/login", ["exports"], function (exports) {
   exports["default"] = Ember.HTMLBars.template((function () {
     return {
@@ -7586,6 +7952,1216 @@ define("we-admin-blog/templates/logout", ["exports"], function (exports) {
       statements: [],
       locals: [],
       templates: []
+    };
+  })());
+});
+define("we-admin-blog/templates/menus", ["exports"], function (exports) {
+  exports["default"] = Ember.HTMLBars.template((function () {
+    return {
+      meta: {
+        "fragmentReason": {
+          "name": "triple-curlies"
+        },
+        "revision": "Ember@2.6.2",
+        "loc": {
+          "source": null,
+          "start": {
+            "line": 1,
+            "column": 0
+          },
+          "end": {
+            "line": 1,
+            "column": 62
+          }
+        },
+        "moduleName": "we-admin-blog/templates/menus.hbs"
+      },
+      isEmpty: false,
+      arity: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      buildFragment: function buildFragment(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createElement("div");
+        dom.setAttribute(el1, "class", "row");
+        var el2 = dom.createElement("div");
+        dom.setAttribute(el2, "class", "col-md-12");
+        var el3 = dom.createComment("");
+        dom.appendChild(el2, el3);
+        dom.appendChild(el1, el2);
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+        var morphs = new Array(1);
+        morphs[0] = dom.createMorphAt(dom.childAt(fragment, [0, 0]), 0, 0);
+        return morphs;
+      },
+      statements: [["content", "outlet", ["loc", [null, [1, 40], [1, 50]]]]],
+      locals: [],
+      templates: []
+    };
+  })());
+});
+define("we-admin-blog/templates/menus/create", ["exports"], function (exports) {
+  exports["default"] = Ember.HTMLBars.template((function () {
+    return {
+      meta: {
+        "fragmentReason": {
+          "name": "missing-wrapper",
+          "problems": ["wrong-type"]
+        },
+        "revision": "Ember@2.6.2",
+        "loc": {
+          "source": null,
+          "start": {
+            "line": 1,
+            "column": 0
+          },
+          "end": {
+            "line": 1,
+            "column": 24
+          }
+        },
+        "moduleName": "we-admin-blog/templates/menus/create.hbs"
+      },
+      isEmpty: false,
+      arity: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      buildFragment: function buildFragment(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createComment("");
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+        var morphs = new Array(1);
+        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+        dom.insertBoundary(fragment, 0);
+        dom.insertBoundary(fragment, null);
+        return morphs;
+      },
+      statements: [["inline", "partial", ["menus/form"], [], ["loc", [null, [1, 0], [1, 24]]]]],
+      locals: [],
+      templates: []
+    };
+  })());
+});
+define("we-admin-blog/templates/menus/form", ["exports"], function (exports) {
+  exports["default"] = Ember.HTMLBars.template((function () {
+    var child0 = (function () {
+      return {
+        meta: {
+          "fragmentReason": {
+            "name": "triple-curlies"
+          },
+          "revision": "Ember@2.6.2",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 1,
+              "column": 0
+            },
+            "end": {
+              "line": 3,
+              "column": 0
+            }
+          },
+          "moduleName": "we-admin-blog/templates/menus/form.hbs"
+        },
+        isEmpty: false,
+        arity: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createElement("h1");
+          dom.setAttribute(el1, "class", "page-header");
+          var el2 = dom.createTextNode("Editar menu #");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createComment("");
+          dom.appendChild(el1, el2);
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var morphs = new Array(1);
+          morphs[0] = dom.createMorphAt(dom.childAt(fragment, [0]), 1, 1);
+          return morphs;
+        },
+        statements: [["content", "model.record.id", ["loc", [null, [2, 37], [2, 56]]]]],
+        locals: [],
+        templates: []
+      };
+    })();
+    var child1 = (function () {
+      return {
+        meta: {
+          "fragmentReason": false,
+          "revision": "Ember@2.6.2",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 3,
+              "column": 0
+            },
+            "end": {
+              "line": 5,
+              "column": 0
+            }
+          },
+          "moduleName": "we-admin-blog/templates/menus/form.hbs"
+        },
+        isEmpty: false,
+        arity: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createElement("h1");
+          dom.setAttribute(el1, "class", "page-header");
+          var el2 = dom.createTextNode("Criar");
+          dom.appendChild(el1, el2);
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes() {
+          return [];
+        },
+        statements: [],
+        locals: [],
+        templates: []
+      };
+    })();
+    return {
+      meta: {
+        "fragmentReason": {
+          "name": "missing-wrapper",
+          "problems": ["wrong-type", "multiple-nodes"]
+        },
+        "revision": "Ember@2.6.2",
+        "loc": {
+          "source": null,
+          "start": {
+            "line": 1,
+            "column": 0
+          },
+          "end": {
+            "line": 28,
+            "column": 7
+          }
+        },
+        "moduleName": "we-admin-blog/templates/menus/form.hbs"
+      },
+      isEmpty: false,
+      arity: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      buildFragment: function buildFragment(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createComment("");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createTextNode("\n");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createElement("form");
+        var el2 = dom.createTextNode("\n  ");
+        dom.appendChild(el1, el2);
+        var el2 = dom.createElement("fieldset");
+        var el3 = dom.createTextNode("\n    ");
+        dom.appendChild(el2, el3);
+        var el3 = dom.createElement("div");
+        dom.setAttribute(el3, "class", "form-group");
+        var el4 = dom.createTextNode("\n      ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createElement("label");
+        var el5 = dom.createTextNode("Nome*");
+        dom.appendChild(el4, el5);
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n      ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createComment("");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n    ");
+        dom.appendChild(el3, el4);
+        dom.appendChild(el2, el3);
+        var el3 = dom.createTextNode("\n    ");
+        dom.appendChild(el2, el3);
+        var el3 = dom.createElement("div");
+        dom.setAttribute(el3, "class", "form-group");
+        var el4 = dom.createTextNode("\n      ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createElement("label");
+        var el5 = dom.createTextNode("Class:");
+        dom.appendChild(el4, el5);
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n      ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createComment("");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n    ");
+        dom.appendChild(el3, el4);
+        dom.appendChild(el2, el3);
+        var el3 = dom.createTextNode("\n  ");
+        dom.appendChild(el2, el3);
+        dom.appendChild(el1, el2);
+        var el2 = dom.createTextNode("\n  ");
+        dom.appendChild(el1, el2);
+        var el2 = dom.createElement("div");
+        var el3 = dom.createTextNode("\n    ");
+        dom.appendChild(el2, el3);
+        var el3 = dom.createElement("button");
+        dom.setAttribute(el3, "class", "btn btn-primary");
+        var el4 = dom.createTextNode("\n      ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createElement("i");
+        dom.setAttribute(el4, "class", "fa fa-save");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n      Salvar\n    ");
+        dom.appendChild(el3, el4);
+        dom.appendChild(el2, el3);
+        var el3 = dom.createTextNode("\n    ");
+        dom.appendChild(el2, el3);
+        var el3 = dom.createElement("button");
+        dom.setAttribute(el3, "type", "button");
+        dom.setAttribute(el3, "class", "btn btn-default");
+        var el4 = dom.createTextNode("\n      ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createElement("i");
+        dom.setAttribute(el4, "class", "fa fa-step-backward");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n      Menus\n    ");
+        dom.appendChild(el3, el4);
+        dom.appendChild(el2, el3);
+        var el3 = dom.createTextNode("\n  ");
+        dom.appendChild(el2, el3);
+        dom.appendChild(el1, el2);
+        var el2 = dom.createTextNode("\n");
+        dom.appendChild(el1, el2);
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+        var element0 = dom.childAt(fragment, [2]);
+        var element1 = dom.childAt(element0, [1]);
+        var element2 = dom.childAt(element0, [3, 3]);
+        var morphs = new Array(5);
+        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+        morphs[1] = dom.createElementMorph(element0);
+        morphs[2] = dom.createMorphAt(dom.childAt(element1, [1]), 3, 3);
+        morphs[3] = dom.createMorphAt(dom.childAt(element1, [3]), 3, 3);
+        morphs[4] = dom.createElementMorph(element2);
+        dom.insertBoundary(fragment, 0);
+        return morphs;
+      },
+      statements: [["block", "if", [["get", "model.record.id", ["loc", [null, [1, 6], [1, 21]]]]], [], 0, 1, ["loc", [null, [1, 0], [5, 7]]]], ["element", "action", ["save", ["get", "model.record", ["loc", [null, [7, 22], [7, 34]]]]], ["on", "submit"], ["loc", [null, [7, 6], [7, 48]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.record.name", ["loc", [null, [11, 20], [11, 37]]]]], [], []], "class", "form-control", "placeholder", "Nome do menu", "required", "required"], ["loc", [null, [11, 6], [11, 107]]]], ["inline", "textarea", [], ["value", ["subexpr", "@mut", [["get", "model.record.class", ["loc", [null, [15, 23], [15, 41]]]]], [], []], "class", "form-control"], ["loc", [null, [15, 6], [15, 64]]]], ["element", "action", ["goTo", "menus.index"], [], ["loc", [null, [23, 12], [23, 43]]]]],
+      locals: [],
+      templates: [child0, child1]
+    };
+  })());
+});
+define("we-admin-blog/templates/menus/index", ["exports"], function (exports) {
+  exports["default"] = Ember.HTMLBars.template((function () {
+    var child0 = (function () {
+      return {
+        meta: {
+          "fragmentReason": false,
+          "revision": "Ember@2.6.2",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 4,
+              "column": 2
+            },
+            "end": {
+              "line": 6,
+              "column": 2
+            }
+          },
+          "moduleName": "we-admin-blog/templates/menus/index.hbs"
+        },
+        isEmpty: false,
+        arity: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createTextNode("    ");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createElement("i");
+          dom.setAttribute(el1, "class", "glyphicon glyphicon-plus");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode(" Criar\n");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes() {
+          return [];
+        },
+        statements: [],
+        locals: [],
+        templates: []
+      };
+    })();
+    return {
+      meta: {
+        "fragmentReason": {
+          "name": "missing-wrapper",
+          "problems": ["multiple-nodes", "wrong-type"]
+        },
+        "revision": "Ember@2.6.2",
+        "loc": {
+          "source": null,
+          "start": {
+            "line": 1,
+            "column": 0
+          },
+          "end": {
+            "line": 10,
+            "column": 128
+          }
+        },
+        "moduleName": "we-admin-blog/templates/menus/index.hbs"
+      },
+      isEmpty: false,
+      arity: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      buildFragment: function buildFragment(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createElement("h1");
+        dom.setAttribute(el1, "class", "page-header");
+        var el2 = dom.createTextNode("Menus");
+        dom.appendChild(el1, el2);
+        dom.appendChild(el0, el1);
+        var el1 = dom.createTextNode("\n\n");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createElement("div");
+        dom.setAttribute(el1, "class", "actions");
+        var el2 = dom.createTextNode("\n");
+        dom.appendChild(el1, el2);
+        var el2 = dom.createComment("");
+        dom.appendChild(el1, el2);
+        dom.appendChild(el0, el1);
+        var el1 = dom.createTextNode("\n");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createElement("br");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createTextNode("\n\n");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createComment("");
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+        var morphs = new Array(2);
+        morphs[0] = dom.createMorphAt(dom.childAt(fragment, [2]), 1, 1);
+        morphs[1] = dom.createMorphAt(fragment, 6, 6, contextualElement);
+        dom.insertBoundary(fragment, null);
+        return morphs;
+      },
+      statements: [["block", "link-to", ["menus.create"], ["class", "btn btn-default"], 0, null, ["loc", [null, [4, 2], [6, 14]]]], ["inline", "conteudos-table", [], ["data", ["subexpr", "@mut", [["get", "model.records", ["loc", [null, [10, 23], [10, 36]]]]], [], []], "columns", ["subexpr", "@mut", [["get", "model.columns", ["loc", [null, [10, 45], [10, 58]]]]], [], []], "pageSize", 25, "useFilteringByColumns", false, "deleteRecord", "deleteRecord"], ["loc", [null, [10, 0], [10, 128]]]]],
+      locals: [],
+      templates: [child0]
+    };
+  })());
+});
+define("we-admin-blog/templates/menus/item", ["exports"], function (exports) {
+  exports["default"] = Ember.HTMLBars.template((function () {
+    var child0 = (function () {
+      return {
+        meta: {
+          "fragmentReason": false,
+          "revision": "Ember@2.6.2",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 8,
+              "column": 4
+            },
+            "end": {
+              "line": 10,
+              "column": 4
+            }
+          },
+          "moduleName": "we-admin-blog/templates/menus/item.hbs"
+        },
+        isEmpty: false,
+        arity: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createTextNode("      ");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createElement("button");
+          dom.setAttribute(el1, "type", "button");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var element1 = dom.childAt(fragment, [1]);
+          var morphs = new Array(1);
+          morphs[0] = dom.createElementMorph(element1);
+          return morphs;
+        },
+        statements: [["element", "action", ["saveLinksOrder", ["get", "menu", ["loc", [null, [9, 40], [9, 44]]]]], [], ["loc", [null, [9, 14], [9, 46]]]]],
+        locals: [],
+        templates: []
+      };
+    })();
+    var child1 = (function () {
+      var child0 = (function () {
+        var child0 = (function () {
+          var child0 = (function () {
+            return {
+              meta: {
+                "fragmentReason": false,
+                "revision": "Ember@2.6.2",
+                "loc": {
+                  "source": null,
+                  "start": {
+                    "line": 16,
+                    "column": 10
+                  },
+                  "end": {
+                    "line": 25,
+                    "column": 10
+                  }
+                },
+                "moduleName": "we-admin-blog/templates/menus/item.hbs"
+              },
+              isEmpty: false,
+              arity: 0,
+              cachedFragment: null,
+              hasRendered: false,
+              buildFragment: function buildFragment(dom) {
+                var el0 = dom.createDocumentFragment();
+                var el1 = dom.createTextNode("            ");
+                dom.appendChild(el0, el1);
+                var el1 = dom.createElement("button");
+                dom.setAttribute(el1, "type", "button");
+                dom.setAttribute(el1, "class", "handle btn btn-default");
+                var el2 = dom.createTextNode("\n              ");
+                dom.appendChild(el1, el2);
+                var el2 = dom.createElement("i");
+                dom.setAttribute(el2, "class", "glyphicon glyphicon-resize-vertical");
+                var el3 = dom.createTextNode(" ");
+                dom.appendChild(el2, el3);
+                dom.appendChild(el1, el2);
+                var el2 = dom.createTextNode("\n            ");
+                dom.appendChild(el1, el2);
+                dom.appendChild(el0, el1);
+                var el1 = dom.createTextNode("\n            ");
+                dom.appendChild(el0, el1);
+                var el1 = dom.createComment("");
+                dom.appendChild(el0, el1);
+                var el1 = dom.createTextNode(" - ");
+                dom.appendChild(el0, el1);
+                var el1 = dom.createElement("span");
+                dom.setAttribute(el1, "class", "label label-default");
+                var el2 = dom.createComment("");
+                dom.appendChild(el1, el2);
+                dom.appendChild(el0, el1);
+                var el1 = dom.createTextNode("\n\n            ");
+                dom.appendChild(el0, el1);
+                var el1 = dom.createElement("button");
+                dom.setAttribute(el1, "class", "btn btn-sm btn-default");
+                var el2 = dom.createTextNode("\n              ");
+                dom.appendChild(el1, el2);
+                var el2 = dom.createElement("i");
+                dom.setAttribute(el2, "class", "glyphicon glyphicon-pencil");
+                dom.appendChild(el1, el2);
+                var el2 = dom.createTextNode(" Ediar\n            ");
+                dom.appendChild(el1, el2);
+                dom.appendChild(el0, el1);
+                var el1 = dom.createTextNode("\n");
+                dom.appendChild(el0, el1);
+                return el0;
+              },
+              buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+                var element0 = dom.childAt(fragment, [7]);
+                var morphs = new Array(3);
+                morphs[0] = dom.createMorphAt(fragment, 3, 3, contextualElement);
+                morphs[1] = dom.createMorphAt(dom.childAt(fragment, [5]), 0, 0);
+                morphs[2] = dom.createElementMorph(element0);
+                return morphs;
+              },
+              statements: [["content", "item.text", ["loc", [null, [20, 12], [20, 25]]]], ["content", "item.href", ["loc", [null, [20, 62], [20, 75]]]], ["element", "action", ["openLinkForm", ["get", "item", ["loc", [null, [22, 75], [22, 79]]]]], [], ["loc", [null, [22, 51], [22, 81]]]]],
+              locals: [],
+              templates: []
+            };
+          })();
+          return {
+            meta: {
+              "fragmentReason": false,
+              "revision": "Ember@2.6.2",
+              "loc": {
+                "source": null,
+                "start": {
+                  "line": 15,
+                  "column": 8
+                },
+                "end": {
+                  "line": 26,
+                  "column": 8
+                }
+              },
+              "moduleName": "we-admin-blog/templates/menus/item.hbs"
+            },
+            isEmpty: false,
+            arity: 0,
+            cachedFragment: null,
+            hasRendered: false,
+            buildFragment: function buildFragment(dom) {
+              var el0 = dom.createDocumentFragment();
+              var el1 = dom.createComment("");
+              dom.appendChild(el0, el1);
+              return el0;
+            },
+            buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+              var morphs = new Array(1);
+              morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+              dom.insertBoundary(fragment, 0);
+              dom.insertBoundary(fragment, null);
+              return morphs;
+            },
+            statements: [["block", "sortable-item", [], ["tagName", "li", "class", "list-group-item", "model", ["subexpr", "@mut", [["get", "item", ["loc", [null, [16, 70], [16, 74]]]]], [], []], "group", ["subexpr", "@mut", [["get", "group", ["loc", [null, [16, 81], [16, 86]]]]], [], []], "handle", ".handle"], 0, null, ["loc", [null, [16, 10], [25, 28]]]]],
+            locals: [],
+            templates: [child0]
+          };
+        })();
+        return {
+          meta: {
+            "fragmentReason": false,
+            "revision": "Ember@2.6.2",
+            "loc": {
+              "source": null,
+              "start": {
+                "line": 14,
+                "column": 6
+              },
+              "end": {
+                "line": 27,
+                "column": 6
+              }
+            },
+            "moduleName": "we-admin-blog/templates/menus/item.hbs"
+          },
+          isEmpty: false,
+          arity: 1,
+          cachedFragment: null,
+          hasRendered: false,
+          buildFragment: function buildFragment(dom) {
+            var el0 = dom.createDocumentFragment();
+            var el1 = dom.createComment("");
+            dom.appendChild(el0, el1);
+            return el0;
+          },
+          buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+            var morphs = new Array(1);
+            morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+            dom.insertBoundary(fragment, 0);
+            dom.insertBoundary(fragment, null);
+            return morphs;
+          },
+          statements: [["block", "unless", [["get", "item.isNew", ["loc", [null, [15, 18], [15, 28]]]]], [], 0, null, ["loc", [null, [15, 8], [26, 19]]]]],
+          locals: ["item"],
+          templates: [child0]
+        };
+      })();
+      return {
+        meta: {
+          "fragmentReason": false,
+          "revision": "Ember@2.6.2",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 13,
+              "column": 4
+            },
+            "end": {
+              "line": 28,
+              "column": 4
+            }
+          },
+          "moduleName": "we-admin-blog/templates/menus/item.hbs"
+        },
+        isEmpty: false,
+        arity: 1,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var morphs = new Array(1);
+          morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+          dom.insertBoundary(fragment, 0);
+          dom.insertBoundary(fragment, null);
+          return morphs;
+        },
+        statements: [["block", "each", [["get", "model.record.links", ["loc", [null, [14, 14], [14, 32]]]]], [], 0, null, ["loc", [null, [14, 6], [27, 15]]]]],
+        locals: ["group"],
+        templates: [child0]
+      };
+    })();
+    var child2 = (function () {
+      var child0 = (function () {
+        var child0 = (function () {
+          return {
+            meta: {
+              "fragmentReason": false,
+              "revision": "Ember@2.6.2",
+              "loc": {
+                "source": null,
+                "start": {
+                  "line": 36,
+                  "column": 8
+                },
+                "end": {
+                  "line": 41,
+                  "column": 8
+                }
+              },
+              "moduleName": "we-admin-blog/templates/menus/item.hbs"
+            },
+            isEmpty: false,
+            arity: 0,
+            cachedFragment: null,
+            hasRendered: false,
+            buildFragment: function buildFragment(dom) {
+              var el0 = dom.createDocumentFragment();
+              var el1 = dom.createTextNode("          ");
+              dom.appendChild(el0, el1);
+              var el1 = dom.createElement("h4");
+              dom.setAttribute(el1, "class", "modal-title");
+              var el2 = dom.createTextNode("\n            ");
+              dom.appendChild(el1, el2);
+              var el2 = dom.createElement("i");
+              dom.setAttribute(el2, "class", "glyphicon glyphicon-link");
+              dom.appendChild(el1, el2);
+              var el2 = dom.createTextNode("\n            Editar link \"");
+              dom.appendChild(el1, el2);
+              var el2 = dom.createComment("");
+              dom.appendChild(el1, el2);
+              var el2 = dom.createTextNode("\"\n          ");
+              dom.appendChild(el1, el2);
+              dom.appendChild(el0, el1);
+              var el1 = dom.createTextNode("\n");
+              dom.appendChild(el0, el1);
+              return el0;
+            },
+            buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+              var morphs = new Array(1);
+              morphs[0] = dom.createMorphAt(dom.childAt(fragment, [1]), 3, 3);
+              return morphs;
+            },
+            statements: [["content", "model.editingRecord.text", ["loc", [null, [39, 25], [39, 53]]]]],
+            locals: [],
+            templates: []
+          };
+        })();
+        var child1 = (function () {
+          return {
+            meta: {
+              "fragmentReason": false,
+              "revision": "Ember@2.6.2",
+              "loc": {
+                "source": null,
+                "start": {
+                  "line": 41,
+                  "column": 8
+                },
+                "end": {
+                  "line": 46,
+                  "column": 8
+                }
+              },
+              "moduleName": "we-admin-blog/templates/menus/item.hbs"
+            },
+            isEmpty: false,
+            arity: 0,
+            cachedFragment: null,
+            hasRendered: false,
+            buildFragment: function buildFragment(dom) {
+              var el0 = dom.createDocumentFragment();
+              var el1 = dom.createTextNode("          ");
+              dom.appendChild(el0, el1);
+              var el1 = dom.createElement("h4");
+              dom.setAttribute(el1, "class", "modal-title");
+              var el2 = dom.createTextNode("\n            ");
+              dom.appendChild(el1, el2);
+              var el2 = dom.createElement("i");
+              dom.setAttribute(el2, "class", "glyphicon glyphicon-link");
+              dom.appendChild(el1, el2);
+              var el2 = dom.createTextNode("\n            Criar link\n          ");
+              dom.appendChild(el1, el2);
+              dom.appendChild(el0, el1);
+              var el1 = dom.createTextNode("\n");
+              dom.appendChild(el0, el1);
+              return el0;
+            },
+            buildRenderNodes: function buildRenderNodes() {
+              return [];
+            },
+            statements: [],
+            locals: [],
+            templates: []
+          };
+        })();
+        return {
+          meta: {
+            "fragmentReason": false,
+            "revision": "Ember@2.6.2",
+            "loc": {
+              "source": null,
+              "start": {
+                "line": 35,
+                "column": 6
+              },
+              "end": {
+                "line": 47,
+                "column": 6
+              }
+            },
+            "moduleName": "we-admin-blog/templates/menus/item.hbs"
+          },
+          isEmpty: false,
+          arity: 0,
+          cachedFragment: null,
+          hasRendered: false,
+          buildFragment: function buildFragment(dom) {
+            var el0 = dom.createDocumentFragment();
+            var el1 = dom.createComment("");
+            dom.appendChild(el0, el1);
+            return el0;
+          },
+          buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+            var morphs = new Array(1);
+            morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+            dom.insertBoundary(fragment, 0);
+            dom.insertBoundary(fragment, null);
+            return morphs;
+          },
+          statements: [["block", "if", [["get", "model.editingRecord.id", ["loc", [null, [36, 14], [36, 36]]]]], [], 0, 1, ["loc", [null, [36, 8], [46, 15]]]]],
+          locals: [],
+          templates: [child0, child1]
+        };
+      })();
+      var child1 = (function () {
+        return {
+          meta: {
+            "fragmentReason": false,
+            "revision": "Ember@2.6.2",
+            "loc": {
+              "source": null,
+              "start": {
+                "line": 48,
+                "column": 6
+              },
+              "end": {
+                "line": 50,
+                "column": 6
+              }
+            },
+            "moduleName": "we-admin-blog/templates/menus/item.hbs"
+          },
+          isEmpty: false,
+          arity: 0,
+          cachedFragment: null,
+          hasRendered: false,
+          buildFragment: function buildFragment(dom) {
+            var el0 = dom.createDocumentFragment();
+            var el1 = dom.createTextNode("        ");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createComment("");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createTextNode("\n");
+            dom.appendChild(el0, el1);
+            return el0;
+          },
+          buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+            var morphs = new Array(1);
+            morphs[0] = dom.createMorphAt(fragment, 1, 1, contextualElement);
+            return morphs;
+          },
+          statements: [["inline", "partial", ["links/form"], [], ["loc", [null, [49, 8], [49, 32]]]]],
+          locals: [],
+          templates: []
+        };
+      })();
+      var child2 = (function () {
+        var child0 = (function () {
+          return {
+            meta: {
+              "fragmentReason": false,
+              "revision": "Ember@2.6.2",
+              "loc": {
+                "source": null,
+                "start": {
+                  "line": 52,
+                  "column": 8
+                },
+                "end": {
+                  "line": 52,
+                  "column": 74
+                }
+              },
+              "moduleName": "we-admin-blog/templates/menus/item.hbs"
+            },
+            isEmpty: false,
+            arity: 0,
+            cachedFragment: null,
+            hasRendered: false,
+            buildFragment: function buildFragment(dom) {
+              var el0 = dom.createDocumentFragment();
+              var el1 = dom.createTextNode("Cancelar");
+              dom.appendChild(el0, el1);
+              return el0;
+            },
+            buildRenderNodes: function buildRenderNodes() {
+              return [];
+            },
+            statements: [],
+            locals: [],
+            templates: []
+          };
+        })();
+        var child1 = (function () {
+          return {
+            meta: {
+              "fragmentReason": false,
+              "revision": "Ember@2.6.2",
+              "loc": {
+                "source": null,
+                "start": {
+                  "line": 53,
+                  "column": 8
+                },
+                "end": {
+                  "line": 53,
+                  "column": 73
+                }
+              },
+              "moduleName": "we-admin-blog/templates/menus/item.hbs"
+            },
+            isEmpty: false,
+            arity: 0,
+            cachedFragment: null,
+            hasRendered: false,
+            buildFragment: function buildFragment(dom) {
+              var el0 = dom.createDocumentFragment();
+              var el1 = dom.createTextNode("Salvar");
+              dom.appendChild(el0, el1);
+              return el0;
+            },
+            buildRenderNodes: function buildRenderNodes() {
+              return [];
+            },
+            statements: [],
+            locals: [],
+            templates: []
+          };
+        })();
+        return {
+          meta: {
+            "fragmentReason": false,
+            "revision": "Ember@2.6.2",
+            "loc": {
+              "source": null,
+              "start": {
+                "line": 51,
+                "column": 6
+              },
+              "end": {
+                "line": 54,
+                "column": 6
+              }
+            },
+            "moduleName": "we-admin-blog/templates/menus/item.hbs"
+          },
+          isEmpty: false,
+          arity: 1,
+          cachedFragment: null,
+          hasRendered: false,
+          buildFragment: function buildFragment(dom) {
+            var el0 = dom.createDocumentFragment();
+            var el1 = dom.createTextNode("        ");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createComment("");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createTextNode("\n        ");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createComment("");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createTextNode("\n");
+            dom.appendChild(el0, el1);
+            return el0;
+          },
+          buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+            var morphs = new Array(2);
+            morphs[0] = dom.createMorphAt(fragment, 1, 1, contextualElement);
+            morphs[1] = dom.createMorphAt(fragment, 3, 3, contextualElement);
+            return morphs;
+          },
+          statements: [["block", "bs-button", [], ["onClick", ["subexpr", "action", [["get", "modal.close", ["loc", [null, [52, 37], [52, 48]]]]], [], ["loc", [null, [52, 29], [52, 49]]]], "type", "default"], 0, null, ["loc", [null, [52, 8], [52, 88]]]], ["block", "bs-button", [], ["onClick", ["subexpr", "action", [["get", "modal.submit", ["loc", [null, [53, 37], [53, 49]]]]], [], ["loc", [null, [53, 29], [53, 50]]]], "type", "primary"], 1, null, ["loc", [null, [53, 8], [53, 87]]]]],
+          locals: ["footer"],
+          templates: [child0, child1]
+        };
+      })();
+      return {
+        meta: {
+          "fragmentReason": false,
+          "revision": "Ember@2.6.2",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 31,
+              "column": 4
+            },
+            "end": {
+              "line": 55,
+              "column": 4
+            }
+          },
+          "moduleName": "we-admin-blog/templates/menus/item.hbs"
+        },
+        isEmpty: false,
+        arity: 1,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var morphs = new Array(3);
+          morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+          morphs[1] = dom.createMorphAt(fragment, 1, 1, contextualElement);
+          morphs[2] = dom.createMorphAt(fragment, 2, 2, contextualElement);
+          dom.insertBoundary(fragment, 0);
+          dom.insertBoundary(fragment, null);
+          return morphs;
+        },
+        statements: [["block", "modal.header", [], [], 0, null, ["loc", [null, [35, 6], [47, 23]]]], ["block", "modal.body", [], [], 1, null, ["loc", [null, [48, 6], [50, 21]]]], ["block", "modal.footer", [], [], 2, null, ["loc", [null, [51, 6], [54, 23]]]]],
+        locals: ["modal"],
+        templates: [child0, child1, child2]
+      };
+    })();
+    return {
+      meta: {
+        "fragmentReason": {
+          "name": "missing-wrapper",
+          "problems": ["multiple-nodes"]
+        },
+        "revision": "Ember@2.6.2",
+        "loc": {
+          "source": null,
+          "start": {
+            "line": 1,
+            "column": 0
+          },
+          "end": {
+            "line": 57,
+            "column": 6
+          }
+        },
+        "moduleName": "we-admin-blog/templates/menus/item.hbs"
+      },
+      isEmpty: false,
+      arity: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      buildFragment: function buildFragment(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createElement("div");
+        dom.setAttribute(el1, "class", "menu-form-area");
+        var el2 = dom.createComment("");
+        dom.appendChild(el1, el2);
+        dom.appendChild(el0, el1);
+        var el1 = dom.createTextNode("\n");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createElement("div");
+        dom.setAttribute(el1, "class", "menu-links");
+        var el2 = dom.createTextNode("\n  ");
+        dom.appendChild(el1, el2);
+        var el2 = dom.createElement("h2");
+        var el3 = dom.createTextNode("Links");
+        dom.appendChild(el2, el3);
+        dom.appendChild(el1, el2);
+        var el2 = dom.createTextNode("\n  ");
+        dom.appendChild(el1, el2);
+        var el2 = dom.createElement("div");
+        dom.setAttribute(el2, "class", "menu-links-actions");
+        var el3 = dom.createTextNode("\n    ");
+        dom.appendChild(el2, el3);
+        var el3 = dom.createElement("button");
+        dom.setAttribute(el3, "class", "btn btn-default");
+        var el4 = dom.createTextNode("\n      ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createElement("i");
+        dom.setAttribute(el4, "class", "glyphicon glyphicon-plus");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode(" Add link\n    ");
+        dom.appendChild(el3, el4);
+        dom.appendChild(el2, el3);
+        var el3 = dom.createTextNode("\n");
+        dom.appendChild(el2, el3);
+        var el3 = dom.createComment("");
+        dom.appendChild(el2, el3);
+        var el3 = dom.createTextNode("  ");
+        dom.appendChild(el2, el3);
+        dom.appendChild(el1, el2);
+        var el2 = dom.createTextNode("\n  ");
+        dom.appendChild(el1, el2);
+        var el2 = dom.createElement("div");
+        var el3 = dom.createTextNode("\n");
+        dom.appendChild(el2, el3);
+        var el3 = dom.createComment("");
+        dom.appendChild(el2, el3);
+        var el3 = dom.createTextNode("  ");
+        dom.appendChild(el2, el3);
+        dom.appendChild(el1, el2);
+        var el2 = dom.createTextNode("\n  ");
+        dom.appendChild(el1, el2);
+        var el2 = dom.createElement("div");
+        dom.setAttribute(el2, "class", "menu-links-form");
+        var el3 = dom.createTextNode("\n");
+        dom.appendChild(el2, el3);
+        var el3 = dom.createComment("");
+        dom.appendChild(el2, el3);
+        var el3 = dom.createTextNode("  ");
+        dom.appendChild(el2, el3);
+        dom.appendChild(el1, el2);
+        var el2 = dom.createTextNode("\n");
+        dom.appendChild(el1, el2);
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+        var element2 = dom.childAt(fragment, [2]);
+        var element3 = dom.childAt(element2, [3]);
+        var element4 = dom.childAt(element3, [1]);
+        var morphs = new Array(5);
+        morphs[0] = dom.createMorphAt(dom.childAt(fragment, [0]), 0, 0);
+        morphs[1] = dom.createElementMorph(element4);
+        morphs[2] = dom.createMorphAt(element3, 3, 3);
+        morphs[3] = dom.createMorphAt(dom.childAt(element2, [5]), 1, 1);
+        morphs[4] = dom.createMorphAt(dom.childAt(element2, [7]), 1, 1);
+        return morphs;
+      },
+      statements: [["inline", "partial", ["menus/form"], [], ["loc", [null, [1, 28], [1, 52]]]], ["element", "action", ["openLinkForm"], [], ["loc", [null, [5, 36], [5, 61]]]], ["block", "if", [["get", "record.sorted", ["loc", [null, [8, 10], [8, 23]]]]], [], 0, null, ["loc", [null, [8, 4], [10, 11]]]], ["block", "sortable-group", [], ["tagName", "ul", "class", "list-group", "onChange", "reorderItems"], 1, null, ["loc", [null, [13, 4], [28, 23]]]], ["block", "bs-modal", [], ["open", ["subexpr", "@mut", [["get", "model.editingRecord", ["loc", [null, [32, 11], [32, 30]]]]], [], []], "onHidden", ["subexpr", "action", ["onCloseLinkEditModal"], [], ["loc", [null, [33, 15], [33, 46]]]]], 2, null, ["loc", [null, [31, 4], [55, 17]]]]],
+      locals: [],
+      templates: [child0, child1, child2]
+    };
+  })());
+});
+define("we-admin-blog/templates/menus/list-item-actions", ["exports"], function (exports) {
+  exports["default"] = Ember.HTMLBars.template((function () {
+    var child0 = (function () {
+      return {
+        meta: {
+          "fragmentReason": {
+            "name": "missing-wrapper",
+            "problems": ["wrong-type"]
+          },
+          "revision": "Ember@2.6.2",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 1,
+              "column": 0
+            },
+            "end": {
+              "line": 1,
+              "column": 76
+            }
+          },
+          "moduleName": "we-admin-blog/templates/menus/list-item-actions.hbs"
+        },
+        isEmpty: false,
+        arity: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createTextNode("Ver/editar");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes() {
+          return [];
+        },
+        statements: [],
+        locals: [],
+        templates: []
+      };
+    })();
+    return {
+      meta: {
+        "fragmentReason": {
+          "name": "missing-wrapper",
+          "problems": ["wrong-type", "multiple-nodes"]
+        },
+        "revision": "Ember@2.6.2",
+        "loc": {
+          "source": null,
+          "start": {
+            "line": 1,
+            "column": 0
+          },
+          "end": {
+            "line": 4,
+            "column": 9
+          }
+        },
+        "moduleName": "we-admin-blog/templates/menus/list-item-actions.hbs"
+      },
+      isEmpty: false,
+      arity: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      buildFragment: function buildFragment(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createComment("");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createTextNode("\n");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createElement("button");
+        dom.setAttribute(el1, "type", "button");
+        dom.setAttribute(el1, "class", "btn btn-default btn-sm");
+        var el2 = dom.createTextNode("\n  Deletar\n");
+        dom.appendChild(el1, el2);
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+        var element0 = dom.childAt(fragment, [2]);
+        var morphs = new Array(2);
+        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+        morphs[1] = dom.createElementMorph(element0);
+        dom.insertBoundary(fragment, 0);
+        return morphs;
+      },
+      statements: [["block", "link-to", ["menus.item", ["get", "record.id", ["loc", [null, [1, 24], [1, 33]]]]], ["class", "btn btn-default btn-sm"], 0, null, ["loc", [null, [1, 0], [1, 88]]]], ["element", "action", ["deleteRecord", ["get", "record", ["loc", [null, [2, 32], [2, 38]]]]], [], ["loc", [null, [2, 8], [2, 40]]]]],
+      locals: [],
+      templates: [child0]
     };
   })());
 });
@@ -8673,9 +10249,9 @@ define("we-admin-blog/templates/partials/sidebar-menu", ["exports"], function (e
             var el1 = dom.createTextNode("          ");
             dom.appendChild(el0, el1);
             var el1 = dom.createElement("i");
-            dom.setAttribute(el1, "class", "fa fa-random");
+            dom.setAttribute(el1, "class", "fa fa-bars");
             dom.appendChild(el0, el1);
-            var el1 = dom.createTextNode(" Url alias\n");
+            var el1 = dom.createTextNode(" Menus\n");
             dom.appendChild(el0, el1);
             return el0;
           },
@@ -8700,6 +10276,47 @@ define("we-admin-blog/templates/partials/sidebar-menu", ["exports"], function (e
               },
               "end": {
                 "line": 17,
+                "column": 8
+              }
+            },
+            "moduleName": "we-admin-blog/templates/partials/sidebar-menu.hbs"
+          },
+          isEmpty: false,
+          arity: 0,
+          cachedFragment: null,
+          hasRendered: false,
+          buildFragment: function buildFragment(dom) {
+            var el0 = dom.createDocumentFragment();
+            var el1 = dom.createTextNode("          ");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createElement("i");
+            dom.setAttribute(el1, "class", "fa fa-random");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createTextNode(" Url alias\n");
+            dom.appendChild(el0, el1);
+            return el0;
+          },
+          buildRenderNodes: function buildRenderNodes() {
+            return [];
+          },
+          statements: [],
+          locals: [],
+          templates: []
+        };
+      })();
+      var child3 = (function () {
+        return {
+          meta: {
+            "fragmentReason": false,
+            "revision": "Ember@2.6.2",
+            "loc": {
+              "source": null,
+              "start": {
+                "line": 20,
+                "column": 8
+              },
+              "end": {
+                "line": 22,
                 "column": 8
               }
             },
@@ -8739,7 +10356,7 @@ define("we-admin-blog/templates/partials/sidebar-menu", ["exports"], function (e
               "column": 4
             },
             "end": {
-              "line": 19,
+              "line": 24,
               "column": 4
             }
           },
@@ -8781,20 +10398,31 @@ define("we-admin-blog/templates/partials/sidebar-menu", ["exports"], function (e
           var el2 = dom.createTextNode("      ");
           dom.appendChild(el1, el2);
           dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n      ");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createElement("li");
+          var el2 = dom.createTextNode("\n");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createComment("");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createTextNode("      ");
+          dom.appendChild(el1, el2);
+          dom.appendChild(el0, el1);
           var el1 = dom.createTextNode("\n");
           dom.appendChild(el0, el1);
           return el0;
         },
         buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-          var morphs = new Array(3);
+          var morphs = new Array(4);
           morphs[0] = dom.createMorphAt(dom.childAt(fragment, [1]), 1, 1);
           morphs[1] = dom.createMorphAt(dom.childAt(fragment, [3]), 1, 1);
           morphs[2] = dom.createMorphAt(dom.childAt(fragment, [5]), 1, 1);
+          morphs[3] = dom.createMorphAt(dom.childAt(fragment, [7]), 1, 1);
           return morphs;
         },
-        statements: [["block", "link-to", ["articles.index"], [], 0, null, ["loc", [null, [5, 8], [7, 20]]]], ["block", "link-to", ["url-alia.index"], [], 1, null, ["loc", [null, [10, 8], [12, 20]]]], ["block", "link-to", ["users.index"], [], 2, null, ["loc", [null, [15, 8], [17, 20]]]]],
+        statements: [["block", "link-to", ["articles.index"], [], 0, null, ["loc", [null, [5, 8], [7, 20]]]], ["block", "link-to", ["menus.index"], [], 1, null, ["loc", [null, [10, 8], [12, 20]]]], ["block", "link-to", ["url-alia.index"], [], 2, null, ["loc", [null, [15, 8], [17, 20]]]], ["block", "link-to", ["users.index"], [], 3, null, ["loc", [null, [20, 8], [22, 20]]]]],
         locals: [],
-        templates: [child0, child1, child2]
+        templates: [child0, child1, child2, child3]
       };
     })();
     return {
@@ -8810,7 +10438,7 @@ define("we-admin-blog/templates/partials/sidebar-menu", ["exports"], function (e
             "column": 0
           },
           "end": {
-            "line": 21,
+            "line": 26,
             "column": 6
           }
         },
@@ -8846,7 +10474,7 @@ define("we-admin-blog/templates/partials/sidebar-menu", ["exports"], function (e
         morphs[0] = dom.createMorphAt(dom.childAt(fragment, [0, 1]), 1, 1);
         return morphs;
       },
-      statements: [["block", "ember-metismenu", [], ["classNames", "nav"], 0, null, ["loc", [null, [3, 4], [19, 24]]]]],
+      statements: [["block", "ember-metismenu", [], ["classNames", "nav"], 0, null, ["loc", [null, [3, 4], [24, 24]]]]],
       locals: [],
       templates: [child0]
     };
@@ -9565,7 +11193,7 @@ define("we-admin-blog/templates/url-alia/form", ["exports"], function (exports) 
         var el4 = dom.createElement("i");
         dom.setAttribute(el4, "class", "fa fa-step-backward");
         dom.appendChild(el3, el4);
-        var el4 = dom.createTextNode("\n      Cancelar\n    ");
+        var el4 = dom.createTextNode("\n      Url alias\n    ");
         dom.appendChild(el3, el4);
         dom.appendChild(el2, el3);
         var el3 = dom.createTextNode("\n  ");
@@ -9697,7 +11325,7 @@ define("we-admin-blog/templates/url-alia/index", ["exports"], function (exports)
         morphs[1] = dom.createMorphAt(fragment, 6, 6, contextualElement);
         return morphs;
       },
-      statements: [["block", "link-to", ["url-alia.create"], ["class", "btn btn-default"], 0, null, ["loc", [null, [4, 2], [6, 14]]]], ["inline", "conteudos-table", [], ["data", ["subexpr", "@mut", [["get", "model.records", ["loc", [null, [10, 23], [10, 36]]]]], [], []], "columns", ["subexpr", "@mut", [["get", "model.columns", ["loc", [null, [10, 45], [10, 58]]]]], [], []], "pageSize", 25, "useFilteringByColumns", false], ["loc", [null, [10, 0], [10, 100]]]]],
+      statements: [["block", "link-to", ["url-alia.create"], ["class", "btn btn-default"], 0, null, ["loc", [null, [4, 2], [6, 14]]]], ["inline", "conteudos-table", [], ["data", ["subexpr", "@mut", [["get", "model.records", ["loc", [null, [10, 23], [10, 36]]]]], [], []], "columns", ["subexpr", "@mut", [["get", "model.columns", ["loc", [null, [10, 45], [10, 58]]]]], [], []], "pageSize", 25, "useFilteringByColumns", false, "deleteRecord", "deleteRecord"], ["loc", [null, [10, 0], [10, 128]]]]],
       locals: [],
       templates: [child0]
     };
@@ -10095,7 +11723,7 @@ define("we-admin-blog/templates/users/index", ["exports"], function (exports) {
           var el1 = dom.createElement("i");
           dom.setAttribute(el1, "class", "glyphicon glyphicon-plus");
           dom.appendChild(el0, el1);
-          var el1 = dom.createTextNode(" Registrar usuário\n");
+          var el1 = dom.createTextNode(" Registrar\n");
           dom.appendChild(el0, el1);
           return el0;
         },
@@ -10720,7 +12348,7 @@ catch(err) {
 /* jshint ignore:start */
 
 if (!runningTests) {
-  require("we-admin-blog/app")["default"].create({"name":"we-admin-blog","version":"0.0.0+c476bdb4"});
+  require("we-admin-blog/app")["default"].create({"name":"we-admin-blog","version":"0.0.0+047e867e"});
 }
 
 /* jshint ignore:end */

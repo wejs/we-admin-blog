@@ -1,0 +1,57 @@
+<div class="menu-form-area">{{partial 'menus/form'}}</div>
+<div class="menu-links">
+  <h2>Links</h2>
+  <div class="menu-links-actions">
+    <button class="btn btn-default" {{action 'openLinkForm'}}>
+      <i class="glyphicon glyphicon-plus"></i> Add link
+    </button>
+    {{#if record.sorted}}
+      <button {{action 'saveLinksOrder' menu}} type="button"></button>
+    {{/if}}
+  </div>
+  <div>
+    {{#sortable-group tagName="ul" class="list-group" onChange="reorderItems" as |group|}}
+      {{#each model.record.links as |item|}}
+        {{#unless item.isNew}}
+          {{#sortable-item tagName="li" class="list-group-item" model=item group=group handle=".handle"}}
+            <button type="button" class="handle btn btn-default">
+              <i class="glyphicon glyphicon-resize-vertical"> </i>
+            </button>
+            {{item.text}} - <span class="label label-default">{{item.href}}</span>
+
+            <button class="btn btn-sm btn-default" {{action 'openLinkForm' item}}>
+              <i class="glyphicon glyphicon-pencil"></i> Ediar
+            </button>
+          {{/sortable-item}}
+        {{/unless}}
+      {{/each}}
+    {{/sortable-group}}
+  </div>
+  <div class="menu-links-form">
+    {{#bs-modal
+      open=model.editingRecord
+      onHidden=(action "onCloseLinkEditModal") as |modal|
+    }}
+      {{#modal.header}}
+        {{#if model.editingRecord.id}}
+          <h4 class="modal-title">
+            <i class="glyphicon glyphicon-link"></i>
+            Editar link "{{model.editingRecord.text}}"
+          </h4>
+        {{else}}
+          <h4 class="modal-title">
+            <i class="glyphicon glyphicon-link"></i>
+            Criar link
+          </h4>
+        {{/if}}
+      {{/modal.header}}
+      {{#modal.body}}
+        {{partial 'links/form'}}
+      {{/modal.body}}
+      {{#modal.footer as |footer|}}
+        {{#bs-button onClick=(action modal.close) type="default"}}Cancelar{{/bs-button}}
+        {{#bs-button onClick=(action modal.submit) type="primary"}}Salvar{{/bs-button}}
+      {{/modal.footer}}
+    {{/bs-modal}}
+  </div>
+</div>

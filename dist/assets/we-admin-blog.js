@@ -1063,7 +1063,7 @@ define('we-admin-blog/models/link', ['exports', 'ember-data'], function (exports
     })
   });
 });
-define('we-admin-blog/models/menu', ['exports', 'ember-data'], function (exports, _emberData) {
+define('we-admin-blog/models/menu', ['exports', 'ember-data', 'ember'], function (exports, _emberData, _ember) {
   exports['default'] = _emberData['default'].Model.extend({
     name: _emberData['default'].attr('string'),
     'class': _emberData['default'].attr('string'),
@@ -1071,7 +1071,9 @@ define('we-admin-blog/models/menu', ['exports', 'ember-data'], function (exports
     links: _emberData['default'].hasMany('link', {
       inverse: 'menu',
       async: true
-    })
+    }),
+    sortedLinks: _ember['default'].computed.sort('links', 'sortLinkDefinition'),
+    sortLinkDefinition: ['weight']
   });
 });
 define('we-admin-blog/models/term', ['exports', 'ember-data'], function (exports, _emberData) {
@@ -1452,8 +1454,10 @@ define('we-admin-blog/routes/menus/index', ['exports', 'ember', 'ember-simple-au
     }
   });
 });
-define('we-admin-blog/routes/menus/item', ['exports', 'ember', 'ember-simple-auth/mixins/authenticated-route-mixin'], function (exports, _ember, _emberSimpleAuthMixinsAuthenticatedRouteMixin) {
+define('we-admin-blog/routes/menus/item', ['exports', 'ember', 'ember-simple-auth/mixins/authenticated-route-mixin', 'we-admin-blog/config/environment'], function (exports, _ember, _emberSimpleAuthMixinsAuthenticatedRouteMixin, _weAdminBlogConfigEnvironment) {
   exports['default'] = _ember['default'].Route.extend(_emberSimpleAuthMixinsAuthenticatedRouteMixin['default'], {
+    session: _ember['default'].inject.service('session'),
+
     model: function model(params) {
       return _ember['default'].RSVP.hash({
         record: this.get('store').findRecord('menu', params.id),
@@ -1470,12 +1474,44 @@ define('we-admin-blog/routes/menus/item', ['exports', 'ember', 'ember-simple-aut
     },
     actions: {
       reorderItems: function reorderItems(itemModels, draggedModel) {
-        this.set('currentModel.record.links', itemModels);
+        itemModels.forEach(function (item, i) {
+          item.set('weight', i);
+        });
         this.set('currentModel.justDragged', draggedModel);
         this.set('currentModel.record.sorted', true);
       },
-      saveLinksOrder: function saveLinksOrder(menu) {
-        console.log('todo!', menu);
+      saveLinksOrder: function saveLinksOrder(links) {
+        var _this = this;
+
+        var menuId = this.get('currentModel.record.id'),
+            data = {};
+
+        var length = links.get('length');
+        for (var i = 0; i < length; i++) {
+          var link = links.objectAt(i);
+          // set values:
+          data['link-' + link.get('id') + '-weight'] = link.get('weight');
+          data['link-' + link.get('id') + '-id'] = link.get('id');
+          data['link-' + link.get('id') + '-depth'] = 0;
+          data['link-' + link.get('id') + '-parent'] = null;
+        }
+
+        var headers = { Accept: 'application/vnd.api+json' },
+            accessToken = this.get('session.session.authenticated.access_token');
+
+        if (accessToken) {
+          headers.Authorization = 'Basic ' + accessToken;
+        }
+
+        _ember['default'].$.ajax({
+          url: _weAdminBlogConfigEnvironment['default'].API_HOST + '/admin/menu/' + menuId + '/sort-links',
+          type: 'POST',
+          data: JSON.stringify(data)
+        }).done(function () {
+          _this.get('notifications').success('Ordem salva');
+        }).fail(function () {
+          _this.get('notifications').error('Erro ao salvar a ordem dos links');
+        });
       },
       openLinkForm: function openLinkForm(link) {
         if (!link) {
@@ -1500,10 +1536,10 @@ define('we-admin-blog/routes/menus/item', ['exports', 'ember', 'ember-simple-aut
         return null;
       },
       saveLink: function saveLink(link, modal) {
-        var _this = this;
+        var _this2 = this;
 
         link.save().then(function (r) {
-          _this.get('notifications').success('Link salvo');
+          _this2.get('notifications').success('Link salvo');
           return r;
         }).then(modal.close);
       }
@@ -8400,6 +8436,9 @@ define("we-admin-blog/templates/menus/item", ["exports"], function (exports) {
           dom.appendChild(el0, el1);
           var el1 = dom.createElement("button");
           dom.setAttribute(el1, "type", "button");
+          dom.setAttribute(el1, "class", "btn btn-primary");
+          var el2 = dom.createTextNode("Salvar ordem");
+          dom.appendChild(el1, el2);
           dom.appendChild(el0, el1);
           var el1 = dom.createTextNode("\n");
           dom.appendChild(el0, el1);
@@ -8411,7 +8450,7 @@ define("we-admin-blog/templates/menus/item", ["exports"], function (exports) {
           morphs[0] = dom.createElementMorph(element1);
           return morphs;
         },
-        statements: [["element", "action", ["saveLinksOrder", ["get", "menu", ["loc", [null, [9, 40], [9, 44]]]]], [], ["loc", [null, [9, 14], [9, 46]]]]],
+        statements: [["element", "action", ["saveLinksOrder", ["get", "model.record.sortedLinks", ["loc", [null, [9, 40], [9, 64]]]]], [], ["loc", [null, [9, 14], [9, 66]]]]],
         locals: [],
         templates: []
       };
@@ -8610,7 +8649,7 @@ define("we-admin-blog/templates/menus/item", ["exports"], function (exports) {
           dom.insertBoundary(fragment, null);
           return morphs;
         },
-        statements: [["block", "each", [["get", "model.record.links", ["loc", [null, [14, 14], [14, 32]]]]], [], 0, null, ["loc", [null, [14, 6], [27, 15]]]]],
+        statements: [["block", "each", [["get", "model.record.sortedLinks", ["loc", [null, [14, 14], [14, 38]]]]], [], 0, null, ["loc", [null, [14, 6], [27, 15]]]]],
         locals: ["group"],
         templates: [child0]
       };
@@ -9066,7 +9105,7 @@ define("we-admin-blog/templates/menus/item", ["exports"], function (exports) {
         morphs[4] = dom.createMorphAt(dom.childAt(element2, [7]), 1, 1);
         return morphs;
       },
-      statements: [["inline", "partial", ["menus/form"], [], ["loc", [null, [1, 28], [1, 52]]]], ["element", "action", ["openLinkForm"], [], ["loc", [null, [5, 36], [5, 61]]]], ["block", "if", [["get", "record.sorted", ["loc", [null, [8, 10], [8, 23]]]]], [], 0, null, ["loc", [null, [8, 4], [10, 11]]]], ["block", "sortable-group", [], ["tagName", "ul", "class", "list-group", "onChange", "reorderItems"], 1, null, ["loc", [null, [13, 4], [28, 23]]]], ["block", "bs-modal", [], ["open", ["subexpr", "@mut", [["get", "model.editingRecord", ["loc", [null, [32, 11], [32, 30]]]]], [], []], "onHidden", ["subexpr", "action", ["onCloseLinkEditModal"], [], ["loc", [null, [33, 15], [33, 46]]]]], 2, null, ["loc", [null, [31, 4], [55, 17]]]]],
+      statements: [["inline", "partial", ["menus/form"], [], ["loc", [null, [1, 28], [1, 52]]]], ["element", "action", ["openLinkForm"], [], ["loc", [null, [5, 36], [5, 61]]]], ["block", "if", [["get", "model.record.sorted", ["loc", [null, [8, 10], [8, 29]]]]], [], 0, null, ["loc", [null, [8, 4], [10, 11]]]], ["block", "sortable-group", [], ["tagName", "ul", "class", "list-group", "onChange", "reorderItems"], 1, null, ["loc", [null, [13, 4], [28, 23]]]], ["block", "bs-modal", [], ["open", ["subexpr", "@mut", [["get", "model.editingRecord", ["loc", [null, [32, 11], [32, 30]]]]], [], []], "onHidden", ["subexpr", "action", ["onCloseLinkEditModal"], [], ["loc", [null, [33, 15], [33, 46]]]]], 2, null, ["loc", [null, [31, 4], [55, 17]]]]],
       locals: [],
       templates: [child0, child1, child2]
     };

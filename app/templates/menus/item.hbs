@@ -5,13 +5,13 @@
     <button class="btn btn-default" {{action 'openLinkForm'}}>
       <i class="glyphicon glyphicon-plus"></i> Add link
     </button>
-    {{#if record.sorted}}
-      <button {{action 'saveLinksOrder' menu}} type="button"></button>
+    {{#if model.record.sorted}}
+      <button {{action 'saveLinksOrder' model.record.sortedLinks}} type="button" class="btn btn-primary">Salvar ordem</button>
     {{/if}}
   </div>
   <div>
     {{#sortable-group tagName="ul" class="list-group" onChange="reorderItems" as |group|}}
-      {{#each model.record.links as |item|}}
+      {{#each model.record.sortedLinks as |item|}}
         {{#unless item.isNew}}
           {{#sortable-item tagName="li" class="list-group-item" model=item group=group handle=".handle"}}
             <button type="button" class="handle btn btn-default">

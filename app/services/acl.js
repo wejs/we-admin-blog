@@ -1,6 +1,12 @@
 import Ember from 'ember';
 import ENV from "../config/environment";
 
+const systemRoles = [
+  'administrator',
+  'authenticated',
+  'unAuthenticated'
+];
+
 export default Ember.Service.extend({
   session: Ember.inject.service('session'),
   /**
@@ -53,13 +59,32 @@ export default Ember.Service.extend({
     });
   },
   /**
-   * Request method to add one permission in role
+   * Get roles in list format
    *
-   * @param {String} roleName
-   * @param {String} permissionName
    * @return {Promise}
    */
-  addPermission(roleName, permissionName) {
+  getRolesArray() {
+    return this.getRoles()
+    .then( (data)=> {
+      const roles = Ember.A([]);
+
+      for (let name in data) {
+        if (systemRoles.indexOf(name) >-1 ) {
+          data[name].isSystemRole = true;
+        }
+
+        roles.push(data[name]);
+      }
+
+      return roles;
+    });
+  },
+  /**
+   * Get user roles
+   *
+   * @return {Promise}
+   */
+  getUserRoles(userId) {
     return new window.Promise( (resolve, reject)=> {
       let headers = { Accept: 'application/vnd.api+json' },
           accessToken = this.get('session.session.authenticated.access_token');
@@ -69,11 +94,46 @@ export default Ember.Service.extend({
       }
 
       Ember.$.ajax({
-        url: `${ENV.API_HOST}/acl/role/${roleName}/permissions/${permissionName}`,
-        type: 'POST',
+        url: `${ENV.API_HOST}/acl/user/${userId}/roles`,
+        type: 'GET',
         headers: headers
       })
-      .done(resolve)
+      .done( (data)=> {
+        resolve(data.data);
+        return null;
+      })
+      .fail(reject);
+    });
+  },
+  /**
+   * Update user roles
+   *
+   * @return {Promise}
+   */
+  updateUserRoles(roleNames, userId) {
+    return new window.Promise( (resolve, reject)=> {
+      let headers = { Accept: 'application/vnd.api+json' },
+          accessToken = this.get('session.session.authenticated.access_token');
+
+      if (accessToken) {
+        headers.Authorization = `Basic ${accessToken}`;
+      }
+
+      const data = { userRoles: roleNames };
+
+      Ember.$.ajax({
+        url: `${ENV.API_HOST}/acl/user/${userId}/roles`,
+        type: 'POST',
+        dataType: 'json',
+        contentType: "application/json; charset=utf-8",
+        data: JSON.stringify(data),
+        headers: headers
+      })
+      .done( (data)=> {
+        console.log('result>', data);
+        resolve(data.data);
+        return null;
+      })
       .fail(reject);
     });
   },
@@ -120,6 +180,7 @@ export default Ember.Service.extend({
       Ember.$.ajax({
         url: `${ENV.API_HOST}/acl/role`,
         type: 'POST',
+        dataType: 'json',
         data: role,
         headers: headers
       })
@@ -145,6 +206,7 @@ export default Ember.Service.extend({
       Ember.$.ajax({
         url: `${ENV.API_HOST}/acl/role`,
         type: 'POST',
+        dataType: 'json',
         data: role,
         headers: headers
       })

@@ -501,6 +501,59 @@ define('we-admin-blog/components/notification-message', ['exports', 'ember-cli-n
     icons: config.icons || 'font-awesome'
   });
 });
+define('we-admin-blog/components/role-permission-check', ['exports', 'ember'], function (exports, _ember) {
+  exports['default'] = _ember['default'].Component.extend({
+    roleName: null,
+    permissionName: null,
+    roles: null,
+    can: null,
+    isLoading: false,
+
+    attributeBindings: ['type'],
+    classNameBindings: ['can:active', 'isLoading:disabled'],
+
+    tagName: 'button',
+    type: 'button',
+
+    init: function init() {
+      this._super();
+
+      var roles = this.get('roles'),
+          permissionName = this.get('permissionName'),
+          roleName = this.get('roleName');
+
+      if (!roles[roleName] || !roles[roleName].permissions || roles[roleName].permissions.indexOf(permissionName) === -1) {
+        // dont have the permission
+        this.set('can', false);
+      } else {
+        // have the permission
+        this.set('can', true);
+      }
+    },
+    click: function click() {
+      this.set('isLoading', true);
+      this.toggleProperty('can');
+
+      if (this.get('can')) {
+        this.sendAction('addPermission', this.get('roleName'), this.get('permissionName'), this.requestDoneCallback.bind(this));
+      } else {
+        this.sendAction('removePermission', this.get('roleName'), this.get('permissionName'), this.requestDoneCallback.bind(this));
+      }
+    },
+    /**
+     * Callback for change permissions request
+     * Used for change loading status
+     */
+    requestDoneCallback: function requestDoneCallback() {
+      var _this = this;
+
+      // wait some time to show the loading image:
+      setTimeout(function () {
+        _this.set('isLoading', false);
+      }, 400);
+    }
+  });
+});
 define('we-admin-blog/components/sortable-group', ['exports', 'ember-sortable/components/sortable-group'], function (exports, _emberSortableComponentsSortableGroup) {
   exports['default'] = _emberSortableComponentsSortableGroup['default'];
 });
@@ -512,6 +565,59 @@ define('we-admin-blog/components/tinymce-editor', ['exports', 'ember-cli-tinymce
     enumerable: true,
     get: function get() {
       return _emberCliTinymceComponentsTinymceEditor['default'];
+    }
+  });
+});
+define('we-admin-blog/components/user-role-checkbox', ['exports', 'ember'], function (exports, _ember) {
+  exports['default'] = _ember['default'].Component.extend({
+    roleName: null,
+    user: null,
+    have: null,
+    isLoading: false,
+
+    attributeBindings: ['type'],
+    classNameBindings: ['have:active', 'isLoading:disabled'],
+
+    tagName: 'button',
+    type: 'button',
+
+    init: function init() {
+      this._super();
+
+      var roles = this.get('user.roles'),
+          roleName = this.get('roleName');
+
+      console.log(roles);
+
+      if (!roles || roles.indexOf(roleName) === -1) {
+        // dont have the role
+        this.set('have', false);
+      } else {
+        // have the role
+        this.set('have', true);
+      }
+    },
+    click: function click() {
+      this.set('isLoading', true);
+      this.toggleProperty('have');
+
+      if (this.get('have')) {
+        this.sendAction('addUserRole', this.get('roleName'), this.get('user'), this.requestDoneCallback.bind(this));
+      } else {
+        this.sendAction('removeUserRole', this.get('roleName'), this.get('user'), this.requestDoneCallback.bind(this));
+      }
+    },
+    /**
+     * Callback for set role requests
+     * Used for change loading status
+     */
+    requestDoneCallback: function requestDoneCallback() {
+      var _this = this;
+
+      // wait some time to show the loading image:
+      setTimeout(function () {
+        _this.set('isLoading', false);
+      }, 400);
     }
   });
 });
@@ -1060,7 +1166,9 @@ define('we-admin-blog/models/link', ['exports', 'ember-data'], function (exports
     menu: _emberData['default'].belongsTo('menu', {
       inverse: 'links',
       async: true
-    })
+    }),
+    createdAt: _emberData['default'].attr('date'),
+    updatedAt: _emberData['default'].attr('date')
   });
 });
 define('we-admin-blog/models/menu', ['exports', 'ember-data', 'ember'], function (exports, _emberData, _ember) {
@@ -1073,12 +1181,16 @@ define('we-admin-blog/models/menu', ['exports', 'ember-data', 'ember'], function
       async: true
     }),
     sortedLinks: _ember['default'].computed.sort('links', 'sortLinkDefinition'),
-    sortLinkDefinition: ['weight']
+    sortLinkDefinition: ['weight'],
+    createdAt: _emberData['default'].attr('date'),
+    updatedAt: _emberData['default'].attr('date')
   });
 });
 define('we-admin-blog/models/term', ['exports', 'ember-data'], function (exports, _emberData) {
   exports['default'] = _emberData['default'].Model.extend({
-    text: _emberData['default'].attr('string')
+    text: _emberData['default'].attr('string'),
+    createdAt: _emberData['default'].attr('date'),
+    updatedAt: _emberData['default'].attr('date')
   });
 });
 define('we-admin-blog/models/url-alia', ['exports', 'ember-data'], function (exports, _emberData) {
@@ -1151,6 +1263,9 @@ define('we-admin-blog/router', ['exports', 'ember', 'we-admin-blog/config/enviro
       this.route('create');
       this.route('item', { path: ':id' }, function () {});
     });
+
+    this.route('permissions');
+    this.route('roles');
 
     this.route('not-found', { path: '/*path' });
   });
@@ -1334,7 +1449,8 @@ define('we-admin-blog/routes/articles/index', ['exports', 'ember', 'ember-simple
         }, {
           propertyName: 'createdAt',
           filteredBy: 'createdAt',
-          title: 'Criado em'
+          title: 'Criado em',
+          template: 'partials/list-item-created-at'
         }, {
           propertyName: 'actions',
           disableSorting: true,
@@ -1442,7 +1558,8 @@ define('we-admin-blog/routes/menus/index', ['exports', 'ember', 'ember-simple-au
         }, {
           propertyName: 'createdAt',
           filteredBy: 'createdAt',
-          title: 'Criado em'
+          title: 'Criado em',
+          template: 'partials/list-item-created-at'
         }, {
           propertyName: 'actions',
           disableSorting: true,
@@ -1546,6 +1663,44 @@ define('we-admin-blog/routes/menus/item', ['exports', 'ember', 'ember-simple-aut
     }
   });
 });
+define('we-admin-blog/routes/permissions', ['exports', 'ember', 'ember-simple-auth/mixins/authenticated-route-mixin'], function (exports, _ember, _emberSimpleAuthMixinsAuthenticatedRouteMixin) {
+  exports['default'] = _ember['default'].Route.extend(_emberSimpleAuthMixinsAuthenticatedRouteMixin['default'], {
+    session: _ember['default'].inject.service('session'),
+    acl: _ember['default'].inject.service('acl'),
+
+    model: function model() {
+      return _ember['default'].RSVP.hash({
+        data: this.getPermissionsAndRoles()
+      });
+    },
+    afterModel: function afterModel(model) {
+      model.roleNames = Object.keys(model.data.roles);
+      model.permissionNames = Object.keys(model.data.permissions);
+    },
+    getPermissionsAndRoles: function getPermissionsAndRoles() {
+      return this.get('acl').getPermissionsAndRoles();
+    },
+
+    actions: {
+      addPermission: function addPermission(roleName, permissionName, cb) {
+        this.get('acl').addPermission(roleName, permissionName).then(function () {
+          cb();
+          return null;
+        })['catch'](function () {
+          cb();
+        });
+      },
+      removePermission: function removePermission(roleName, permissionName, cb) {
+        this.get('acl').removePermission(roleName, permissionName).then(function () {
+          cb();
+          return null;
+        })['catch'](function () {
+          cb();
+        });
+      }
+    }
+  });
+});
 define('we-admin-blog/routes/profile', ['exports', 'ember', 'ember-simple-auth/mixins/authenticated-route-mixin', 'we-admin-blog/config/environment'], function (exports, _ember, _emberSimpleAuthMixinsAuthenticatedRouteMixin, _weAdminBlogConfigEnvironment) {
   exports['default'] = _ember['default'].Route.extend(_emberSimpleAuthMixinsAuthenticatedRouteMixin['default'], {
     model: function model() {
@@ -1605,6 +1760,72 @@ define('we-admin-blog/routes/profile', ['exports', 'ember', 'ember-simple-auth/m
           _this2.send('queryError', err);
         });
       }
+    }
+  });
+});
+define('we-admin-blog/routes/roles', ['exports', 'ember', 'ember-simple-auth/mixins/authenticated-route-mixin'], function (exports, _ember, _emberSimpleAuthMixinsAuthenticatedRouteMixin) {
+
+  var systemRoles = ['administrator', 'authenticated', 'unAuthenticated'];
+
+  exports['default'] = _ember['default'].Route.extend(_emberSimpleAuthMixinsAuthenticatedRouteMixin['default'], {
+    session: _ember['default'].inject.service('session'),
+    acl: _ember['default'].inject.service('acl'),
+
+    model: function model() {
+      return _ember['default'].RSVP.hash({
+        data: this.get('acl').getRoles(),
+        roles: _ember['default'].A([]),
+        newRole: {}
+      });
+    },
+    afterModel: function afterModel(model) {
+      for (var _name in model.data) {
+        if (systemRoles.indexOf(_name) > -1) {
+          model.data[_name].isSystemRole = true;
+        }
+
+        model.roles.push(model.data[_name]);
+      }
+    },
+    actions: {
+      createRole: function createRole(role) {
+        var _this = this;
+
+        var roles = this.get('currentModel.data');
+        if (roles[role.name]) {
+          this.resetNewRole();
+          return;
+        }
+
+        this.get('acl').createRole(role).then(function () {
+          var rolesList = _this.get('currentModel.roles');
+          rolesList.pushObject(role);
+          roles[role.name] = role;
+          _this.resetNewRole();
+        })['catch'](function (err) {
+          console.log(err);
+        });
+      },
+      deleteRole: function deleteRole(role) {
+        var _this2 = this;
+
+        if (!confirm('Você tem certeza que deseja deletar esse perfil de usuário?')) {
+          return;
+        }
+
+        var roles = this.get('currentModel.data');
+
+        this.get('acl').deleteRole(role).then(function () {
+          var rolesList = _this2.get('currentModel.roles');
+          rolesList.removeObject(role);
+          delete roles[role.name];
+        })['catch'](function (err) {
+          console.log(err);
+        });
+      }
+    },
+    resetNewRole: function resetNewRole() {
+      this.set('currentModel.newRole', {});
     }
   });
 });
@@ -1686,7 +1907,8 @@ define('we-admin-blog/routes/url-alia/index', ['exports', 'ember', 'ember-simple
         }, {
           propertyName: 'createdAt',
           filteredBy: 'createdAt',
-          title: 'Criado em'
+          title: 'Criado em',
+          template: 'partials/list-item-created-at'
         }, {
           propertyName: 'actions',
           disableSorting: true,
@@ -1711,10 +1933,7 @@ define('we-admin-blog/routes/url-alia/item', ['exports', 'ember', 'ember-simple-
 });
 define('we-admin-blog/routes/user', ['exports', 'ember', 'ember-simple-auth/mixins/authenticated-route-mixin'], function (exports, _ember, _emberSimpleAuthMixinsAuthenticatedRouteMixin) {
   exports['default'] = _ember['default'].Route.extend(_emberSimpleAuthMixinsAuthenticatedRouteMixin['default'], {
-    settings: _ember['default'].inject.service('settings'),
-    model: function model() {
-      this.get('settings').set('currentOrganization', null);
-    }
+    settings: _ember['default'].inject.service('settings')
   });
 });
 define('we-admin-blog/routes/users/create', ['exports', 'ember', 'ember-simple-auth/mixins/authenticated-route-mixin'], function (exports, _ember, _emberSimpleAuthMixinsAuthenticatedRouteMixin) {
@@ -1767,10 +1986,12 @@ define('we-admin-blog/routes/users/index', ['exports', 'ember', 'ember-simple-au
 define('we-admin-blog/routes/users/item', ['exports', 'ember', 'ember-simple-auth/mixins/authenticated-route-mixin', 'we-admin-blog/config/environment'], function (exports, _ember, _emberSimpleAuthMixinsAuthenticatedRouteMixin, _weAdminBlogConfigEnvironment) {
   exports['default'] = _ember['default'].Route.extend(_emberSimpleAuthMixinsAuthenticatedRouteMixin['default'], {
     notifications: _ember['default'].inject.service('notification-messages'),
+    acl: _ember['default'].inject.service('acl'),
 
     model: function model(params) {
       return _ember['default'].RSVP.hash({
         user: this.get('store').findRecord('user', params.id),
+        roles: this.get('acl').getRolesArray(),
         newPassword: null,
         rNewPassword: null
       });
@@ -1839,6 +2060,39 @@ define('we-admin-blog/routes/users/item', ['exports', 'ember', 'ember-simple-aut
         })['catch'](function (err) {
           _this3.send('queryError', err);
         });
+      },
+      addUserRole: function addUserRole(roleName, user, cb) {
+        var userRoles = user.get('roles');
+
+        if (userRoles.indexOf(roleName) > -1) {
+          // this user already have the role:
+          return cb();
+        }
+
+        userRoles.push(roleName);
+
+        return this.get('acl').updateUserRoles(userRoles, user.id).then(function () {
+          cb();
+          return null;
+        })['catch'](cb);
+      },
+      removeUserRole: function removeUserRole(roleName, user, cb) {
+        var userRoles = user.get('roles');
+
+        if (userRoles.indexOf(roleName) === -1) {
+          // this user dont have the role:
+          return cb();
+        }
+
+        var index = userRoles.indexOf(roleName);
+        if (index !== -1) {
+          userRoles.splice(index, 1);
+        }
+
+        return this.get('acl').updateUserRoles(userRoles, user.id).then(function () {
+          cb();
+          return null;
+        })['catch'](cb);
       }
     }
   });
@@ -1859,6 +2113,218 @@ define('we-admin-blog/serializers/application', ['exports', 'ember-data/serializ
     },
     modelNameFromPayloadKey: function modelNameFromPayloadKey(name) {
       return name;
+    }
+  });
+});
+define('we-admin-blog/services/acl', ['exports', 'ember', 'we-admin-blog/config/environment'], function (exports, _ember, _weAdminBlogConfigEnvironment) {
+
+  var systemRoles = ['administrator', 'authenticated', 'unAuthenticated'];
+
+  exports['default'] = _ember['default'].Service.extend({
+    session: _ember['default'].inject.service('session'),
+    /**
+     * Get all permissions and roles from api host
+     *
+     * @return {Promise}
+     */
+    getPermissionsAndRoles: function getPermissionsAndRoles() {
+      var _this = this;
+
+      return new window.Promise(function (resolve, reject) {
+        var headers = { Accept: 'application/vnd.api+json' },
+            accessToken = _this.get('session.session.authenticated.access_token');
+
+        if (accessToken) {
+          headers.Authorization = 'Basic ' + accessToken;
+        }
+
+        _ember['default'].$.ajax({
+          url: _weAdminBlogConfigEnvironment['default'].API_HOST + '/acl/permission',
+          type: 'GET',
+          headers: headers
+        }).done(resolve).fail(reject);
+      });
+    },
+    /**
+     * Get Roles
+     *
+     * @return {Promise}
+     */
+    getRoles: function getRoles() {
+      var _this2 = this;
+
+      return new window.Promise(function (resolve, reject) {
+        var headers = { Accept: 'application/vnd.api+json' },
+            accessToken = _this2.get('session.session.authenticated.access_token');
+
+        if (accessToken) {
+          headers.Authorization = 'Basic ' + accessToken;
+        }
+
+        _ember['default'].$.ajax({
+          url: _weAdminBlogConfigEnvironment['default'].API_HOST + '/acl/permission',
+          type: 'GET',
+          headers: headers
+        }).done(function (data) {
+          resolve(data.roles);
+          return null;
+        }).fail(reject);
+      });
+    },
+    /**
+     * Get roles in list format
+     *
+     * @return {Promise}
+     */
+    getRolesArray: function getRolesArray() {
+      return this.getRoles().then(function (data) {
+        var roles = _ember['default'].A([]);
+
+        for (var _name in data) {
+          if (systemRoles.indexOf(_name) > -1) {
+            data[_name].isSystemRole = true;
+          }
+
+          roles.push(data[_name]);
+        }
+
+        return roles;
+      });
+    },
+    /**
+     * Get user roles
+     *
+     * @return {Promise}
+     */
+    getUserRoles: function getUserRoles(userId) {
+      var _this3 = this;
+
+      return new window.Promise(function (resolve, reject) {
+        var headers = { Accept: 'application/vnd.api+json' },
+            accessToken = _this3.get('session.session.authenticated.access_token');
+
+        if (accessToken) {
+          headers.Authorization = 'Basic ' + accessToken;
+        }
+
+        _ember['default'].$.ajax({
+          url: _weAdminBlogConfigEnvironment['default'].API_HOST + '/acl/user/' + userId + '/roles',
+          type: 'GET',
+          headers: headers
+        }).done(function (data) {
+          resolve(data.data);
+          return null;
+        }).fail(reject);
+      });
+    },
+    /**
+     * Update user roles
+     *
+     * @return {Promise}
+     */
+    updateUserRoles: function updateUserRoles(roleNames, userId) {
+      var _this4 = this;
+
+      return new window.Promise(function (resolve, reject) {
+        var headers = { Accept: 'application/vnd.api+json' },
+            accessToken = _this4.get('session.session.authenticated.access_token');
+
+        if (accessToken) {
+          headers.Authorization = 'Basic ' + accessToken;
+        }
+
+        var data = { userRoles: roleNames };
+
+        _ember['default'].$.ajax({
+          url: _weAdminBlogConfigEnvironment['default'].API_HOST + '/acl/user/' + userId + '/roles',
+          type: 'POST',
+          dataType: 'json',
+          contentType: "application/json; charset=utf-8",
+          data: JSON.stringify(data),
+          headers: headers
+        }).done(function (data) {
+          console.log('result>', data);
+          resolve(data.data);
+          return null;
+        }).fail(reject);
+      });
+    },
+    /**
+     * Request method to remove one permission from role
+     *
+     * @param {String} roleName
+     * @param {String} permissionName
+     * @return {Promise}
+     */
+    removePermission: function removePermission(roleName, permissionName) {
+      var _this5 = this;
+
+      return new window.Promise(function (resolve, reject) {
+        var headers = { Accept: 'application/vnd.api+json' },
+            accessToken = _this5.get('session.session.authenticated.access_token');
+
+        if (accessToken) {
+          headers.Authorization = 'Basic ' + accessToken;
+        }
+
+        _ember['default'].$.ajax({
+          url: _weAdminBlogConfigEnvironment['default'].API_HOST + '/acl/role/' + roleName + '/permissions/' + permissionName,
+          type: 'DELETE',
+          headers: headers
+        }).done(resolve).fail(reject);
+      });
+    },
+
+    /**
+     * Create one role request method
+     */
+    createRole: function createRole(role) {
+      var _this6 = this;
+
+      return new window.Promise(function (resolve, reject) {
+        var headers = { Accept: 'application/vnd.api+json' },
+            accessToken = _this6.get('session.session.authenticated.access_token');
+
+        if (accessToken) {
+          headers.Authorization = 'Basic ' + accessToken;
+        }
+
+        role.action = 'create';
+
+        _ember['default'].$.ajax({
+          url: _weAdminBlogConfigEnvironment['default'].API_HOST + '/acl/role',
+          type: 'POST',
+          dataType: 'json',
+          data: role,
+          headers: headers
+        }).done(resolve).fail(reject);
+      });
+    },
+
+    /**
+     * Delete one role request method
+     */
+    deleteRole: function deleteRole(role) {
+      var _this7 = this;
+
+      return new window.Promise(function (resolve, reject) {
+        var headers = { Accept: 'application/vnd.api+json' },
+            accessToken = _this7.get('session.session.authenticated.access_token');
+
+        if (accessToken) {
+          headers.Authorization = 'Basic ' + accessToken;
+        }
+
+        role.action = 'delete';
+
+        _ember['default'].$.ajax({
+          url: _weAdminBlogConfigEnvironment['default'].API_HOST + '/acl/role',
+          type: 'POST',
+          dataType: 'json',
+          data: role,
+          headers: headers
+        }).done(resolve).fail(reject);
+      });
     }
   });
 });
@@ -7669,6 +8135,432 @@ define("we-admin-blog/templates/components/models-table/table-footer", ["exports
     };
   })());
 });
+define("we-admin-blog/templates/components/role-permission-check", ["exports"], function (exports) {
+  exports["default"] = Ember.HTMLBars.template((function () {
+    var child0 = (function () {
+      return {
+        meta: {
+          "fragmentReason": {
+            "name": "triple-curlies"
+          },
+          "revision": "Ember@2.6.2",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 1,
+              "column": 0
+            },
+            "end": {
+              "line": 3,
+              "column": 0
+            }
+          },
+          "moduleName": "we-admin-blog/templates/components/role-permission-check.hbs"
+        },
+        isEmpty: false,
+        arity: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createTextNode("  ");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createElement("i");
+          dom.setAttribute(el1, "class", "fa fa-spinner");
+          dom.setAttribute(el1, "aria-hidden", "true");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes() {
+          return [];
+        },
+        statements: [],
+        locals: [],
+        templates: []
+      };
+    })();
+    var child1 = (function () {
+      var child0 = (function () {
+        return {
+          meta: {
+            "fragmentReason": false,
+            "revision": "Ember@2.6.2",
+            "loc": {
+              "source": null,
+              "start": {
+                "line": 4,
+                "column": 2
+              },
+              "end": {
+                "line": 6,
+                "column": 2
+              }
+            },
+            "moduleName": "we-admin-blog/templates/components/role-permission-check.hbs"
+          },
+          isEmpty: false,
+          arity: 0,
+          cachedFragment: null,
+          hasRendered: false,
+          buildFragment: function buildFragment(dom) {
+            var el0 = dom.createDocumentFragment();
+            var el1 = dom.createTextNode("    ");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createElement("i");
+            dom.setAttribute(el1, "class", "fa fa-check-square-o");
+            dom.setAttribute(el1, "aria-hidden", "true");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createTextNode("\n");
+            dom.appendChild(el0, el1);
+            return el0;
+          },
+          buildRenderNodes: function buildRenderNodes() {
+            return [];
+          },
+          statements: [],
+          locals: [],
+          templates: []
+        };
+      })();
+      var child1 = (function () {
+        return {
+          meta: {
+            "fragmentReason": false,
+            "revision": "Ember@2.6.2",
+            "loc": {
+              "source": null,
+              "start": {
+                "line": 6,
+                "column": 2
+              },
+              "end": {
+                "line": 8,
+                "column": 2
+              }
+            },
+            "moduleName": "we-admin-blog/templates/components/role-permission-check.hbs"
+          },
+          isEmpty: false,
+          arity: 0,
+          cachedFragment: null,
+          hasRendered: false,
+          buildFragment: function buildFragment(dom) {
+            var el0 = dom.createDocumentFragment();
+            var el1 = dom.createTextNode("    ");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createElement("i");
+            dom.setAttribute(el1, "class", "fa fa-square-o");
+            dom.setAttribute(el1, "aria-hidden", "true");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createTextNode("\n");
+            dom.appendChild(el0, el1);
+            return el0;
+          },
+          buildRenderNodes: function buildRenderNodes() {
+            return [];
+          },
+          statements: [],
+          locals: [],
+          templates: []
+        };
+      })();
+      return {
+        meta: {
+          "fragmentReason": false,
+          "revision": "Ember@2.6.2",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 3,
+              "column": 0
+            },
+            "end": {
+              "line": 9,
+              "column": 0
+            }
+          },
+          "moduleName": "we-admin-blog/templates/components/role-permission-check.hbs"
+        },
+        isEmpty: false,
+        arity: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var morphs = new Array(1);
+          morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+          dom.insertBoundary(fragment, 0);
+          dom.insertBoundary(fragment, null);
+          return morphs;
+        },
+        statements: [["block", "if", [["get", "can", ["loc", [null, [4, 8], [4, 11]]]]], [], 0, 1, ["loc", [null, [4, 2], [8, 9]]]]],
+        locals: [],
+        templates: [child0, child1]
+      };
+    })();
+    return {
+      meta: {
+        "fragmentReason": {
+          "name": "missing-wrapper",
+          "problems": ["wrong-type"]
+        },
+        "revision": "Ember@2.6.2",
+        "loc": {
+          "source": null,
+          "start": {
+            "line": 1,
+            "column": 0
+          },
+          "end": {
+            "line": 9,
+            "column": 7
+          }
+        },
+        "moduleName": "we-admin-blog/templates/components/role-permission-check.hbs"
+      },
+      isEmpty: false,
+      arity: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      buildFragment: function buildFragment(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createComment("");
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+        var morphs = new Array(1);
+        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+        dom.insertBoundary(fragment, 0);
+        dom.insertBoundary(fragment, null);
+        return morphs;
+      },
+      statements: [["block", "if", [["get", "isLoading", ["loc", [null, [1, 6], [1, 15]]]]], [], 0, 1, ["loc", [null, [1, 0], [9, 7]]]]],
+      locals: [],
+      templates: [child0, child1]
+    };
+  })());
+});
+define("we-admin-blog/templates/components/user-role-checkbox", ["exports"], function (exports) {
+  exports["default"] = Ember.HTMLBars.template((function () {
+    var child0 = (function () {
+      return {
+        meta: {
+          "fragmentReason": {
+            "name": "triple-curlies"
+          },
+          "revision": "Ember@2.6.2",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 1,
+              "column": 0
+            },
+            "end": {
+              "line": 3,
+              "column": 0
+            }
+          },
+          "moduleName": "we-admin-blog/templates/components/user-role-checkbox.hbs"
+        },
+        isEmpty: false,
+        arity: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createTextNode("  ");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createElement("i");
+          dom.setAttribute(el1, "class", "fa fa-spinner");
+          dom.setAttribute(el1, "aria-hidden", "true");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes() {
+          return [];
+        },
+        statements: [],
+        locals: [],
+        templates: []
+      };
+    })();
+    var child1 = (function () {
+      var child0 = (function () {
+        return {
+          meta: {
+            "fragmentReason": false,
+            "revision": "Ember@2.6.2",
+            "loc": {
+              "source": null,
+              "start": {
+                "line": 4,
+                "column": 2
+              },
+              "end": {
+                "line": 6,
+                "column": 2
+              }
+            },
+            "moduleName": "we-admin-blog/templates/components/user-role-checkbox.hbs"
+          },
+          isEmpty: false,
+          arity: 0,
+          cachedFragment: null,
+          hasRendered: false,
+          buildFragment: function buildFragment(dom) {
+            var el0 = dom.createDocumentFragment();
+            var el1 = dom.createTextNode("    ");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createElement("i");
+            dom.setAttribute(el1, "class", "fa fa-check-square-o");
+            dom.setAttribute(el1, "aria-hidden", "true");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createTextNode("\n");
+            dom.appendChild(el0, el1);
+            return el0;
+          },
+          buildRenderNodes: function buildRenderNodes() {
+            return [];
+          },
+          statements: [],
+          locals: [],
+          templates: []
+        };
+      })();
+      var child1 = (function () {
+        return {
+          meta: {
+            "fragmentReason": false,
+            "revision": "Ember@2.6.2",
+            "loc": {
+              "source": null,
+              "start": {
+                "line": 6,
+                "column": 2
+              },
+              "end": {
+                "line": 8,
+                "column": 2
+              }
+            },
+            "moduleName": "we-admin-blog/templates/components/user-role-checkbox.hbs"
+          },
+          isEmpty: false,
+          arity: 0,
+          cachedFragment: null,
+          hasRendered: false,
+          buildFragment: function buildFragment(dom) {
+            var el0 = dom.createDocumentFragment();
+            var el1 = dom.createTextNode("    ");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createElement("i");
+            dom.setAttribute(el1, "class", "fa fa-square-o");
+            dom.setAttribute(el1, "aria-hidden", "true");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createTextNode("\n");
+            dom.appendChild(el0, el1);
+            return el0;
+          },
+          buildRenderNodes: function buildRenderNodes() {
+            return [];
+          },
+          statements: [],
+          locals: [],
+          templates: []
+        };
+      })();
+      return {
+        meta: {
+          "fragmentReason": false,
+          "revision": "Ember@2.6.2",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 3,
+              "column": 0
+            },
+            "end": {
+              "line": 9,
+              "column": 0
+            }
+          },
+          "moduleName": "we-admin-blog/templates/components/user-role-checkbox.hbs"
+        },
+        isEmpty: false,
+        arity: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var morphs = new Array(1);
+          morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+          dom.insertBoundary(fragment, 0);
+          dom.insertBoundary(fragment, null);
+          return morphs;
+        },
+        statements: [["block", "if", [["get", "have", ["loc", [null, [4, 8], [4, 12]]]]], [], 0, 1, ["loc", [null, [4, 2], [8, 9]]]]],
+        locals: [],
+        templates: [child0, child1]
+      };
+    })();
+    return {
+      meta: {
+        "fragmentReason": {
+          "name": "missing-wrapper",
+          "problems": ["wrong-type"]
+        },
+        "revision": "Ember@2.6.2",
+        "loc": {
+          "source": null,
+          "start": {
+            "line": 1,
+            "column": 0
+          },
+          "end": {
+            "line": 9,
+            "column": 7
+          }
+        },
+        "moduleName": "we-admin-blog/templates/components/user-role-checkbox.hbs"
+      },
+      isEmpty: false,
+      arity: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      buildFragment: function buildFragment(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createComment("");
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+        var morphs = new Array(1);
+        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+        dom.insertBoundary(fragment, 0);
+        dom.insertBoundary(fragment, null);
+        return morphs;
+      },
+      statements: [["block", "if", [["get", "isLoading", ["loc", [null, [1, 6], [1, 15]]]]], [], 0, 1, ["loc", [null, [1, 0], [9, 7]]]]],
+      locals: [],
+      templates: [child0, child1]
+    };
+  })());
+});
 define("we-admin-blog/templates/index",["exports"],function(exports){exports["default"] = Ember.HTMLBars.template((function(){return {meta:{"fragmentReason":{"name":"missing-wrapper","problems":["multiple-nodes","wrong-type"]},"revision":"Ember@2.6.2","loc":{"source":null,"start":{"line":1,"column":0},"end":{"line":538,"column":14}},"moduleName":"we-admin-blog/templates/index.hbs"},isEmpty:false,arity:0,cachedFragment:null,hasRendered:false,buildFragment:function buildFragment(dom){var el0=dom.createDocumentFragment();var el1=dom.createElement("div");dom.setAttribute(el1,"class","row");var el2=dom.createTextNode("\n    ");dom.appendChild(el1,el2);var el2=dom.createElement("div");dom.setAttribute(el2,"class","col-lg-12");var el3=dom.createTextNode("\n        ");dom.appendChild(el2,el3);var el3=dom.createElement("h1");dom.setAttribute(el3,"class","page-header");var el4=dom.createTextNode("Dashboard");dom.appendChild(el3,el4);dom.appendChild(el2,el3);var el3=dom.createTextNode("\n    ");dom.appendChild(el2,el3);dom.appendChild(el1,el2);var el2=dom.createTextNode("\n    ");dom.appendChild(el1,el2);var el2=dom.createComment(" /.col-lg-12 ");dom.appendChild(el1,el2);var el2=dom.createTextNode("\n");dom.appendChild(el1,el2);dom.appendChild(el0,el1);var el1=dom.createTextNode("\n");dom.appendChild(el0,el1);var el1=dom.createComment(" /.row ");dom.appendChild(el0,el1);var el1=dom.createTextNode("\n");dom.appendChild(el0,el1);var el1=dom.createElement("div");dom.setAttribute(el1,"class","row");var el2=dom.createTextNode("\n    ");dom.appendChild(el1,el2);var el2=dom.createElement("div");dom.setAttribute(el2,"class","col-lg-3 col-md-6");var el3=dom.createTextNode("\n        ");dom.appendChild(el2,el3);var el3=dom.createElement("div");dom.setAttribute(el3,"class","panel panel-primary");var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("div");dom.setAttribute(el4,"class","panel-heading");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("div");dom.setAttribute(el5,"class","row");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("div");dom.setAttribute(el6,"class","col-xs-3");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("i");dom.setAttribute(el7,"class","fa fa-comments fa-5x");dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("div");dom.setAttribute(el6,"class","col-xs-9 text-right");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","huge");var el8=dom.createTextNode("26");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");var el8=dom.createTextNode("New Comments!");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("a");dom.setAttribute(el4,"href","#");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("div");dom.setAttribute(el5,"class","panel-footer");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("span");dom.setAttribute(el6,"class","pull-left");var el7=dom.createTextNode("View Details");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("span");dom.setAttribute(el6,"class","pull-right");var el7=dom.createElement("i");dom.setAttribute(el7,"class","fa fa-arrow-circle-right");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("div");dom.setAttribute(el6,"class","clearfix");dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n        ");dom.appendChild(el3,el4);dom.appendChild(el2,el3);var el3=dom.createTextNode("\n    ");dom.appendChild(el2,el3);dom.appendChild(el1,el2);var el2=dom.createTextNode("\n    ");dom.appendChild(el1,el2);var el2=dom.createElement("div");dom.setAttribute(el2,"class","col-lg-3 col-md-6");var el3=dom.createTextNode("\n        ");dom.appendChild(el2,el3);var el3=dom.createElement("div");dom.setAttribute(el3,"class","panel panel-green");var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("div");dom.setAttribute(el4,"class","panel-heading");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("div");dom.setAttribute(el5,"class","row");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("div");dom.setAttribute(el6,"class","col-xs-3");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("i");dom.setAttribute(el7,"class","fa fa-tasks fa-5x");dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("div");dom.setAttribute(el6,"class","col-xs-9 text-right");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","huge");var el8=dom.createTextNode("12");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");var el8=dom.createTextNode("New Tasks!");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("a");dom.setAttribute(el4,"href","#");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("div");dom.setAttribute(el5,"class","panel-footer");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("span");dom.setAttribute(el6,"class","pull-left");var el7=dom.createTextNode("View Details");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("span");dom.setAttribute(el6,"class","pull-right");var el7=dom.createElement("i");dom.setAttribute(el7,"class","fa fa-arrow-circle-right");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("div");dom.setAttribute(el6,"class","clearfix");dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n        ");dom.appendChild(el3,el4);dom.appendChild(el2,el3);var el3=dom.createTextNode("\n    ");dom.appendChild(el2,el3);dom.appendChild(el1,el2);var el2=dom.createTextNode("\n    ");dom.appendChild(el1,el2);var el2=dom.createElement("div");dom.setAttribute(el2,"class","col-lg-3 col-md-6");var el3=dom.createTextNode("\n        ");dom.appendChild(el2,el3);var el3=dom.createElement("div");dom.setAttribute(el3,"class","panel panel-yellow");var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("div");dom.setAttribute(el4,"class","panel-heading");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("div");dom.setAttribute(el5,"class","row");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("div");dom.setAttribute(el6,"class","col-xs-3");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("i");dom.setAttribute(el7,"class","fa fa-shopping-cart fa-5x");dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("div");dom.setAttribute(el6,"class","col-xs-9 text-right");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","huge");var el8=dom.createTextNode("124");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");var el8=dom.createTextNode("New Orders!");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("a");dom.setAttribute(el4,"href","#");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("div");dom.setAttribute(el5,"class","panel-footer");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("span");dom.setAttribute(el6,"class","pull-left");var el7=dom.createTextNode("View Details");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("span");dom.setAttribute(el6,"class","pull-right");var el7=dom.createElement("i");dom.setAttribute(el7,"class","fa fa-arrow-circle-right");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("div");dom.setAttribute(el6,"class","clearfix");dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n        ");dom.appendChild(el3,el4);dom.appendChild(el2,el3);var el3=dom.createTextNode("\n    ");dom.appendChild(el2,el3);dom.appendChild(el1,el2);var el2=dom.createTextNode("\n    ");dom.appendChild(el1,el2);var el2=dom.createElement("div");dom.setAttribute(el2,"class","col-lg-3 col-md-6");var el3=dom.createTextNode("\n        ");dom.appendChild(el2,el3);var el3=dom.createElement("div");dom.setAttribute(el3,"class","panel panel-red");var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("div");dom.setAttribute(el4,"class","panel-heading");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("div");dom.setAttribute(el5,"class","row");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("div");dom.setAttribute(el6,"class","col-xs-3");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("i");dom.setAttribute(el7,"class","fa fa-support fa-5x");dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("div");dom.setAttribute(el6,"class","col-xs-9 text-right");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","huge");var el8=dom.createTextNode("13");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");var el8=dom.createTextNode("Support Tickets!");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("a");dom.setAttribute(el4,"href","#");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("div");dom.setAttribute(el5,"class","panel-footer");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("span");dom.setAttribute(el6,"class","pull-left");var el7=dom.createTextNode("View Details");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("span");dom.setAttribute(el6,"class","pull-right");var el7=dom.createElement("i");dom.setAttribute(el7,"class","fa fa-arrow-circle-right");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("div");dom.setAttribute(el6,"class","clearfix");dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n        ");dom.appendChild(el3,el4);dom.appendChild(el2,el3);var el3=dom.createTextNode("\n    ");dom.appendChild(el2,el3);dom.appendChild(el1,el2);var el2=dom.createTextNode("\n");dom.appendChild(el1,el2);dom.appendChild(el0,el1);var el1=dom.createTextNode("\n");dom.appendChild(el0,el1);var el1=dom.createComment(" /.row ");dom.appendChild(el0,el1);var el1=dom.createTextNode("\n");dom.appendChild(el0,el1);var el1=dom.createElement("div");dom.setAttribute(el1,"class","row");var el2=dom.createTextNode("\n    ");dom.appendChild(el1,el2);var el2=dom.createElement("div");dom.setAttribute(el2,"class","col-lg-8");var el3=dom.createTextNode("\n        ");dom.appendChild(el2,el3);var el3=dom.createElement("div");dom.setAttribute(el3,"class","panel panel-default");var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("div");dom.setAttribute(el4,"class","panel-heading");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("i");dom.setAttribute(el5,"class","fa fa-bar-chart-o fa-fw");dom.appendChild(el4,el5);var el5=dom.createTextNode(" Area Chart Example\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("div");dom.setAttribute(el5,"class","pull-right");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("div");dom.setAttribute(el6,"class","btn-group");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("button");dom.setAttribute(el7,"type","button");dom.setAttribute(el7,"class","btn btn-default btn-xs dropdown-toggle");dom.setAttribute(el7,"data-toggle","dropdown");var el8=dom.createTextNode("\n                            Actions\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("span");dom.setAttribute(el8,"class","caret");dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("ul");dom.setAttribute(el7,"class","dropdown-menu pull-right");dom.setAttribute(el7,"role","menu");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("li");var el9=dom.createElement("a");dom.setAttribute(el9,"href","#");var el10=dom.createTextNode("Action");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("li");var el9=dom.createElement("a");dom.setAttribute(el9,"href","#");var el10=dom.createTextNode("Another action");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("li");var el9=dom.createElement("a");dom.setAttribute(el9,"href","#");var el10=dom.createTextNode("Something else here");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("li");dom.setAttribute(el8,"class","divider");dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("li");var el9=dom.createElement("a");dom.setAttribute(el9,"href","#");var el10=dom.createTextNode("Separated link");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createComment(" /.panel-heading ");dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("div");dom.setAttribute(el4,"class","panel-body");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("div");dom.setAttribute(el5,"id","morris-area-chart");dom.appendChild(el4,el5);var el5=dom.createTextNode("\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createComment(" /.panel-body ");dom.appendChild(el3,el4);var el4=dom.createTextNode("\n        ");dom.appendChild(el3,el4);dom.appendChild(el2,el3);var el3=dom.createTextNode("\n        ");dom.appendChild(el2,el3);var el3=dom.createComment(" /.panel ");dom.appendChild(el2,el3);var el3=dom.createTextNode("\n        ");dom.appendChild(el2,el3);var el3=dom.createElement("div");dom.setAttribute(el3,"class","panel panel-default");var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("div");dom.setAttribute(el4,"class","panel-heading");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("i");dom.setAttribute(el5,"class","fa fa-bar-chart-o fa-fw");dom.appendChild(el4,el5);var el5=dom.createTextNode(" Bar Chart Example\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("div");dom.setAttribute(el5,"class","pull-right");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("div");dom.setAttribute(el6,"class","btn-group");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("button");dom.setAttribute(el7,"type","button");dom.setAttribute(el7,"class","btn btn-default btn-xs dropdown-toggle");dom.setAttribute(el7,"data-toggle","dropdown");var el8=dom.createTextNode("\n                            Actions\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("span");dom.setAttribute(el8,"class","caret");dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("ul");dom.setAttribute(el7,"class","dropdown-menu pull-right");dom.setAttribute(el7,"role","menu");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("li");var el9=dom.createElement("a");dom.setAttribute(el9,"href","#");var el10=dom.createTextNode("Action");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("li");var el9=dom.createElement("a");dom.setAttribute(el9,"href","#");var el10=dom.createTextNode("Another action");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("li");var el9=dom.createElement("a");dom.setAttribute(el9,"href","#");var el10=dom.createTextNode("Something else here");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("li");dom.setAttribute(el8,"class","divider");dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("li");var el9=dom.createElement("a");dom.setAttribute(el9,"href","#");var el10=dom.createTextNode("Separated link");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createComment(" /.panel-heading ");dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("div");dom.setAttribute(el4,"class","panel-body");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("div");dom.setAttribute(el5,"class","row");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("div");dom.setAttribute(el6,"class","col-lg-4");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","table-responsive");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("table");dom.setAttribute(el8,"class","table table-bordered table-hover table-striped");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("thead");var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("tr");var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("th");var el12=dom.createTextNode("#");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("th");var el12=dom.createTextNode("Date");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("th");var el12=dom.createTextNode("Time");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("th");var el12=dom.createTextNode("Amount");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                    ");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                ");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("tbody");var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("tr");var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("3326");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("10/21/2013");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("3:29 PM");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("$321.33");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                    ");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("tr");var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("3325");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("10/21/2013");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("3:20 PM");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("$234.34");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                    ");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("tr");var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("3324");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("10/21/2013");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("3:03 PM");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("$724.17");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                    ");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("tr");var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("3323");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("10/21/2013");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("3:00 PM");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("$23.71");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                    ");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("tr");var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("3322");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("10/21/2013");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("2:49 PM");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("$8345.23");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                    ");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("tr");var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("3321");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("10/21/2013");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("2:23 PM");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("$245.12");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                    ");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("tr");var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("3320");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("10/21/2013");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("2:15 PM");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("$5663.54");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                    ");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("tr");var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("3319");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("10/21/2013");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("2:13 PM");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("$943.45");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                    ");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                ");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createComment(" /.table-responsive ");dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createComment(" /.col-lg-4 (nested) ");dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("div");dom.setAttribute(el6,"class","col-lg-8");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"id","morris-bar-chart");dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createComment(" /.col-lg-8 (nested) ");dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createComment(" /.row ");dom.appendChild(el4,el5);var el5=dom.createTextNode("\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createComment(" /.panel-body ");dom.appendChild(el3,el4);var el4=dom.createTextNode("\n        ");dom.appendChild(el3,el4);dom.appendChild(el2,el3);var el3=dom.createTextNode("\n        ");dom.appendChild(el2,el3);var el3=dom.createComment(" /.panel ");dom.appendChild(el2,el3);var el3=dom.createTextNode("\n        ");dom.appendChild(el2,el3);var el3=dom.createElement("div");dom.setAttribute(el3,"class","panel panel-default");var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("div");dom.setAttribute(el4,"class","panel-heading");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("i");dom.setAttribute(el5,"class","fa fa-clock-o fa-fw");dom.appendChild(el4,el5);var el5=dom.createTextNode(" Responsive Timeline\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createComment(" /.panel-heading ");dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("div");dom.setAttribute(el4,"class","panel-body");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("ul");dom.setAttribute(el5,"class","timeline");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("li");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","timeline-badge");var el8=dom.createElement("i");dom.setAttribute(el8,"class","fa fa-check");dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","timeline-panel");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","timeline-heading");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("h4");dom.setAttribute(el9,"class","timeline-title");var el10=dom.createTextNode("Lorem ipsum dolor");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("p");var el10=dom.createElement("small");dom.setAttribute(el10,"class","text-muted");var el11=dom.createElement("i");dom.setAttribute(el11,"class","fa fa-clock-o");dom.appendChild(el10,el11);var el11=dom.createTextNode(" 11 hours ago via Twitter");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                ");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","timeline-body");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("p");var el10=dom.createTextNode("Lorem ipsum dolor sit amet, consectetur adipisicing elit. Libero laboriosam dolor perspiciatis omnis exercitationem. Beatae, officia pariatur? Est cum veniam excepturi. Maiores praesentium, porro voluptas suscipit facere rem dicta, debitis.");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("li");dom.setAttribute(el6,"class","timeline-inverted");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","timeline-badge warning");var el8=dom.createElement("i");dom.setAttribute(el8,"class","fa fa-credit-card");dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","timeline-panel");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","timeline-heading");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("h4");dom.setAttribute(el9,"class","timeline-title");var el10=dom.createTextNode("Lorem ipsum dolor");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","timeline-body");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("p");var el10=dom.createTextNode("Lorem ipsum dolor sit amet, consectetur adipisicing elit. Autem dolorem quibusdam, tenetur commodi provident cumque magni voluptatem libero, quis rerum. Fugiat esse debitis optio, tempore. Animi officiis alias, officia repellendus.");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("p");var el10=dom.createTextNode("Lorem ipsum dolor sit amet, consectetur adipisicing elit. Laudantium maiores odit qui est tempora eos, nostrum provident explicabo dignissimos debitis vel! Adipisci eius voluptates, ad aut recusandae minus eaque facere.");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("li");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","timeline-badge danger");var el8=dom.createElement("i");dom.setAttribute(el8,"class","fa fa-bomb");dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","timeline-panel");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","timeline-heading");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("h4");dom.setAttribute(el9,"class","timeline-title");var el10=dom.createTextNode("Lorem ipsum dolor");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","timeline-body");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("p");var el10=dom.createTextNode("Lorem ipsum dolor sit amet, consectetur adipisicing elit. Repellendus numquam facilis enim eaque, tenetur nam id qui vel velit similique nihil iure molestias aliquam, voluptatem totam quaerat, magni commodi quisquam.");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("li");dom.setAttribute(el6,"class","timeline-inverted");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","timeline-panel");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","timeline-heading");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("h4");dom.setAttribute(el9,"class","timeline-title");var el10=dom.createTextNode("Lorem ipsum dolor");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","timeline-body");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("p");var el10=dom.createTextNode("Lorem ipsum dolor sit amet, consectetur adipisicing elit. Voluptates est quaerat asperiores sapiente, eligendi, nihil. Itaque quos, alias sapiente rerum quas odit! Aperiam officiis quidem delectus libero, omnis ut debitis!");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("li");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","timeline-badge info");var el8=dom.createElement("i");dom.setAttribute(el8,"class","fa fa-save");dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","timeline-panel");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","timeline-heading");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("h4");dom.setAttribute(el9,"class","timeline-title");var el10=dom.createTextNode("Lorem ipsum dolor");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","timeline-body");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("p");var el10=dom.createTextNode("Lorem ipsum dolor sit amet, consectetur adipisicing elit. Nobis minus modi quam ipsum alias at est molestiae excepturi delectus nesciunt, quibusdam debitis amet, beatae consequuntur impedit nulla qui! Laborum, atque.");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("hr");dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("div");dom.setAttribute(el9,"class","btn-group");var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("button");dom.setAttribute(el10,"type","button");dom.setAttribute(el10,"class","btn btn-primary btn-sm dropdown-toggle");dom.setAttribute(el10,"data-toggle","dropdown");var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("i");dom.setAttribute(el11,"class","fa fa-gear");dom.appendChild(el10,el11);var el11=dom.createTextNode(" ");dom.appendChild(el10,el11);var el11=dom.createElement("span");dom.setAttribute(el11,"class","caret");dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                    ");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("ul");dom.setAttribute(el10,"class","dropdown-menu");dom.setAttribute(el10,"role","menu");var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("li");var el12=dom.createElement("a");dom.setAttribute(el12,"href","#");var el13=dom.createTextNode("Action");dom.appendChild(el12,el13);dom.appendChild(el11,el12);var el12=dom.createTextNode("\n                                        ");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("li");var el12=dom.createElement("a");dom.setAttribute(el12,"href","#");var el13=dom.createTextNode("Another action");dom.appendChild(el12,el13);dom.appendChild(el11,el12);var el12=dom.createTextNode("\n                                        ");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("li");var el12=dom.createElement("a");dom.setAttribute(el12,"href","#");var el13=dom.createTextNode("Something else here");dom.appendChild(el12,el13);dom.appendChild(el11,el12);var el12=dom.createTextNode("\n                                        ");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("li");dom.setAttribute(el11,"class","divider");dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("li");var el12=dom.createElement("a");dom.setAttribute(el12,"href","#");var el13=dom.createTextNode("Separated link");dom.appendChild(el12,el13);dom.appendChild(el11,el12);var el12=dom.createTextNode("\n                                        ");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                    ");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                ");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("li");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","timeline-panel");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","timeline-heading");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("h4");dom.setAttribute(el9,"class","timeline-title");var el10=dom.createTextNode("Lorem ipsum dolor");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","timeline-body");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("p");var el10=dom.createTextNode("Lorem ipsum dolor sit amet, consectetur adipisicing elit. Sequi fuga odio quibusdam. Iure expedita, incidunt unde quis nam! Quod, quisquam. Officia quam qui adipisci quas consequuntur nostrum sequi. Consequuntur, commodi.");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("li");dom.setAttribute(el6,"class","timeline-inverted");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","timeline-badge success");var el8=dom.createElement("i");dom.setAttribute(el8,"class","fa fa-graduation-cap");dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","timeline-panel");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","timeline-heading");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("h4");dom.setAttribute(el9,"class","timeline-title");var el10=dom.createTextNode("Lorem ipsum dolor");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","timeline-body");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("p");var el10=dom.createTextNode("Lorem ipsum dolor sit amet, consectetur adipisicing elit. Deserunt obcaecati, quaerat tempore officia voluptas debitis consectetur culpa amet, accusamus dolorum fugiat, animi dicta aperiam, enim incidunt quisquam maxime neque eaque.");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createComment(" /.panel-body ");dom.appendChild(el3,el4);var el4=dom.createTextNode("\n        ");dom.appendChild(el3,el4);dom.appendChild(el2,el3);var el3=dom.createTextNode("\n        ");dom.appendChild(el2,el3);var el3=dom.createComment(" /.panel ");dom.appendChild(el2,el3);var el3=dom.createTextNode("\n    ");dom.appendChild(el2,el3);dom.appendChild(el1,el2);var el2=dom.createTextNode("\n    ");dom.appendChild(el1,el2);var el2=dom.createComment(" /.col-lg-8 ");dom.appendChild(el1,el2);var el2=dom.createTextNode("\n    ");dom.appendChild(el1,el2);var el2=dom.createElement("div");dom.setAttribute(el2,"class","col-lg-4");var el3=dom.createTextNode("\n        ");dom.appendChild(el2,el3);var el3=dom.createElement("div");dom.setAttribute(el3,"class","panel panel-default");var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("div");dom.setAttribute(el4,"class","panel-heading");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("i");dom.setAttribute(el5,"class","fa fa-bell fa-fw");dom.appendChild(el4,el5);var el5=dom.createTextNode(" Notifications Panel\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createComment(" /.panel-heading ");dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("div");dom.setAttribute(el4,"class","panel-body");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("div");dom.setAttribute(el5,"class","list-group");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("a");dom.setAttribute(el6,"href","#");dom.setAttribute(el6,"class","list-group-item");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("i");dom.setAttribute(el7,"class","fa fa-comment fa-fw");dom.appendChild(el6,el7);var el7=dom.createTextNode(" New Comment\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("span");dom.setAttribute(el7,"class","pull-right text-muted small");var el8=dom.createElement("em");var el9=dom.createTextNode("4 minutes ago");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("a");dom.setAttribute(el6,"href","#");dom.setAttribute(el6,"class","list-group-item");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("i");dom.setAttribute(el7,"class","fa fa-twitter fa-fw");dom.appendChild(el6,el7);var el7=dom.createTextNode(" 3 New Followers\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("span");dom.setAttribute(el7,"class","pull-right text-muted small");var el8=dom.createElement("em");var el9=dom.createTextNode("12 minutes ago");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("a");dom.setAttribute(el6,"href","#");dom.setAttribute(el6,"class","list-group-item");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("i");dom.setAttribute(el7,"class","fa fa-envelope fa-fw");dom.appendChild(el6,el7);var el7=dom.createTextNode(" Message Sent\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("span");dom.setAttribute(el7,"class","pull-right text-muted small");var el8=dom.createElement("em");var el9=dom.createTextNode("27 minutes ago");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("a");dom.setAttribute(el6,"href","#");dom.setAttribute(el6,"class","list-group-item");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("i");dom.setAttribute(el7,"class","fa fa-tasks fa-fw");dom.appendChild(el6,el7);var el7=dom.createTextNode(" New Task\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("span");dom.setAttribute(el7,"class","pull-right text-muted small");var el8=dom.createElement("em");var el9=dom.createTextNode("43 minutes ago");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("a");dom.setAttribute(el6,"href","#");dom.setAttribute(el6,"class","list-group-item");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("i");dom.setAttribute(el7,"class","fa fa-upload fa-fw");dom.appendChild(el6,el7);var el7=dom.createTextNode(" Server Rebooted\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("span");dom.setAttribute(el7,"class","pull-right text-muted small");var el8=dom.createElement("em");var el9=dom.createTextNode("11:32 AM");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("a");dom.setAttribute(el6,"href","#");dom.setAttribute(el6,"class","list-group-item");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("i");dom.setAttribute(el7,"class","fa fa-bolt fa-fw");dom.appendChild(el6,el7);var el7=dom.createTextNode(" Server Crashed!\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("span");dom.setAttribute(el7,"class","pull-right text-muted small");var el8=dom.createElement("em");var el9=dom.createTextNode("11:13 AM");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("a");dom.setAttribute(el6,"href","#");dom.setAttribute(el6,"class","list-group-item");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("i");dom.setAttribute(el7,"class","fa fa-warning fa-fw");dom.appendChild(el6,el7);var el7=dom.createTextNode(" Server Not Responding\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("span");dom.setAttribute(el7,"class","pull-right text-muted small");var el8=dom.createElement("em");var el9=dom.createTextNode("10:57 AM");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("a");dom.setAttribute(el6,"href","#");dom.setAttribute(el6,"class","list-group-item");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("i");dom.setAttribute(el7,"class","fa fa-shopping-cart fa-fw");dom.appendChild(el6,el7);var el7=dom.createTextNode(" New Order Placed\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("span");dom.setAttribute(el7,"class","pull-right text-muted small");var el8=dom.createElement("em");var el9=dom.createTextNode("9:49 AM");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("a");dom.setAttribute(el6,"href","#");dom.setAttribute(el6,"class","list-group-item");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("i");dom.setAttribute(el7,"class","fa fa-money fa-fw");dom.appendChild(el6,el7);var el7=dom.createTextNode(" Payment Received\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("span");dom.setAttribute(el7,"class","pull-right text-muted small");var el8=dom.createElement("em");var el9=dom.createTextNode("Yesterday");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createComment(" /.list-group ");dom.appendChild(el4,el5);var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("a");dom.setAttribute(el5,"href","#");dom.setAttribute(el5,"class","btn btn-default btn-block");var el6=dom.createTextNode("View All Alerts");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createComment(" /.panel-body ");dom.appendChild(el3,el4);var el4=dom.createTextNode("\n        ");dom.appendChild(el3,el4);dom.appendChild(el2,el3);var el3=dom.createTextNode("\n        ");dom.appendChild(el2,el3);var el3=dom.createComment(" /.panel ");dom.appendChild(el2,el3);var el3=dom.createTextNode("\n        ");dom.appendChild(el2,el3);var el3=dom.createElement("div");dom.setAttribute(el3,"class","panel panel-default");var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("div");dom.setAttribute(el4,"class","panel-heading");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("i");dom.setAttribute(el5,"class","fa fa-bar-chart-o fa-fw");dom.appendChild(el4,el5);var el5=dom.createTextNode(" Donut Chart Example\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("div");dom.setAttribute(el4,"class","panel-body");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("div");dom.setAttribute(el5,"id","morris-donut-chart");dom.appendChild(el4,el5);var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("a");dom.setAttribute(el5,"href","#");dom.setAttribute(el5,"class","btn btn-default btn-block");var el6=dom.createTextNode("View Details");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createComment(" /.panel-body ");dom.appendChild(el3,el4);var el4=dom.createTextNode("\n        ");dom.appendChild(el3,el4);dom.appendChild(el2,el3);var el3=dom.createTextNode("\n        ");dom.appendChild(el2,el3);var el3=dom.createComment(" /.panel ");dom.appendChild(el2,el3);var el3=dom.createTextNode("\n        ");dom.appendChild(el2,el3);var el3=dom.createElement("div");dom.setAttribute(el3,"class","chat-panel panel panel-default");var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("div");dom.setAttribute(el4,"class","panel-heading");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("i");dom.setAttribute(el5,"class","fa fa-comments fa-fw");dom.appendChild(el4,el5);var el5=dom.createTextNode(" Chat\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("div");dom.setAttribute(el5,"class","btn-group pull-right");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("button");dom.setAttribute(el6,"type","button");dom.setAttribute(el6,"class","btn btn-default btn-xs dropdown-toggle");dom.setAttribute(el6,"data-toggle","dropdown");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("i");dom.setAttribute(el7,"class","fa fa-chevron-down");dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("ul");dom.setAttribute(el6,"class","dropdown-menu slidedown");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("li");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("a");dom.setAttribute(el8,"href","#");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("i");dom.setAttribute(el9,"class","fa fa-refresh fa-fw");dom.appendChild(el8,el9);var el9=dom.createTextNode(" Refresh\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("li");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("a");dom.setAttribute(el8,"href","#");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("i");dom.setAttribute(el9,"class","fa fa-check-circle fa-fw");dom.appendChild(el8,el9);var el9=dom.createTextNode(" Available\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("li");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("a");dom.setAttribute(el8,"href","#");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("i");dom.setAttribute(el9,"class","fa fa-times fa-fw");dom.appendChild(el8,el9);var el9=dom.createTextNode(" Busy\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("li");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("a");dom.setAttribute(el8,"href","#");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("i");dom.setAttribute(el9,"class","fa fa-clock-o fa-fw");dom.appendChild(el8,el9);var el9=dom.createTextNode(" Away\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("li");dom.setAttribute(el7,"class","divider");dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("li");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("a");dom.setAttribute(el8,"href","#");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("i");dom.setAttribute(el9,"class","fa fa-sign-out fa-fw");dom.appendChild(el8,el9);var el9=dom.createTextNode(" Sign Out\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createComment(" /.panel-heading ");dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("div");dom.setAttribute(el4,"class","panel-body");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("ul");dom.setAttribute(el5,"class","chat");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("li");dom.setAttribute(el6,"class","left clearfix");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("span");dom.setAttribute(el7,"class","chat-img pull-left");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("img");dom.setAttribute(el8,"src","http://placehold.it/50/55C1E7/fff");dom.setAttribute(el8,"alt","User Avatar");dom.setAttribute(el8,"class","img-circle");dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","chat-body clearfix");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","header");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("strong");dom.setAttribute(el9,"class","primary-font");var el10=dom.createTextNode("Jack Sparrow");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("small");dom.setAttribute(el9,"class","pull-right text-muted");var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("i");dom.setAttribute(el10,"class","fa fa-clock-o fa-fw");dom.appendChild(el9,el10);var el10=dom.createTextNode(" 12 mins ago\n                                ");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("p");var el9=dom.createTextNode("\n                                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur bibendum ornare dolor, quis ullamcorper ligula sodales.\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("li");dom.setAttribute(el6,"class","right clearfix");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("span");dom.setAttribute(el7,"class","chat-img pull-right");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("img");dom.setAttribute(el8,"src","http://placehold.it/50/FA6F57/fff");dom.setAttribute(el8,"alt","User Avatar");dom.setAttribute(el8,"class","img-circle");dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","chat-body clearfix");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","header");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("small");dom.setAttribute(el9,"class"," text-muted");var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("i");dom.setAttribute(el10,"class","fa fa-clock-o fa-fw");dom.appendChild(el9,el10);var el10=dom.createTextNode(" 13 mins ago");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("strong");dom.setAttribute(el9,"class","pull-right primary-font");var el10=dom.createTextNode("Bhaumik Patel");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("p");var el9=dom.createTextNode("\n                                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur bibendum ornare dolor, quis ullamcorper ligula sodales.\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("li");dom.setAttribute(el6,"class","left clearfix");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("span");dom.setAttribute(el7,"class","chat-img pull-left");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("img");dom.setAttribute(el8,"src","http://placehold.it/50/55C1E7/fff");dom.setAttribute(el8,"alt","User Avatar");dom.setAttribute(el8,"class","img-circle");dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","chat-body clearfix");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","header");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("strong");dom.setAttribute(el9,"class","primary-font");var el10=dom.createTextNode("Jack Sparrow");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("small");dom.setAttribute(el9,"class","pull-right text-muted");var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("i");dom.setAttribute(el10,"class","fa fa-clock-o fa-fw");dom.appendChild(el9,el10);var el10=dom.createTextNode(" 14 mins ago");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("p");var el9=dom.createTextNode("\n                                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur bibendum ornare dolor, quis ullamcorper ligula sodales.\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("li");dom.setAttribute(el6,"class","right clearfix");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("span");dom.setAttribute(el7,"class","chat-img pull-right");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("img");dom.setAttribute(el8,"src","http://placehold.it/50/FA6F57/fff");dom.setAttribute(el8,"alt","User Avatar");dom.setAttribute(el8,"class","img-circle");dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","chat-body clearfix");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","header");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("small");dom.setAttribute(el9,"class"," text-muted");var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("i");dom.setAttribute(el10,"class","fa fa-clock-o fa-fw");dom.appendChild(el9,el10);var el10=dom.createTextNode(" 15 mins ago");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("strong");dom.setAttribute(el9,"class","pull-right primary-font");var el10=dom.createTextNode("Bhaumik Patel");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("p");var el9=dom.createTextNode("\n                                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur bibendum ornare dolor, quis ullamcorper ligula sodales.\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createComment(" /.panel-body ");dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("div");dom.setAttribute(el4,"class","panel-footer");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("div");dom.setAttribute(el5,"class","input-group");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("input");dom.setAttribute(el6,"id","btn-input");dom.setAttribute(el6,"type","text");dom.setAttribute(el6,"class","form-control input-sm");dom.setAttribute(el6,"placeholder","Type your message here...");dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("span");dom.setAttribute(el6,"class","input-group-btn");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("button");dom.setAttribute(el7,"class","btn btn-warning btn-sm");dom.setAttribute(el7,"id","btn-chat");var el8=dom.createTextNode("\n                            Send\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createComment(" /.panel-footer ");dom.appendChild(el3,el4);var el4=dom.createTextNode("\n        ");dom.appendChild(el3,el4);dom.appendChild(el2,el3);var el3=dom.createTextNode("\n        ");dom.appendChild(el2,el3);var el3=dom.createComment(" /.panel .chat-panel ");dom.appendChild(el2,el3);var el3=dom.createTextNode("\n    ");dom.appendChild(el2,el3);dom.appendChild(el1,el2);var el2=dom.createTextNode("\n    ");dom.appendChild(el1,el2);var el2=dom.createComment(" /.col-lg-4 ");dom.appendChild(el1,el2);var el2=dom.createTextNode("\n");dom.appendChild(el1,el2);dom.appendChild(el0,el1);var el1=dom.createTextNode("\n");dom.appendChild(el0,el1);var el1=dom.createComment(" /.row ");dom.appendChild(el0,el1);return el0;},buildRenderNodes:function buildRenderNodes(){return [];},statements:[],locals:[],templates:[]};})());});
 define("we-admin-blog/templates/links/form", ["exports"], function (exports) {
   exports["default"] = Ember.HTMLBars.template((function () {
@@ -9735,6 +10627,51 @@ define("we-admin-blog/templates/partials/home-un-authenticated", ["exports"], fu
     };
   })());
 });
+define("we-admin-blog/templates/partials/list-item-created-at", ["exports"], function (exports) {
+  exports["default"] = Ember.HTMLBars.template((function () {
+    return {
+      meta: {
+        "fragmentReason": {
+          "name": "missing-wrapper",
+          "problems": ["wrong-type"]
+        },
+        "revision": "Ember@2.6.2",
+        "loc": {
+          "source": null,
+          "start": {
+            "line": 1,
+            "column": 0
+          },
+          "end": {
+            "line": 1,
+            "column": 40
+          }
+        },
+        "moduleName": "we-admin-blog/templates/partials/list-item-created-at.hbs"
+      },
+      isEmpty: false,
+      arity: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      buildFragment: function buildFragment(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createComment("");
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+        var morphs = new Array(1);
+        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+        dom.insertBoundary(fragment, 0);
+        dom.insertBoundary(fragment, null);
+        return morphs;
+      },
+      statements: [["inline", "moment-format", [["get", "record.createdAt", ["loc", [null, [1, 16], [1, 32]]]], "LLL"], [], ["loc", [null, [1, 0], [1, 40]]]]],
+      locals: [],
+      templates: []
+    };
+  })());
+});
 define("we-admin-blog/templates/partials/navbar-top-links", ["exports"], function (exports) {
   exports["default"] = Ember.HTMLBars.template((function () {
     var child0 = (function () {
@@ -10290,7 +11227,7 @@ define("we-admin-blog/templates/partials/sidebar-menu", ["exports"], function (e
             var el1 = dom.createElement("i");
             dom.setAttribute(el1, "class", "fa fa-bars");
             dom.appendChild(el0, el1);
-            var el1 = dom.createTextNode(" Menus\n");
+            var el1 = dom.createTextNode(" Menus e links\n");
             dom.appendChild(el0, el1);
             return el0;
           },
@@ -10331,7 +11268,7 @@ define("we-admin-blog/templates/partials/sidebar-menu", ["exports"], function (e
             var el1 = dom.createElement("i");
             dom.setAttribute(el1, "class", "fa fa-random");
             dom.appendChild(el0, el1);
-            var el1 = dom.createTextNode(" Url alias\n");
+            var el1 = dom.createTextNode(" Urls alternativas\n");
             dom.appendChild(el0, el1);
             return el0;
           },
@@ -10384,6 +11321,89 @@ define("we-admin-blog/templates/partials/sidebar-menu", ["exports"], function (e
           templates: []
         };
       })();
+      var child4 = (function () {
+        return {
+          meta: {
+            "fragmentReason": false,
+            "revision": "Ember@2.6.2",
+            "loc": {
+              "source": null,
+              "start": {
+                "line": 25,
+                "column": 8
+              },
+              "end": {
+                "line": 27,
+                "column": 8
+              }
+            },
+            "moduleName": "we-admin-blog/templates/partials/sidebar-menu.hbs"
+          },
+          isEmpty: false,
+          arity: 0,
+          cachedFragment: null,
+          hasRendered: false,
+          buildFragment: function buildFragment(dom) {
+            var el0 = dom.createDocumentFragment();
+            var el1 = dom.createTextNode("          ");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createElement("i");
+            dom.setAttribute(el1, "class", "fa fa-credit-card");
+            dom.setAttribute(el1, "aria-hidden", "true");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createTextNode(" Papéis de usuários\n");
+            dom.appendChild(el0, el1);
+            return el0;
+          },
+          buildRenderNodes: function buildRenderNodes() {
+            return [];
+          },
+          statements: [],
+          locals: [],
+          templates: []
+        };
+      })();
+      var child5 = (function () {
+        return {
+          meta: {
+            "fragmentReason": false,
+            "revision": "Ember@2.6.2",
+            "loc": {
+              "source": null,
+              "start": {
+                "line": 30,
+                "column": 8
+              },
+              "end": {
+                "line": 32,
+                "column": 8
+              }
+            },
+            "moduleName": "we-admin-blog/templates/partials/sidebar-menu.hbs"
+          },
+          isEmpty: false,
+          arity: 0,
+          cachedFragment: null,
+          hasRendered: false,
+          buildFragment: function buildFragment(dom) {
+            var el0 = dom.createDocumentFragment();
+            var el1 = dom.createTextNode("          ");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createElement("i");
+            dom.setAttribute(el1, "class", "fa fa-unlock-alt");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createTextNode(" Permissões\n");
+            dom.appendChild(el0, el1);
+            return el0;
+          },
+          buildRenderNodes: function buildRenderNodes() {
+            return [];
+          },
+          statements: [],
+          locals: [],
+          templates: []
+        };
+      })();
       return {
         meta: {
           "fragmentReason": false,
@@ -10395,7 +11415,7 @@ define("we-admin-blog/templates/partials/sidebar-menu", ["exports"], function (e
               "column": 4
             },
             "end": {
-              "line": 24,
+              "line": 34,
               "column": 4
             }
           },
@@ -10447,21 +11467,43 @@ define("we-admin-blog/templates/partials/sidebar-menu", ["exports"], function (e
           var el2 = dom.createTextNode("      ");
           dom.appendChild(el1, el2);
           dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n      ");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createElement("li");
+          var el2 = dom.createTextNode("\n");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createComment("");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createTextNode("      ");
+          dom.appendChild(el1, el2);
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n      ");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createElement("li");
+          var el2 = dom.createTextNode("\n");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createComment("");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createTextNode("      ");
+          dom.appendChild(el1, el2);
+          dom.appendChild(el0, el1);
           var el1 = dom.createTextNode("\n");
           dom.appendChild(el0, el1);
           return el0;
         },
         buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-          var morphs = new Array(4);
+          var morphs = new Array(6);
           morphs[0] = dom.createMorphAt(dom.childAt(fragment, [1]), 1, 1);
           morphs[1] = dom.createMorphAt(dom.childAt(fragment, [3]), 1, 1);
           morphs[2] = dom.createMorphAt(dom.childAt(fragment, [5]), 1, 1);
           morphs[3] = dom.createMorphAt(dom.childAt(fragment, [7]), 1, 1);
+          morphs[4] = dom.createMorphAt(dom.childAt(fragment, [9]), 1, 1);
+          morphs[5] = dom.createMorphAt(dom.childAt(fragment, [11]), 1, 1);
           return morphs;
         },
-        statements: [["block", "link-to", ["articles.index"], [], 0, null, ["loc", [null, [5, 8], [7, 20]]]], ["block", "link-to", ["menus.index"], [], 1, null, ["loc", [null, [10, 8], [12, 20]]]], ["block", "link-to", ["url-alia.index"], [], 2, null, ["loc", [null, [15, 8], [17, 20]]]], ["block", "link-to", ["users.index"], [], 3, null, ["loc", [null, [20, 8], [22, 20]]]]],
+        statements: [["block", "link-to", ["articles.index"], [], 0, null, ["loc", [null, [5, 8], [7, 20]]]], ["block", "link-to", ["menus.index"], [], 1, null, ["loc", [null, [10, 8], [12, 20]]]], ["block", "link-to", ["url-alia.index"], [], 2, null, ["loc", [null, [15, 8], [17, 20]]]], ["block", "link-to", ["users.index"], [], 3, null, ["loc", [null, [20, 8], [22, 20]]]], ["block", "link-to", ["roles"], [], 4, null, ["loc", [null, [25, 8], [27, 20]]]], ["block", "link-to", ["permissions"], [], 5, null, ["loc", [null, [30, 8], [32, 20]]]]],
         locals: [],
-        templates: [child0, child1, child2, child3]
+        templates: [child0, child1, child2, child3, child4, child5]
       };
     })();
     return {
@@ -10477,7 +11519,7 @@ define("we-admin-blog/templates/partials/sidebar-menu", ["exports"], function (e
             "column": 0
           },
           "end": {
-            "line": 26,
+            "line": 36,
             "column": 6
           }
         },
@@ -10513,9 +11555,252 @@ define("we-admin-blog/templates/partials/sidebar-menu", ["exports"], function (e
         morphs[0] = dom.createMorphAt(dom.childAt(fragment, [0, 1]), 1, 1);
         return morphs;
       },
-      statements: [["block", "ember-metismenu", [], ["classNames", "nav"], 0, null, ["loc", [null, [3, 4], [24, 24]]]]],
+      statements: [["block", "ember-metismenu", [], ["classNames", "nav"], 0, null, ["loc", [null, [3, 4], [34, 24]]]]],
       locals: [],
       templates: [child0]
+    };
+  })());
+});
+define("we-admin-blog/templates/permissions", ["exports"], function (exports) {
+  exports["default"] = Ember.HTMLBars.template((function () {
+    var child0 = (function () {
+      return {
+        meta: {
+          "fragmentReason": false,
+          "revision": "Ember@2.6.2",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 9,
+              "column": 6
+            },
+            "end": {
+              "line": 11,
+              "column": 6
+            }
+          },
+          "moduleName": "we-admin-blog/templates/permissions.hbs"
+        },
+        isEmpty: false,
+        arity: 1,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createTextNode("        ");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createElement("th");
+          var el2 = dom.createComment("");
+          dom.appendChild(el1, el2);
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var morphs = new Array(1);
+          morphs[0] = dom.createMorphAt(dom.childAt(fragment, [1]), 0, 0);
+          return morphs;
+        },
+        statements: [["content", "role", ["loc", [null, [10, 12], [10, 20]]]]],
+        locals: ["role"],
+        templates: []
+      };
+    })();
+    var child1 = (function () {
+      var child0 = (function () {
+        return {
+          meta: {
+            "fragmentReason": false,
+            "revision": "Ember@2.6.2",
+            "loc": {
+              "source": null,
+              "start": {
+                "line": 18,
+                "column": 8
+              },
+              "end": {
+                "line": 29,
+                "column": 8
+              }
+            },
+            "moduleName": "we-admin-blog/templates/permissions.hbs"
+          },
+          isEmpty: false,
+          arity: 1,
+          cachedFragment: null,
+          hasRendered: false,
+          buildFragment: function buildFragment(dom) {
+            var el0 = dom.createDocumentFragment();
+            var el1 = dom.createTextNode("          ");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createElement("td");
+            var el2 = dom.createTextNode("\n            ");
+            dom.appendChild(el1, el2);
+            var el2 = dom.createComment("");
+            dom.appendChild(el1, el2);
+            var el2 = dom.createTextNode("\n          ");
+            dom.appendChild(el1, el2);
+            dom.appendChild(el0, el1);
+            var el1 = dom.createTextNode("\n");
+            dom.appendChild(el0, el1);
+            return el0;
+          },
+          buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+            var morphs = new Array(1);
+            morphs[0] = dom.createMorphAt(dom.childAt(fragment, [1]), 1, 1);
+            return morphs;
+          },
+          statements: [["inline", "role-permission-check", [], ["roleName", ["subexpr", "@mut", [["get", "role", ["loc", [null, [21, 23], [21, 27]]]]], [], []], "permissionName", ["subexpr", "@mut", [["get", "permissionName", ["loc", [null, [22, 29], [22, 43]]]]], [], []], "roles", ["subexpr", "@mut", [["get", "model.data.roles", ["loc", [null, [23, 20], [23, 36]]]]], [], []], "class", "btn btn-default", "addPermission", "addPermission", "removePermission", "removePermission"], ["loc", [null, [20, 12], [27, 14]]]]],
+          locals: ["role"],
+          templates: []
+        };
+      })();
+      return {
+        meta: {
+          "fragmentReason": false,
+          "revision": "Ember@2.6.2",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 15,
+              "column": 4
+            },
+            "end": {
+              "line": 31,
+              "column": 4
+            }
+          },
+          "moduleName": "we-admin-blog/templates/permissions.hbs"
+        },
+        isEmpty: false,
+        arity: 1,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createTextNode("      ");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createElement("tr");
+          var el2 = dom.createTextNode("\n        ");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createElement("td");
+          var el3 = dom.createComment("");
+          dom.appendChild(el2, el3);
+          dom.appendChild(el1, el2);
+          var el2 = dom.createTextNode("\n");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createComment("");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createTextNode("      ");
+          dom.appendChild(el1, el2);
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var element0 = dom.childAt(fragment, [1]);
+          var morphs = new Array(2);
+          morphs[0] = dom.createMorphAt(dom.childAt(element0, [1]), 0, 0);
+          morphs[1] = dom.createMorphAt(element0, 3, 3);
+          return morphs;
+        },
+        statements: [["content", "permissionName", ["loc", [null, [17, 12], [17, 30]]]], ["block", "each", [["get", "model.roleNames", ["loc", [null, [18, 16], [18, 31]]]]], [], 0, null, ["loc", [null, [18, 8], [29, 17]]]]],
+        locals: ["permissionName"],
+        templates: [child0]
+      };
+    })();
+    return {
+      meta: {
+        "fragmentReason": {
+          "name": "triple-curlies"
+        },
+        "revision": "Ember@2.6.2",
+        "loc": {
+          "source": null,
+          "start": {
+            "line": 1,
+            "column": 0
+          },
+          "end": {
+            "line": 35,
+            "column": 12
+          }
+        },
+        "moduleName": "we-admin-blog/templates/permissions.hbs"
+      },
+      isEmpty: false,
+      arity: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      buildFragment: function buildFragment(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createElement("div");
+        dom.setAttribute(el1, "class", "row");
+        var el2 = dom.createElement("div");
+        dom.setAttribute(el2, "class", "col-md-12");
+        var el3 = dom.createTextNode("\n\n");
+        dom.appendChild(el2, el3);
+        var el3 = dom.createElement("h1");
+        var el4 = dom.createTextNode("Permissões");
+        dom.appendChild(el3, el4);
+        dom.appendChild(el2, el3);
+        var el3 = dom.createTextNode("\n\n");
+        dom.appendChild(el2, el3);
+        var el3 = dom.createElement("table");
+        dom.setAttribute(el3, "class", "table table-bordered permissions-table");
+        var el4 = dom.createTextNode("\n  ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createElement("thead");
+        var el5 = dom.createTextNode("\n    ");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createElement("tr");
+        var el6 = dom.createTextNode("\n      ");
+        dom.appendChild(el5, el6);
+        var el6 = dom.createElement("th");
+        var el7 = dom.createTextNode("#");
+        dom.appendChild(el6, el7);
+        dom.appendChild(el5, el6);
+        var el6 = dom.createTextNode("\n");
+        dom.appendChild(el5, el6);
+        var el6 = dom.createComment("");
+        dom.appendChild(el5, el6);
+        var el6 = dom.createTextNode("    ");
+        dom.appendChild(el5, el6);
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("\n  ");
+        dom.appendChild(el4, el5);
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n  ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createElement("tbody");
+        var el5 = dom.createTextNode("\n");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createComment("");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("  ");
+        dom.appendChild(el4, el5);
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n");
+        dom.appendChild(el3, el4);
+        dom.appendChild(el2, el3);
+        var el3 = dom.createTextNode("\n\n");
+        dom.appendChild(el2, el3);
+        dom.appendChild(el1, el2);
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+        var element1 = dom.childAt(fragment, [0, 0, 3]);
+        var morphs = new Array(2);
+        morphs[0] = dom.createMorphAt(dom.childAt(element1, [1, 1]), 3, 3);
+        morphs[1] = dom.createMorphAt(dom.childAt(element1, [3]), 1, 1);
+        return morphs;
+      },
+      statements: [["block", "each", [["get", "model.roleNames", ["loc", [null, [9, 14], [9, 29]]]]], [], 0, null, ["loc", [null, [9, 6], [11, 15]]]], ["block", "each", [["get", "model.permissionNames", ["loc", [null, [15, 12], [15, 33]]]]], [], 1, null, ["loc", [null, [15, 4], [31, 13]]]]],
+      locals: [],
+      templates: [child0, child1]
     };
   })());
 });
@@ -10885,6 +12170,235 @@ define("we-admin-blog/templates/profile/index", ["exports"], function (exports) 
       statements: [["element", "action", ["save", ["get", "model.user", ["loc", [null, [6, 26], [6, 36]]]]], ["on", "submit"], ["loc", [null, [6, 10], [6, 50]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.user.username", ["loc", [null, [10, 24], [10, 43]]]]], [], []], "class", "form-control", "placeholder", "Nome do usuário", "required", "required"], ["loc", [null, [10, 10], [10, 116]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.user.displayName", ["loc", [null, [14, 24], [14, 46]]]]], [], []], "class", "form-control", "placeholder", "Nome de exibição", "required", "required"], ["loc", [null, [14, 10], [14, 120]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.user.email", ["loc", [null, [18, 24], [18, 40]]]]], [], []], "class", "form-control", "placeholder", "Email", "disabled", ["subexpr", "@mut", [["get", "settings.notIsAdmin", ["loc", [null, [18, 91], [18, 110]]]]], [], []]], ["loc", [null, [18, 10], [18, 112]]]], ["inline", "textarea", [], ["value", ["subexpr", "@mut", [["get", "model.user.biography", ["loc", [null, [22, 27], [22, 47]]]]], [], []], "class", "form-control", "rows", "4"], ["loc", [null, [22, 10], [22, 79]]]]],
       locals: [],
       templates: []
+    };
+  })());
+});
+define("we-admin-blog/templates/roles", ["exports"], function (exports) {
+  exports["default"] = Ember.HTMLBars.template((function () {
+    var child0 = (function () {
+      var child0 = (function () {
+        return {
+          meta: {
+            "fragmentReason": false,
+            "revision": "Ember@2.6.2",
+            "loc": {
+              "source": null,
+              "start": {
+                "line": 7,
+                "column": 8
+              },
+              "end": {
+                "line": 11,
+                "column": 8
+              }
+            },
+            "moduleName": "we-admin-blog/templates/roles.hbs"
+          },
+          isEmpty: false,
+          arity: 0,
+          cachedFragment: null,
+          hasRendered: false,
+          buildFragment: function buildFragment(dom) {
+            var el0 = dom.createDocumentFragment();
+            var el1 = dom.createTextNode("          ");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createElement("button");
+            dom.setAttribute(el1, "class", "btn btn-default btn-sm");
+            var el2 = dom.createTextNode("\n            ");
+            dom.appendChild(el1, el2);
+            var el2 = dom.createElement("i");
+            dom.setAttribute(el2, "class", "glyphicon glyphicon-remove text-danger");
+            dom.appendChild(el1, el2);
+            var el2 = dom.createTextNode("\n          ");
+            dom.appendChild(el1, el2);
+            dom.appendChild(el0, el1);
+            var el1 = dom.createTextNode("\n");
+            dom.appendChild(el0, el1);
+            return el0;
+          },
+          buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+            var element0 = dom.childAt(fragment, [1]);
+            var morphs = new Array(1);
+            morphs[0] = dom.createElementMorph(element0);
+            return morphs;
+          },
+          statements: [["element", "action", ["deleteRole", ["get", "role", ["loc", [null, [8, 40], [8, 44]]]]], [], ["loc", [null, [8, 18], [8, 46]]]]],
+          locals: [],
+          templates: []
+        };
+      })();
+      return {
+        meta: {
+          "fragmentReason": false,
+          "revision": "Ember@2.6.2",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 4,
+              "column": 4
+            },
+            "end": {
+              "line": 13,
+              "column": 4
+            }
+          },
+          "moduleName": "we-admin-blog/templates/roles.hbs"
+        },
+        isEmpty: false,
+        arity: 1,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createTextNode("      ");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createElement("li");
+          dom.setAttribute(el1, "class", "list-group-item");
+          var el2 = dom.createTextNode("\n        ");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createComment("");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createTextNode("\n");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createComment("");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createTextNode("      ");
+          dom.appendChild(el1, el2);
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var element1 = dom.childAt(fragment, [1]);
+          var morphs = new Array(2);
+          morphs[0] = dom.createMorphAt(element1, 1, 1);
+          morphs[1] = dom.createMorphAt(element1, 3, 3);
+          return morphs;
+        },
+        statements: [["content", "role.name", ["loc", [null, [6, 8], [6, 21]]]], ["block", "unless", [["get", "role.isSystemRole", ["loc", [null, [7, 18], [7, 35]]]]], [], 0, null, ["loc", [null, [7, 8], [11, 19]]]]],
+        locals: ["role"],
+        templates: [child0]
+      };
+    })();
+    return {
+      meta: {
+        "fragmentReason": {
+          "name": "triple-curlies"
+        },
+        "revision": "Ember@2.6.2",
+        "loc": {
+          "source": null,
+          "start": {
+            "line": 1,
+            "column": 0
+          },
+          "end": {
+            "line": 28,
+            "column": 12
+          }
+        },
+        "moduleName": "we-admin-blog/templates/roles.hbs"
+      },
+      isEmpty: false,
+      arity: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      buildFragment: function buildFragment(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createElement("div");
+        dom.setAttribute(el1, "class", "row");
+        var el2 = dom.createElement("div");
+        dom.setAttribute(el2, "class", "col-md-12");
+        var el3 = dom.createTextNode("\n  ");
+        dom.appendChild(el2, el3);
+        var el3 = dom.createElement("h1");
+        var el4 = dom.createTextNode("Papéis de usuários");
+        dom.appendChild(el3, el4);
+        dom.appendChild(el2, el3);
+        var el3 = dom.createTextNode("\n  ");
+        dom.appendChild(el2, el3);
+        var el3 = dom.createElement("ul");
+        dom.setAttribute(el3, "class", "list-group");
+        var el4 = dom.createTextNode("\n");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createComment("");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("    ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createElement("li");
+        dom.setAttribute(el4, "class", "list-group-item");
+        var el5 = dom.createTextNode("\n      ");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createElement("form");
+        dom.setAttribute(el5, "class", "form-inline");
+        var el6 = dom.createTextNode("\n        ");
+        dom.appendChild(el5, el6);
+        var el6 = dom.createElement("fieldset");
+        var el7 = dom.createTextNode("\n          ");
+        dom.appendChild(el6, el7);
+        var el7 = dom.createElement("div");
+        dom.setAttribute(el7, "class", "form-group");
+        var el8 = dom.createTextNode("\n            ");
+        dom.appendChild(el7, el8);
+        var el8 = dom.createElement("label");
+        dom.setAttribute(el8, "class", "sr-only");
+        var el9 = dom.createTextNode("Name*");
+        dom.appendChild(el8, el9);
+        dom.appendChild(el7, el8);
+        var el8 = dom.createTextNode("\n            ");
+        dom.appendChild(el7, el8);
+        var el8 = dom.createComment("");
+        dom.appendChild(el7, el8);
+        var el8 = dom.createTextNode("\n          ");
+        dom.appendChild(el7, el8);
+        dom.appendChild(el6, el7);
+        var el7 = dom.createTextNode("\n          ");
+        dom.appendChild(el6, el7);
+        var el7 = dom.createElement("div");
+        dom.setAttribute(el7, "class", "form-group");
+        var el8 = dom.createTextNode("\n            ");
+        dom.appendChild(el7, el8);
+        var el8 = dom.createElement("button");
+        dom.setAttribute(el8, "type", "submit");
+        dom.setAttribute(el8, "class", "btn btn-default");
+        var el9 = dom.createElement("i");
+        dom.setAttribute(el9, "class", "glyphicon glyphicon-plus");
+        dom.appendChild(el8, el9);
+        dom.appendChild(el7, el8);
+        var el8 = dom.createTextNode("\n          ");
+        dom.appendChild(el7, el8);
+        dom.appendChild(el6, el7);
+        var el7 = dom.createTextNode("\n        ");
+        dom.appendChild(el6, el7);
+        dom.appendChild(el5, el6);
+        var el6 = dom.createTextNode("\n      ");
+        dom.appendChild(el5, el6);
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("\n    ");
+        dom.appendChild(el4, el5);
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n  ");
+        dom.appendChild(el3, el4);
+        dom.appendChild(el2, el3);
+        var el3 = dom.createTextNode("\n");
+        dom.appendChild(el2, el3);
+        dom.appendChild(el1, el2);
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+        var element2 = dom.childAt(fragment, [0, 0, 3]);
+        var element3 = dom.childAt(element2, [3, 1]);
+        var morphs = new Array(3);
+        morphs[0] = dom.createMorphAt(element2, 1, 1);
+        morphs[1] = dom.createElementMorph(element3);
+        morphs[2] = dom.createMorphAt(dom.childAt(element3, [1, 1]), 3, 3);
+        return morphs;
+      },
+      statements: [["block", "each", [["get", "model.roles", ["loc", [null, [4, 12], [4, 23]]]]], [], 0, null, ["loc", [null, [4, 4], [13, 13]]]], ["element", "action", ["createRole", ["get", "model.newRole", ["loc", [null, [15, 34], [15, 47]]]]], ["on", "submit"], ["loc", [null, [15, 12], [15, 61]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.newRole.name", ["loc", [null, [19, 26], [19, 44]]]]], [], []], "class", "form-control", "placeholder", "Criar papel de usuário", "required", "required"], ["loc", [null, [19, 12], [19, 124]]]]],
+      locals: [],
+      templates: [child0]
     };
   })());
 });
@@ -11841,6 +13355,471 @@ define("we-admin-blog/templates/users/index", ["exports"], function (exports) {
 define("we-admin-blog/templates/users/item", ["exports"], function (exports) {
   exports["default"] = Ember.HTMLBars.template((function () {
     var child0 = (function () {
+      var child0 = (function () {
+        var child0 = (function () {
+          return {
+            meta: {
+              "fragmentReason": false,
+              "revision": "Ember@2.6.2",
+              "loc": {
+                "source": null,
+                "start": {
+                  "line": 31,
+                  "column": 10
+                },
+                "end": {
+                  "line": 35,
+                  "column": 10
+                }
+              },
+              "moduleName": "we-admin-blog/templates/users/item.hbs"
+            },
+            isEmpty: false,
+            arity: 0,
+            cachedFragment: null,
+            hasRendered: false,
+            buildFragment: function buildFragment(dom) {
+              var el0 = dom.createDocumentFragment();
+              var el1 = dom.createTextNode("            ");
+              dom.appendChild(el0, el1);
+              var el1 = dom.createElement("button");
+              dom.setAttribute(el1, "type", "button");
+              dom.setAttribute(el1, "class", "btn btn-warning");
+              var el2 = dom.createTextNode("\n              Desativar\n            ");
+              dom.appendChild(el1, el2);
+              dom.appendChild(el0, el1);
+              var el1 = dom.createTextNode("\n");
+              dom.appendChild(el0, el1);
+              return el0;
+            },
+            buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+              var element4 = dom.childAt(fragment, [1]);
+              var morphs = new Array(1);
+              morphs[0] = dom.createElementMorph(element4);
+              return morphs;
+            },
+            statements: [["element", "action", ["changeActiveStatus", ["get", "model.user", ["loc", [null, [32, 50], [32, 60]]]], false], [], ["loc", [null, [32, 20], [32, 68]]]]],
+            locals: [],
+            templates: []
+          };
+        })();
+        var child1 = (function () {
+          return {
+            meta: {
+              "fragmentReason": false,
+              "revision": "Ember@2.6.2",
+              "loc": {
+                "source": null,
+                "start": {
+                  "line": 35,
+                  "column": 10
+                },
+                "end": {
+                  "line": 39,
+                  "column": 10
+                }
+              },
+              "moduleName": "we-admin-blog/templates/users/item.hbs"
+            },
+            isEmpty: false,
+            arity: 0,
+            cachedFragment: null,
+            hasRendered: false,
+            buildFragment: function buildFragment(dom) {
+              var el0 = dom.createDocumentFragment();
+              var el1 = dom.createTextNode("            ");
+              dom.appendChild(el0, el1);
+              var el1 = dom.createElement("button");
+              dom.setAttribute(el1, "type", "button");
+              dom.setAttribute(el1, "class", "btn btn-success");
+              var el2 = dom.createTextNode("\n              Ativar\n            ");
+              dom.appendChild(el1, el2);
+              dom.appendChild(el0, el1);
+              var el1 = dom.createTextNode("\n");
+              dom.appendChild(el0, el1);
+              return el0;
+            },
+            buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+              var element3 = dom.childAt(fragment, [1]);
+              var morphs = new Array(1);
+              morphs[0] = dom.createElementMorph(element3);
+              return morphs;
+            },
+            statements: [["element", "action", ["changeActiveStatus", ["get", "model.user", ["loc", [null, [36, 50], [36, 60]]]], true], [], ["loc", [null, [36, 20], [36, 67]]]]],
+            locals: [],
+            templates: []
+          };
+        })();
+        return {
+          meta: {
+            "fragmentReason": false,
+            "revision": "Ember@2.6.2",
+            "loc": {
+              "source": null,
+              "start": {
+                "line": 4,
+                "column": 2
+              },
+              "end": {
+                "line": 43,
+                "column": 2
+              }
+            },
+            "moduleName": "we-admin-blog/templates/users/item.hbs"
+          },
+          isEmpty: false,
+          arity: 0,
+          cachedFragment: null,
+          hasRendered: false,
+          buildFragment: function buildFragment(dom) {
+            var el0 = dom.createDocumentFragment();
+            var el1 = dom.createTextNode("    ");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createElement("form");
+            var el2 = dom.createTextNode("\n      ");
+            dom.appendChild(el1, el2);
+            var el2 = dom.createElement("fieldset");
+            var el3 = dom.createTextNode("\n        ");
+            dom.appendChild(el2, el3);
+            var el3 = dom.createElement("div");
+            dom.setAttribute(el3, "class", "form-group");
+            var el4 = dom.createTextNode("\n          ");
+            dom.appendChild(el3, el4);
+            var el4 = dom.createElement("label");
+            var el5 = dom.createTextNode("Username");
+            dom.appendChild(el4, el5);
+            dom.appendChild(el3, el4);
+            var el4 = dom.createTextNode("\n          ");
+            dom.appendChild(el3, el4);
+            var el4 = dom.createComment("");
+            dom.appendChild(el3, el4);
+            var el4 = dom.createTextNode("\n        ");
+            dom.appendChild(el3, el4);
+            dom.appendChild(el2, el3);
+            var el3 = dom.createTextNode("\n        ");
+            dom.appendChild(el2, el3);
+            var el3 = dom.createElement("div");
+            dom.setAttribute(el3, "class", "form-group");
+            var el4 = dom.createTextNode("\n          ");
+            dom.appendChild(el3, el4);
+            var el4 = dom.createElement("label");
+            var el5 = dom.createTextNode("DisplayName");
+            dom.appendChild(el4, el5);
+            dom.appendChild(el3, el4);
+            var el4 = dom.createTextNode("\n          ");
+            dom.appendChild(el3, el4);
+            var el4 = dom.createComment("");
+            dom.appendChild(el3, el4);
+            var el4 = dom.createTextNode("\n        ");
+            dom.appendChild(el3, el4);
+            dom.appendChild(el2, el3);
+            var el3 = dom.createTextNode("\n        ");
+            dom.appendChild(el2, el3);
+            var el3 = dom.createElement("div");
+            dom.setAttribute(el3, "class", "form-group");
+            var el4 = dom.createTextNode("\n          ");
+            dom.appendChild(el3, el4);
+            var el4 = dom.createElement("label");
+            var el5 = dom.createTextNode("Email");
+            dom.appendChild(el4, el5);
+            dom.appendChild(el3, el4);
+            var el4 = dom.createTextNode("\n          ");
+            dom.appendChild(el3, el4);
+            var el4 = dom.createComment("");
+            dom.appendChild(el3, el4);
+            var el4 = dom.createTextNode("\n        ");
+            dom.appendChild(el3, el4);
+            dom.appendChild(el2, el3);
+            var el3 = dom.createTextNode("\n        ");
+            dom.appendChild(el2, el3);
+            var el3 = dom.createElement("div");
+            dom.setAttribute(el3, "class", "form-group");
+            var el4 = dom.createTextNode("\n          ");
+            dom.appendChild(el3, el4);
+            var el4 = dom.createElement("label");
+            var el5 = dom.createTextNode("Biografia / sobre");
+            dom.appendChild(el4, el5);
+            dom.appendChild(el3, el4);
+            var el4 = dom.createTextNode("\n          ");
+            dom.appendChild(el3, el4);
+            var el4 = dom.createComment("");
+            dom.appendChild(el3, el4);
+            var el4 = dom.createTextNode("\n        ");
+            dom.appendChild(el3, el4);
+            dom.appendChild(el2, el3);
+            var el3 = dom.createTextNode("\n      ");
+            dom.appendChild(el2, el3);
+            dom.appendChild(el1, el2);
+            var el2 = dom.createTextNode("\n      ");
+            dom.appendChild(el1, el2);
+            var el2 = dom.createElement("div");
+            var el3 = dom.createTextNode("\n        ");
+            dom.appendChild(el2, el3);
+            var el3 = dom.createElement("button");
+            dom.setAttribute(el3, "class", "btn btn-primary");
+            var el4 = dom.createTextNode("\n          ");
+            dom.appendChild(el3, el4);
+            var el4 = dom.createElement("i");
+            dom.setAttribute(el4, "class", "fa fa-save");
+            dom.appendChild(el3, el4);
+            var el4 = dom.createTextNode("\n          Salvar\n        ");
+            dom.appendChild(el3, el4);
+            dom.appendChild(el2, el3);
+            var el3 = dom.createTextNode("\n\n        ");
+            dom.appendChild(el2, el3);
+            var el3 = dom.createElement("div");
+            dom.setAttribute(el3, "class", "pull-right");
+            var el4 = dom.createTextNode("\n");
+            dom.appendChild(el3, el4);
+            var el4 = dom.createComment("");
+            dom.appendChild(el3, el4);
+            var el4 = dom.createTextNode("        ");
+            dom.appendChild(el3, el4);
+            dom.appendChild(el2, el3);
+            var el3 = dom.createTextNode("\n      ");
+            dom.appendChild(el2, el3);
+            dom.appendChild(el1, el2);
+            var el2 = dom.createTextNode("\n    ");
+            dom.appendChild(el1, el2);
+            dom.appendChild(el0, el1);
+            var el1 = dom.createTextNode("\n");
+            dom.appendChild(el0, el1);
+            return el0;
+          },
+          buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+            var element5 = dom.childAt(fragment, [1]);
+            var element6 = dom.childAt(element5, [1]);
+            var morphs = new Array(6);
+            morphs[0] = dom.createElementMorph(element5);
+            morphs[1] = dom.createMorphAt(dom.childAt(element6, [1]), 3, 3);
+            morphs[2] = dom.createMorphAt(dom.childAt(element6, [3]), 3, 3);
+            morphs[3] = dom.createMorphAt(dom.childAt(element6, [5]), 3, 3);
+            morphs[4] = dom.createMorphAt(dom.childAt(element6, [7]), 3, 3);
+            morphs[5] = dom.createMorphAt(dom.childAt(element5, [3, 3]), 1, 1);
+            return morphs;
+          },
+          statements: [["element", "action", ["save", ["get", "model.user", ["loc", [null, [5, 26], [5, 36]]]]], ["on", "submit"], ["loc", [null, [5, 10], [5, 50]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.user.username", ["loc", [null, [9, 24], [9, 43]]]]], [], []], "class", "form-control", "placeholder", "Nome do usuário", "required", "required"], ["loc", [null, [9, 10], [9, 116]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.user.displayName", ["loc", [null, [13, 24], [13, 46]]]]], [], []], "class", "form-control", "placeholder", "Nome de exibição", "required", "required"], ["loc", [null, [13, 10], [13, 120]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.user.email", ["loc", [null, [17, 24], [17, 40]]]]], [], []], "class", "form-control", "placeholder", "Email", "required", "required"], ["loc", [null, [17, 10], [17, 103]]]], ["inline", "textarea", [], ["value", ["subexpr", "@mut", [["get", "model.user.biography", ["loc", [null, [21, 27], [21, 47]]]]], [], []], "class", "form-control", "rows", "4"], ["loc", [null, [21, 10], [21, 79]]]], ["block", "if", [["get", "model.user.active", ["loc", [null, [31, 16], [31, 33]]]]], [], 0, 1, ["loc", [null, [31, 10], [39, 17]]]]],
+          locals: [],
+          templates: [child0, child1]
+        };
+      })();
+      var child1 = (function () {
+        return {
+          meta: {
+            "fragmentReason": false,
+            "revision": "Ember@2.6.2",
+            "loc": {
+              "source": null,
+              "start": {
+                "line": 44,
+                "column": 2
+              },
+              "end": {
+                "line": 64,
+                "column": 2
+              }
+            },
+            "moduleName": "we-admin-blog/templates/users/item.hbs"
+          },
+          isEmpty: false,
+          arity: 0,
+          cachedFragment: null,
+          hasRendered: false,
+          buildFragment: function buildFragment(dom) {
+            var el0 = dom.createDocumentFragment();
+            var el1 = dom.createTextNode("    ");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createElement("h4");
+            var el2 = dom.createTextNode("Mudar senha");
+            dom.appendChild(el1, el2);
+            dom.appendChild(el0, el1);
+            var el1 = dom.createTextNode("\n    ");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createElement("form");
+            var el2 = dom.createTextNode("\n      ");
+            dom.appendChild(el1, el2);
+            var el2 = dom.createElement("fieldset");
+            var el3 = dom.createTextNode("\n        ");
+            dom.appendChild(el2, el3);
+            var el3 = dom.createElement("div");
+            dom.setAttribute(el3, "class", "form-group");
+            var el4 = dom.createTextNode("\n          ");
+            dom.appendChild(el3, el4);
+            var el4 = dom.createElement("label");
+            var el5 = dom.createTextNode("Nova senha");
+            dom.appendChild(el4, el5);
+            dom.appendChild(el3, el4);
+            var el4 = dom.createTextNode("\n          ");
+            dom.appendChild(el3, el4);
+            var el4 = dom.createComment("");
+            dom.appendChild(el3, el4);
+            var el4 = dom.createTextNode("\n        ");
+            dom.appendChild(el3, el4);
+            dom.appendChild(el2, el3);
+            var el3 = dom.createTextNode("\n        ");
+            dom.appendChild(el2, el3);
+            var el3 = dom.createElement("div");
+            dom.setAttribute(el3, "class", "form-group");
+            var el4 = dom.createTextNode("\n          ");
+            dom.appendChild(el3, el4);
+            var el4 = dom.createElement("label");
+            var el5 = dom.createTextNode("Repetir a nova senha");
+            dom.appendChild(el4, el5);
+            dom.appendChild(el3, el4);
+            var el4 = dom.createTextNode("\n          ");
+            dom.appendChild(el3, el4);
+            var el4 = dom.createComment("");
+            dom.appendChild(el3, el4);
+            var el4 = dom.createTextNode("\n        ");
+            dom.appendChild(el3, el4);
+            dom.appendChild(el2, el3);
+            var el3 = dom.createTextNode("\n      ");
+            dom.appendChild(el2, el3);
+            dom.appendChild(el1, el2);
+            var el2 = dom.createTextNode("\n      ");
+            dom.appendChild(el1, el2);
+            var el2 = dom.createElement("div");
+            var el3 = dom.createTextNode("\n        ");
+            dom.appendChild(el2, el3);
+            var el3 = dom.createElement("button");
+            dom.setAttribute(el3, "type", "submit");
+            dom.setAttribute(el3, "class", "btn btn-primary");
+            var el4 = dom.createTextNode("\n          ");
+            dom.appendChild(el3, el4);
+            var el4 = dom.createElement("i");
+            dom.setAttribute(el4, "class", "fa fa-save");
+            dom.appendChild(el3, el4);
+            var el4 = dom.createTextNode("\n          Mudar senha\n        ");
+            dom.appendChild(el3, el4);
+            dom.appendChild(el2, el3);
+            var el3 = dom.createTextNode("\n      ");
+            dom.appendChild(el2, el3);
+            dom.appendChild(el1, el2);
+            var el2 = dom.createTextNode("\n    ");
+            dom.appendChild(el1, el2);
+            dom.appendChild(el0, el1);
+            var el1 = dom.createTextNode("\n");
+            dom.appendChild(el0, el1);
+            return el0;
+          },
+          buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+            var element1 = dom.childAt(fragment, [3]);
+            var element2 = dom.childAt(element1, [1]);
+            var morphs = new Array(3);
+            morphs[0] = dom.createElementMorph(element1);
+            morphs[1] = dom.createMorphAt(dom.childAt(element2, [1]), 3, 3);
+            morphs[2] = dom.createMorphAt(dom.childAt(element2, [3]), 3, 3);
+            return morphs;
+          },
+          statements: [["element", "action", ["changePassword", ["get", "model", ["loc", [null, [46, 36], [46, 41]]]]], ["on", "submit"], ["loc", [null, [46, 10], [46, 55]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.newPassword", ["loc", [null, [50, 24], [50, 41]]]]], [], []], "class", "form-control", "placeholder", "Digite a nova senha aqui", "required", "required", "type", "password"], ["loc", [null, [50, 10], [50, 139]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.rNewPassword", ["loc", [null, [54, 24], [54, 42]]]]], [], []], "class", "form-control", "placeholder", "Repita a senha aqui", "required", "required", "type", "password"], ["loc", [null, [54, 10], [54, 135]]]]],
+          locals: [],
+          templates: []
+        };
+      })();
+      var child2 = (function () {
+        var child0 = (function () {
+          return {
+            meta: {
+              "fragmentReason": false,
+              "revision": "Ember@2.6.2",
+              "loc": {
+                "source": null,
+                "start": {
+                  "line": 67,
+                  "column": 6
+                },
+                "end": {
+                  "line": 78,
+                  "column": 6
+                }
+              },
+              "moduleName": "we-admin-blog/templates/users/item.hbs"
+            },
+            isEmpty: false,
+            arity: 1,
+            cachedFragment: null,
+            hasRendered: false,
+            buildFragment: function buildFragment(dom) {
+              var el0 = dom.createDocumentFragment();
+              var el1 = dom.createTextNode("        ");
+              dom.appendChild(el0, el1);
+              var el1 = dom.createElement("li");
+              dom.setAttribute(el1, "class", "list-group-item");
+              var el2 = dom.createTextNode("\n          ");
+              dom.appendChild(el1, el2);
+              var el2 = dom.createComment("");
+              dom.appendChild(el1, el2);
+              var el2 = dom.createTextNode("\n          ");
+              dom.appendChild(el1, el2);
+              var el2 = dom.createComment("");
+              dom.appendChild(el1, el2);
+              var el2 = dom.createTextNode("\n        ");
+              dom.appendChild(el1, el2);
+              dom.appendChild(el0, el1);
+              var el1 = dom.createTextNode("\n");
+              dom.appendChild(el0, el1);
+              return el0;
+            },
+            buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+              var element0 = dom.childAt(fragment, [1]);
+              var morphs = new Array(2);
+              morphs[0] = dom.createMorphAt(element0, 1, 1);
+              morphs[1] = dom.createMorphAt(element0, 3, 3);
+              return morphs;
+            },
+            statements: [["inline", "user-role-checkbox", [], ["user", ["subexpr", "@mut", [["get", "model.user", ["loc", [null, [70, 17], [70, 27]]]]], [], []], "roleName", ["subexpr", "@mut", [["get", "role.name", ["loc", [null, [71, 21], [71, 30]]]]], [], []], "class", "btn btn-default", "addUserRole", "addUserRole", "removeUserRole", "removeUserRole"], ["loc", [null, [69, 10], [75, 12]]]], ["content", "role.name", ["loc", [null, [76, 10], [76, 23]]]]],
+            locals: ["role"],
+            templates: []
+          };
+        })();
+        return {
+          meta: {
+            "fragmentReason": false,
+            "revision": "Ember@2.6.2",
+            "loc": {
+              "source": null,
+              "start": {
+                "line": 65,
+                "column": 2
+              },
+              "end": {
+                "line": 80,
+                "column": 2
+              }
+            },
+            "moduleName": "we-admin-blog/templates/users/item.hbs"
+          },
+          isEmpty: false,
+          arity: 0,
+          cachedFragment: null,
+          hasRendered: false,
+          buildFragment: function buildFragment(dom) {
+            var el0 = dom.createDocumentFragment();
+            var el1 = dom.createTextNode("    ");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createElement("ul");
+            dom.setAttribute(el1, "class", "list-group");
+            var el2 = dom.createTextNode("\n");
+            dom.appendChild(el1, el2);
+            var el2 = dom.createComment("");
+            dom.appendChild(el1, el2);
+            var el2 = dom.createTextNode("    ");
+            dom.appendChild(el1, el2);
+            dom.appendChild(el0, el1);
+            var el1 = dom.createTextNode("\n");
+            dom.appendChild(el0, el1);
+            return el0;
+          },
+          buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+            var morphs = new Array(1);
+            morphs[0] = dom.createMorphAt(dom.childAt(fragment, [1]), 1, 1);
+            return morphs;
+          },
+          statements: [["block", "each", [["get", "model.roles", ["loc", [null, [67, 14], [67, 25]]]]], [], 0, null, ["loc", [null, [67, 6], [78, 15]]]]],
+          locals: [],
+          templates: [child0]
+        };
+      })();
       return {
         meta: {
           "fragmentReason": false,
@@ -11848,97 +13827,49 @@ define("we-admin-blog/templates/users/item", ["exports"], function (exports) {
           "loc": {
             "source": null,
             "start": {
-              "line": 32,
-              "column": 8
+              "line": 3,
+              "column": 0
             },
             "end": {
-              "line": 36,
-              "column": 8
+              "line": 81,
+              "column": 0
             }
           },
           "moduleName": "we-admin-blog/templates/users/item.hbs"
         },
         isEmpty: false,
-        arity: 0,
+        arity: 1,
         cachedFragment: null,
         hasRendered: false,
         buildFragment: function buildFragment(dom) {
           var el0 = dom.createDocumentFragment();
-          var el1 = dom.createTextNode("          ");
+          var el1 = dom.createComment("");
           dom.appendChild(el0, el1);
-          var el1 = dom.createElement("button");
-          dom.setAttribute(el1, "type", "button");
-          dom.setAttribute(el1, "class", "btn btn-warning");
-          var el2 = dom.createTextNode("\n            Desativar\n          ");
-          dom.appendChild(el1, el2);
+          var el1 = dom.createComment("");
           dom.appendChild(el0, el1);
-          var el1 = dom.createTextNode("\n");
+          var el1 = dom.createComment("");
           dom.appendChild(el0, el1);
           return el0;
         },
         buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-          var element1 = dom.childAt(fragment, [1]);
-          var morphs = new Array(1);
-          morphs[0] = dom.createElementMorph(element1);
+          var morphs = new Array(3);
+          morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+          morphs[1] = dom.createMorphAt(fragment, 1, 1, contextualElement);
+          morphs[2] = dom.createMorphAt(fragment, 2, 2, contextualElement);
+          dom.insertBoundary(fragment, 0);
+          dom.insertBoundary(fragment, null);
           return morphs;
         },
-        statements: [["element", "action", ["changeActiveStatus", ["get", "model.user", ["loc", [null, [33, 48], [33, 58]]]], false], [], ["loc", [null, [33, 18], [33, 66]]]]],
-        locals: [],
-        templates: []
-      };
-    })();
-    var child1 = (function () {
-      return {
-        meta: {
-          "fragmentReason": false,
-          "revision": "Ember@2.6.2",
-          "loc": {
-            "source": null,
-            "start": {
-              "line": 36,
-              "column": 8
-            },
-            "end": {
-              "line": 40,
-              "column": 8
-            }
-          },
-          "moduleName": "we-admin-blog/templates/users/item.hbs"
-        },
-        isEmpty: false,
-        arity: 0,
-        cachedFragment: null,
-        hasRendered: false,
-        buildFragment: function buildFragment(dom) {
-          var el0 = dom.createDocumentFragment();
-          var el1 = dom.createTextNode("          ");
-          dom.appendChild(el0, el1);
-          var el1 = dom.createElement("button");
-          dom.setAttribute(el1, "type", "button");
-          dom.setAttribute(el1, "class", "btn btn-success");
-          var el2 = dom.createTextNode("\n            Ativar\n          ");
-          dom.appendChild(el1, el2);
-          dom.appendChild(el0, el1);
-          var el1 = dom.createTextNode("\n");
-          dom.appendChild(el0, el1);
-          return el0;
-        },
-        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-          var element0 = dom.childAt(fragment, [1]);
-          var morphs = new Array(1);
-          morphs[0] = dom.createElementMorph(element0);
-          return morphs;
-        },
-        statements: [["element", "action", ["changeActiveStatus", ["get", "model.user", ["loc", [null, [37, 48], [37, 58]]]], true], [], ["loc", [null, [37, 18], [37, 65]]]]],
-        locals: [],
-        templates: []
+        statements: [["block", "tab.pane", [], ["title", "Dados de perfil"], 0, null, ["loc", [null, [4, 2], [43, 15]]]], ["block", "tab.pane", [], ["title", "Senha e login"], 1, null, ["loc", [null, [44, 2], [64, 15]]]], ["block", "tab.pane", [], ["title", "Papéis"], 2, null, ["loc", [null, [65, 2], [80, 15]]]]],
+        locals: ["tab"],
+        templates: [child0, child1, child2]
       };
     })();
     return {
       meta: {
         "fragmentReason": {
           "name": "missing-wrapper",
-          "problems": ["multiple-nodes"]
+          "problems": ["multiple-nodes", "wrong-type"]
         },
         "revision": "Ember@2.6.2",
         "loc": {
@@ -11948,8 +13879,8 @@ define("we-admin-blog/templates/users/item", ["exports"], function (exports) {
             "column": 0
           },
           "end": {
-            "line": 72,
-            "column": 0
+            "line": 81,
+            "column": 11
           }
         },
         "moduleName": "we-admin-blog/templates/users/item.hbs"
@@ -11960,258 +13891,31 @@ define("we-admin-blog/templates/users/item", ["exports"], function (exports) {
       hasRendered: false,
       buildFragment: function buildFragment(dom) {
         var el0 = dom.createDocumentFragment();
-        var el1 = dom.createElement("div");
-        dom.setAttribute(el1, "class", "content-box-large");
-        var el2 = dom.createTextNode("\n  ");
+        var el1 = dom.createElement("h1");
+        dom.setAttribute(el1, "class", "page-header");
+        var el2 = dom.createTextNode("Usuário \"");
         dom.appendChild(el1, el2);
-        var el2 = dom.createElement("div");
-        dom.setAttribute(el2, "class", "panel-heading");
-        var el3 = dom.createTextNode("\n    ");
-        dom.appendChild(el2, el3);
-        var el3 = dom.createElement("h1");
-        dom.setAttribute(el3, "class", "page-header");
-        var el4 = dom.createTextNode("Dados do usuário");
-        dom.appendChild(el3, el4);
-        dom.appendChild(el2, el3);
-        var el3 = dom.createTextNode("\n  ");
-        dom.appendChild(el2, el3);
+        var el2 = dom.createComment("");
         dom.appendChild(el1, el2);
-        var el2 = dom.createTextNode("\n  ");
-        dom.appendChild(el1, el2);
-        var el2 = dom.createElement("div");
-        dom.setAttribute(el2, "class", "panel-body");
-        var el3 = dom.createTextNode("\n    ");
-        dom.appendChild(el2, el3);
-        var el3 = dom.createElement("form");
-        var el4 = dom.createTextNode("\n    ");
-        dom.appendChild(el3, el4);
-        var el4 = dom.createElement("fieldset");
-        var el5 = dom.createTextNode("\n      ");
-        dom.appendChild(el4, el5);
-        var el5 = dom.createElement("div");
-        dom.setAttribute(el5, "class", "form-group");
-        var el6 = dom.createTextNode("\n        ");
-        dom.appendChild(el5, el6);
-        var el6 = dom.createElement("label");
-        var el7 = dom.createTextNode("Username");
-        dom.appendChild(el6, el7);
-        dom.appendChild(el5, el6);
-        var el6 = dom.createTextNode("\n        ");
-        dom.appendChild(el5, el6);
-        var el6 = dom.createComment("");
-        dom.appendChild(el5, el6);
-        var el6 = dom.createTextNode("\n      ");
-        dom.appendChild(el5, el6);
-        dom.appendChild(el4, el5);
-        var el5 = dom.createTextNode("\n      ");
-        dom.appendChild(el4, el5);
-        var el5 = dom.createElement("div");
-        dom.setAttribute(el5, "class", "form-group");
-        var el6 = dom.createTextNode("\n        ");
-        dom.appendChild(el5, el6);
-        var el6 = dom.createElement("label");
-        var el7 = dom.createTextNode("DisplayName");
-        dom.appendChild(el6, el7);
-        dom.appendChild(el5, el6);
-        var el6 = dom.createTextNode("\n        ");
-        dom.appendChild(el5, el6);
-        var el6 = dom.createComment("");
-        dom.appendChild(el5, el6);
-        var el6 = dom.createTextNode("\n      ");
-        dom.appendChild(el5, el6);
-        dom.appendChild(el4, el5);
-        var el5 = dom.createTextNode("\n      ");
-        dom.appendChild(el4, el5);
-        var el5 = dom.createElement("div");
-        dom.setAttribute(el5, "class", "form-group");
-        var el6 = dom.createTextNode("\n        ");
-        dom.appendChild(el5, el6);
-        var el6 = dom.createElement("label");
-        var el7 = dom.createTextNode("Email");
-        dom.appendChild(el6, el7);
-        dom.appendChild(el5, el6);
-        var el6 = dom.createTextNode("\n        ");
-        dom.appendChild(el5, el6);
-        var el6 = dom.createComment("");
-        dom.appendChild(el5, el6);
-        var el6 = dom.createTextNode("\n      ");
-        dom.appendChild(el5, el6);
-        dom.appendChild(el4, el5);
-        var el5 = dom.createTextNode("\n      ");
-        dom.appendChild(el4, el5);
-        var el5 = dom.createElement("div");
-        dom.setAttribute(el5, "class", "form-group");
-        var el6 = dom.createTextNode("\n        ");
-        dom.appendChild(el5, el6);
-        var el6 = dom.createElement("label");
-        var el7 = dom.createTextNode("Biografia / sobre");
-        dom.appendChild(el6, el7);
-        dom.appendChild(el5, el6);
-        var el6 = dom.createTextNode("\n        ");
-        dom.appendChild(el5, el6);
-        var el6 = dom.createComment("");
-        dom.appendChild(el5, el6);
-        var el6 = dom.createTextNode("\n      ");
-        dom.appendChild(el5, el6);
-        dom.appendChild(el4, el5);
-        var el5 = dom.createTextNode("\n    ");
-        dom.appendChild(el4, el5);
-        dom.appendChild(el3, el4);
-        var el4 = dom.createTextNode("\n    ");
-        dom.appendChild(el3, el4);
-        var el4 = dom.createElement("div");
-        var el5 = dom.createTextNode("\n      ");
-        dom.appendChild(el4, el5);
-        var el5 = dom.createElement("button");
-        dom.setAttribute(el5, "class", "btn btn-primary");
-        var el6 = dom.createTextNode("\n        ");
-        dom.appendChild(el5, el6);
-        var el6 = dom.createElement("i");
-        dom.setAttribute(el6, "class", "fa fa-save");
-        dom.appendChild(el5, el6);
-        var el6 = dom.createTextNode("\n        Salvar\n      ");
-        dom.appendChild(el5, el6);
-        dom.appendChild(el4, el5);
-        var el5 = dom.createTextNode("\n\n      ");
-        dom.appendChild(el4, el5);
-        var el5 = dom.createElement("div");
-        dom.setAttribute(el5, "class", "pull-right");
-        var el6 = dom.createTextNode("\n");
-        dom.appendChild(el5, el6);
-        var el6 = dom.createComment("");
-        dom.appendChild(el5, el6);
-        var el6 = dom.createTextNode("      ");
-        dom.appendChild(el5, el6);
-        dom.appendChild(el4, el5);
-        var el5 = dom.createTextNode("\n    ");
-        dom.appendChild(el4, el5);
-        dom.appendChild(el3, el4);
-        var el4 = dom.createTextNode("\n  ");
-        dom.appendChild(el3, el4);
-        dom.appendChild(el2, el3);
-        var el3 = dom.createTextNode("\n  ");
-        dom.appendChild(el2, el3);
-        dom.appendChild(el1, el2);
-        var el2 = dom.createTextNode("\n");
+        var el2 = dom.createTextNode("\"");
         dom.appendChild(el1, el2);
         dom.appendChild(el0, el1);
         var el1 = dom.createTextNode("\n\n");
         dom.appendChild(el0, el1);
-        var el1 = dom.createElement("div");
-        dom.setAttribute(el1, "class", "content-box-large");
-        var el2 = dom.createTextNode("\n  ");
-        dom.appendChild(el1, el2);
-        var el2 = dom.createElement("div");
-        dom.setAttribute(el2, "class", "panel-heading");
-        var el3 = dom.createTextNode("\n      ");
-        dom.appendChild(el2, el3);
-        var el3 = dom.createElement("div");
-        dom.setAttribute(el3, "class", "panel-title");
-        var el4 = dom.createTextNode("Mudar senha");
-        dom.appendChild(el3, el4);
-        dom.appendChild(el2, el3);
-        var el3 = dom.createTextNode("\n    ");
-        dom.appendChild(el2, el3);
-        dom.appendChild(el1, el2);
-        var el2 = dom.createTextNode("\n  ");
-        dom.appendChild(el1, el2);
-        var el2 = dom.createElement("div");
-        dom.setAttribute(el2, "class", "panel-body");
-        var el3 = dom.createTextNode("\n    ");
-        dom.appendChild(el2, el3);
-        var el3 = dom.createElement("form");
-        var el4 = dom.createTextNode("\n    ");
-        dom.appendChild(el3, el4);
-        var el4 = dom.createElement("fieldset");
-        var el5 = dom.createTextNode("\n      ");
-        dom.appendChild(el4, el5);
-        var el5 = dom.createElement("div");
-        dom.setAttribute(el5, "class", "form-group");
-        var el6 = dom.createTextNode("\n        ");
-        dom.appendChild(el5, el6);
-        var el6 = dom.createElement("label");
-        var el7 = dom.createTextNode("Nova senha");
-        dom.appendChild(el6, el7);
-        dom.appendChild(el5, el6);
-        var el6 = dom.createTextNode("\n        ");
-        dom.appendChild(el5, el6);
-        var el6 = dom.createComment("");
-        dom.appendChild(el5, el6);
-        var el6 = dom.createTextNode("\n      ");
-        dom.appendChild(el5, el6);
-        dom.appendChild(el4, el5);
-        var el5 = dom.createTextNode("\n      ");
-        dom.appendChild(el4, el5);
-        var el5 = dom.createElement("div");
-        dom.setAttribute(el5, "class", "form-group");
-        var el6 = dom.createTextNode("\n        ");
-        dom.appendChild(el5, el6);
-        var el6 = dom.createElement("label");
-        var el7 = dom.createTextNode("Repetir a nova senha");
-        dom.appendChild(el6, el7);
-        dom.appendChild(el5, el6);
-        var el6 = dom.createTextNode("\n        ");
-        dom.appendChild(el5, el6);
-        var el6 = dom.createComment("");
-        dom.appendChild(el5, el6);
-        var el6 = dom.createTextNode("\n      ");
-        dom.appendChild(el5, el6);
-        dom.appendChild(el4, el5);
-        var el5 = dom.createTextNode("\n    ");
-        dom.appendChild(el4, el5);
-        dom.appendChild(el3, el4);
-        var el4 = dom.createTextNode("\n    ");
-        dom.appendChild(el3, el4);
-        var el4 = dom.createElement("div");
-        var el5 = dom.createTextNode("\n      ");
-        dom.appendChild(el4, el5);
-        var el5 = dom.createElement("button");
-        dom.setAttribute(el5, "type", "submit");
-        dom.setAttribute(el5, "class", "btn btn-primary");
-        var el6 = dom.createTextNode("\n        ");
-        dom.appendChild(el5, el6);
-        var el6 = dom.createElement("i");
-        dom.setAttribute(el6, "class", "fa fa-save");
-        dom.appendChild(el5, el6);
-        var el6 = dom.createTextNode("\n        Mudar senha\n      ");
-        dom.appendChild(el5, el6);
-        dom.appendChild(el4, el5);
-        var el5 = dom.createTextNode("\n    ");
-        dom.appendChild(el4, el5);
-        dom.appendChild(el3, el4);
-        var el4 = dom.createTextNode("\n  ");
-        dom.appendChild(el3, el4);
-        dom.appendChild(el2, el3);
-        var el3 = dom.createTextNode("\n  ");
-        dom.appendChild(el2, el3);
-        dom.appendChild(el1, el2);
-        var el2 = dom.createTextNode("\n");
-        dom.appendChild(el1, el2);
-        dom.appendChild(el0, el1);
-        var el1 = dom.createTextNode("\n");
+        var el1 = dom.createComment("");
         dom.appendChild(el0, el1);
         return el0;
       },
       buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-        var element2 = dom.childAt(fragment, [0, 3, 1]);
-        var element3 = dom.childAt(element2, [1]);
-        var element4 = dom.childAt(fragment, [2, 3, 1]);
-        var element5 = dom.childAt(element4, [1]);
-        var morphs = new Array(9);
-        morphs[0] = dom.createElementMorph(element2);
-        morphs[1] = dom.createMorphAt(dom.childAt(element3, [1]), 3, 3);
-        morphs[2] = dom.createMorphAt(dom.childAt(element3, [3]), 3, 3);
-        morphs[3] = dom.createMorphAt(dom.childAt(element3, [5]), 3, 3);
-        morphs[4] = dom.createMorphAt(dom.childAt(element3, [7]), 3, 3);
-        morphs[5] = dom.createMorphAt(dom.childAt(element2, [3, 3]), 1, 1);
-        morphs[6] = dom.createElementMorph(element4);
-        morphs[7] = dom.createMorphAt(dom.childAt(element5, [1]), 3, 3);
-        morphs[8] = dom.createMorphAt(dom.childAt(element5, [3]), 3, 3);
+        var morphs = new Array(2);
+        morphs[0] = dom.createMorphAt(dom.childAt(fragment, [0]), 1, 1);
+        morphs[1] = dom.createMorphAt(fragment, 2, 2, contextualElement);
+        dom.insertBoundary(fragment, null);
         return morphs;
       },
-      statements: [["element", "action", ["save", ["get", "model.user", ["loc", [null, [6, 26], [6, 36]]]]], ["on", "submit"], ["loc", [null, [6, 10], [6, 50]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.user.username", ["loc", [null, [10, 22], [10, 41]]]]], [], []], "class", "form-control", "placeholder", "Nome do usuário", "required", "required"], ["loc", [null, [10, 8], [10, 114]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.user.displayName", ["loc", [null, [14, 22], [14, 44]]]]], [], []], "class", "form-control", "placeholder", "Nome de exibição", "required", "required"], ["loc", [null, [14, 8], [14, 118]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.user.email", ["loc", [null, [18, 22], [18, 38]]]]], [], []], "class", "form-control", "placeholder", "Email", "required", "required"], ["loc", [null, [18, 8], [18, 101]]]], ["inline", "textarea", [], ["value", ["subexpr", "@mut", [["get", "model.user.biography", ["loc", [null, [22, 25], [22, 45]]]]], [], []], "class", "form-control", "rows", "4"], ["loc", [null, [22, 8], [22, 77]]]], ["block", "if", [["get", "model.user.active", ["loc", [null, [32, 14], [32, 31]]]]], [], 0, 1, ["loc", [null, [32, 8], [40, 15]]]], ["element", "action", ["changePassword", ["get", "model", ["loc", [null, [52, 36], [52, 41]]]]], ["on", "submit"], ["loc", [null, [52, 10], [52, 55]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.newPassword", ["loc", [null, [56, 22], [56, 39]]]]], [], []], "class", "form-control", "placeholder", "Digite a nova senha aqui", "required", "required", "type", "password"], ["loc", [null, [56, 8], [56, 137]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.rNewPassword", ["loc", [null, [60, 22], [60, 40]]]]], [], []], "class", "form-control", "placeholder", "Repita a senha aqui", "required", "required", "type", "password"], ["loc", [null, [60, 8], [60, 133]]]]],
+      statements: [["content", "model.user.username", ["loc", [null, [1, 33], [1, 56]]]], ["block", "bs-tab", [], [], 0, null, ["loc", [null, [3, 0], [81, 11]]]]],
       locals: [],
-      templates: [child0, child1]
+      templates: [child0]
     };
   })());
 });
@@ -12387,7 +14091,7 @@ catch(err) {
 /* jshint ignore:start */
 
 if (!runningTests) {
-  require("we-admin-blog/app")["default"].create({"name":"we-admin-blog","version":"0.0.0+047e867e"});
+  require("we-admin-blog/app")["default"].create({"name":"we-admin-blog","version":"0.0.0+b15280e0"});
 }
 
 /* jshint ignore:end */

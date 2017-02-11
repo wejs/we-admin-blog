@@ -4,10 +4,12 @@ import ENV from "../../config/environment";
 
 export default Ember.Route.extend(AuthenticatedRouteMixin, {
   notifications: Ember.inject.service('notification-messages'),
+  acl: Ember.inject.service('acl'),
 
   model(params) {
     return Ember.RSVP.hash({
       user: this.get('store').findRecord('user', params.id),
+      roles: this.get('acl').getRolesArray(),
       newPassword: null,
       rNewPassword: null
     });
@@ -76,6 +78,45 @@ export default Ember.Route.extend(AuthenticatedRouteMixin, {
       .catch( (err)=> {
         this.send('queryError', err);
       });
+    },
+    addUserRole(roleName, user, cb) {
+      const userRoles = user.get('roles');
+
+      if (userRoles.indexOf(roleName) > -1) {
+        // this user already have the role:
+        return cb();
+      }
+
+      userRoles.push(roleName);
+
+      return this.get('acl')
+      .updateUserRoles(userRoles, user.id)
+      .then( ()=> {
+        cb();
+        return null;
+      })
+      .catch(cb);
+    },
+    removeUserRole(roleName, user, cb) {
+      const userRoles = user.get('roles');
+
+      if (userRoles.indexOf(roleName) === -1) {
+        // this user dont have the role:
+        return cb();
+      }
+
+      const index = userRoles.indexOf(roleName);
+      if (index !== -1) {
+        userRoles.splice( index, 1 );
+      }
+
+      return this.get('acl')
+      .updateUserRoles(userRoles, user.id)
+      .then( ()=> {
+        cb();
+        return null;
+      })
+      .catch(cb);
     }
   }
 });

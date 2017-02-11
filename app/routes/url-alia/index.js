@@ -28,7 +28,8 @@ export default Ember.Route.extend(AuthenticatedRouteMixin, {
         {
           propertyName: 'createdAt',
           filteredBy: 'createdAt',
-          title: 'Criado em'
+          title: 'Criado em',
+          template: 'partials/list-item-created-at'
         },
         {
           propertyName: 'actions',

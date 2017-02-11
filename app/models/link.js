@@ -15,5 +15,7 @@ export default DS.Model.extend({
   menu: DS.belongsTo('menu', {
     inverse: 'links',
     async: true
-  })
+  }),
+  createdAt: DS.attr('date'),
+  updatedAt: DS.attr('date')
 });

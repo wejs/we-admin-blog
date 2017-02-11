@@ -18,11 +18,37 @@ export default Ember.Service.extend({
       }
 
       Ember.$.ajax({
-        url: `${ENV.API_HOST}/admin/permission`,
+        url: `${ENV.API_HOST}/acl/permission`,
         type: 'GET',
         headers: headers
       })
       .done(resolve)
+      .fail(reject);
+    });
+  },
+  /**
+   * Get Roles
+   *
+   * @return {Promise}
+   */
+  getRoles() {
+    return new window.Promise( (resolve, reject)=> {
+      let headers = { Accept: 'application/vnd.api+json' },
+          accessToken = this.get('session.session.authenticated.access_token');
+
+      if (accessToken) {
+        headers.Authorization = `Basic ${accessToken}`;
+      }
+
+      Ember.$.ajax({
+        url: `${ENV.API_HOST}/acl/permission`,
+        type: 'GET',
+        headers: headers
+      })
+      .done( (data)=> {
+        resolve(data.roles);
+        return null;
+      })
       .fail(reject);
     });
   },
@@ -43,7 +69,7 @@ export default Ember.Service.extend({
       }
 
       Ember.$.ajax({
-        url: `${ENV.API_HOST}/admin/role/${roleName}/permissions/${permissionName}`,
+        url: `${ENV.API_HOST}/acl/role/${roleName}/permissions/${permissionName}`,
         type: 'POST',
         headers: headers
       })
@@ -68,8 +94,58 @@ export default Ember.Service.extend({
       }
 
       Ember.$.ajax({
-        url: `${ENV.API_HOST}/admin/role/${roleName}/permissions/${permissionName}`,
+        url: `${ENV.API_HOST}/acl/role/${roleName}/permissions/${permissionName}`,
         type: 'DELETE',
+        headers: headers
+      })
+      .done(resolve)
+      .fail(reject);
+    });
+  },
+
+  /**
+   * Create one role request method
+   */
+  createRole(role) {
+    return new window.Promise( (resolve, reject)=> {
+      let headers = { Accept: 'application/vnd.api+json' },
+          accessToken = this.get('session.session.authenticated.access_token');
+
+      if (accessToken) {
+        headers.Authorization = `Basic ${accessToken}`;
+      }
+
+      role.action = 'create';
+
+      Ember.$.ajax({
+        url: `${ENV.API_HOST}/acl/role`,
+        type: 'POST',
+        data: role,
+        headers: headers
+      })
+      .done(resolve)
+      .fail(reject);
+    });
+  },
+
+  /**
+   * Delete one role request method
+   */
+  deleteRole(role) {
+    return new window.Promise( (resolve, reject)=> {
+      let headers = { Accept: 'application/vnd.api+json' },
+          accessToken = this.get('session.session.authenticated.access_token');
+
+      if (accessToken) {
+        headers.Authorization = `Basic ${accessToken}`;
+      }
+
+      role.action = 'delete';
+
+      Ember.$.ajax({
+        url: `${ENV.API_HOST}/acl/role`,
+        type: 'POST',
+        data: role,
         headers: headers
       })
       .done(resolve)

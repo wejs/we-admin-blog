@@ -10,5 +10,7 @@ export default DS.Model.extend({
     async: true
   }),
   sortedLinks: Ember.computed.sort('links', 'sortLinkDefinition'),
-  sortLinkDefinition: ['weight']
+  sortLinkDefinition: ['weight'],
+  createdAt: DS.attr('date'),
+  updatedAt: DS.attr('date')
 });

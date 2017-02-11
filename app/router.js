@@ -44,6 +44,8 @@ Router.map(function() {
     });
   });
 
+  this.route('permissions');
+
   this.route('not-found', { path: '/*path' });
 });
 

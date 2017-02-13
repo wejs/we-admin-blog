@@ -1,16 +1,20 @@
 {{notification-container position="top"}}
 
-{{#if session.isAuthenticated}}
-  {{#if settings.isManager}}
-    <div id="wrapper">
-      {{partial 'partials/header'}}
-      <div id="page-wrapper">
-        {{outlet}}
-      </div>
-    </div>
-  {{else}}
-    {{partial 'partials/home-not-manager'}}
-  {{/if}}
+{{#if session.needsReload}}
+  {{bootstrap-loading}}
 {{else}}
-  {{partial 'partials/home-un-authenticated'}}
+  {{#if session.isAuthenticated}}
+    {{#if settings.isManager}}
+      <div id="wrapper">
+        {{partial 'partials/header'}}
+        <div id="page-wrapper">
+          {{outlet}}
+        </div>
+      </div>
+    {{else}}
+      {{partial 'partials/home-not-manager'}}
+    {{/if}}
+  {{else}}
+    {{partial 'partials/home-un-authenticated'}}
+  {{/if}}
 {{/if}}

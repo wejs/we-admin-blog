@@ -3,7 +3,7 @@ module.exports = function(environment) {
   var ENV = {
     modulePrefix: 'we-admin-blog',
     environment: environment,
-    baseURL: '/admin',
+    baseURL: '/admin/',
     locationType: 'hash',
     EmberENV: {
       EXTEND_PROTOTYPES: {

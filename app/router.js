@@ -52,7 +52,6 @@ Router.map(function() {
 
   this.route('permissions');
   this.route('roles');
-
   this.route('not-found', { path: '/*path' });
 });
 

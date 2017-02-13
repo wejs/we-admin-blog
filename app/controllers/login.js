@@ -6,8 +6,13 @@ export default Ember.Controller.extend({
   actions: {
     authenticate() {
       let { identification, password } = this.getProperties('identification', 'password');
-      this.get('session').authenticate('authenticator:oauth2', identification, password)
-      .catch((reason) => {
+      this.get('session')
+      .authenticate('authenticator:oauth2', identification, password)
+      .then( (r)=> {
+        this.set('session.needsReload', true);
+        return r;
+      })
+      .catch( (reason)=> {
         // console.log('reason', reason);
         this.get('notifications').error(reason.messages[0].message);
         // this.set('errorMessage', reason.error || reason);

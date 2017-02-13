@@ -70,5 +70,13 @@
       "we-plugin-user-settings": true,
       "we-passport-oauth2-password": true
     }
+  },
+  "ember-addon": {
+    "paths": [
+      "lib/copy-build-files"
+    ]
+  },
+  "dependencies": {
+    "fs-extra": "^2.0.0"
   }
 }

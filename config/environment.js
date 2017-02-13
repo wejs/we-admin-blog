@@ -3,8 +3,8 @@ module.exports = function(environment) {
   var ENV = {
     modulePrefix: 'we-admin-blog',
     environment: environment,
-    baseURL: '/',
-    locationType: 'auto',
+    baseURL: '/admin',
+    locationType: 'hash',
     EmberENV: {
       EXTEND_PROTOTYPES: {
         Date: false,
@@ -81,9 +81,8 @@ module.exports = function(environment) {
     ENV.APP.rootElement = '#ember-testing';
   }
   if (environment === 'production') {
-    // ENV.rootURL = '/admin';
     ENV.baseURL = '/admin';
-    ENV.API_HOST = 'https://supportty-api.linkysystems.com';
+    ENV.API_HOST = 'http://localhost:4000';
     ENV['ember-simple-auth'].serverTokenEndpoint = ENV['API_HOST'] + ENV['ember-simple-auth'].serverTokenEndpoint;
   }
   return ENV;

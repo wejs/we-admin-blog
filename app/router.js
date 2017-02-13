@@ -7,8 +7,6 @@ const Router = Ember.Router.extend({
 
 Router.map(function() {
   this.route('user');
-  this.route('vocabulary');
-  this.route('term');
 
   this.route('login');
   this.route('logout');
@@ -41,6 +39,14 @@ Router.map(function() {
     this.route('create');
     this.route('item', { path: ':id' }, function(){
 
+    });
+  });
+
+  this.route('vocabulary', function(){
+    this.route('item', { path: ':id' }, function(){
+      this.route('term', function(){
+        this.route('item', { path: ':id' }, function(){});
+      });
     });
   });
 

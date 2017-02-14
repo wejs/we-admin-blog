@@ -14,7 +14,7 @@ Router.map(function() {
     this.route('change-password');
   });
 
-  this.route('articles', function(){
+  this.route('articles', function() {
     this.route('create');
     this.route('item', { path: ':id' }, function(){
 
@@ -42,9 +42,11 @@ Router.map(function() {
     });
   });
 
-  this.route('vocabulary', function(){
-    this.route('item', { path: ':id' }, function(){
-      this.route('term', function(){
+  this.route('vocabulary', function() {
+    this.route('create');
+    this.route('item', { path: ':id' }, function() {
+      this.route('terms', function() {
+        this.route('create');
         this.route('item', { path: ':id' }, function(){});
       });
     });

@@ -1,1 +1,28 @@
-form.hbs
+{{#if model.record.id}}
+<h1 class="page-header">Editar termo #{{model.record.id}}</h1>
+{{else}}
+<h1 class="page-header">Adicionar termo</h1>
+{{/if}}
+
+<form {{action "save" model.record on="submit"}}>
+  <fieldset>
+    <div class="form-group">
+      <label>Text*</label>
+      {{input value=model.record.text class="form-control" placeholder="Texto do termo" required="required"}}
+    </div>
+    <div class="form-group">
+      <label>Description</label>
+      {{textarea value=model.record.description class="form-control" placeholder="Descrição do termo"}}
+    </div>
+  </fieldset>
+  <div>
+    <button class="btn btn-primary">
+      <i class="fa fa-save"></i>
+      Salvar
+    </button>
+    <button {{action 'goTo' 'vocabulary.item.terms' model.vocabulary.id}} type="button" class="btn btn-default">
+      <i class="fa fa-step-backward"></i>
+      Termos
+    </button>
+  </div>
+</form>

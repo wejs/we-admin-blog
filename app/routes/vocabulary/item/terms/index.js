@@ -2,21 +2,24 @@ import Ember from 'ember';
 import AuthenticatedRouteMixin from 'ember-simple-auth/mixins/authenticated-route-mixin';
 
 export default Ember.Route.extend(AuthenticatedRouteMixin, {
+  term: Ember.inject.service(),
   model() {
-    console.log('>>', this.modelFor('vocabulary.item'));
+    const vocabulary = this.modelFor('vocabulary.item').record;
 
     return  Ember.RSVP.hash({
-      vocabulary: this.modelFor('vocabulary.item').record,
-      records: this.get('store').query('term', {}),
+      vocabulary: vocabulary,
+      records: this.get('store').query('term', {
+        vocabularyName: Ember.get(vocabulary,'name')
+      }),
       columns: [
         {
           propertyName: 'id',
           title: 'ID'
         },
         {
-          propertyName: 'name',
-          filteredBy: 'name_starts-with',
-          title: 'Nome'
+          propertyName: 'text',
+          filteredBy: 'text_starts-with',
+          title: 'Text'
         },
         {
           propertyName: 'createdAt',
@@ -29,9 +32,23 @@ export default Ember.Route.extend(AuthenticatedRouteMixin, {
           disableSorting: true,
           disableFiltering: true,
           title: 'Actions',
-          template: 'vocabulary/list-item-actions'
+          template: 'vocabulary/item/terms/list-item-actions'
         }
       ]
     });
+  },
+  actions: {
+    deleteRecord(record) {
+      const vocabulary = this.modelFor('vocabulary.item').record;
+
+      if (confirm(`Tem certeza que deseja deletar o termo "${record.get('text')}"? \nEssa ação não pode ser desfeita.`)) {
+        record.destroyRecord()
+        .then( ()=> {
+          this.get('notifications').success(`O termo "${record.get('text')}" foi deletado.`);
+          this.transitionTo('vocabulary.item.terms.index', vocabulary.id);
+          return null;
+        });
+      }
+    }
   }
 });

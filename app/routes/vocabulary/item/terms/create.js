@@ -3,10 +3,12 @@ import AuthenticatedRouteMixin from 'ember-simple-auth/mixins/authenticated-rout
 
 export default Ember.Route.extend(AuthenticatedRouteMixin, {
   model() {
-    console.log('>>', this.modelFor('vocabulary.item'));
+    const vocabulary = this.modelFor('vocabulary.item').record;
     return {
-      vocabulary: this.modelFor('vocabulary.item').record,
-      record: this.store.createRecord('term')
+      vocabulary: vocabulary,
+      record: this.store.createRecord('term', {
+        vocabularyName: Ember.get(vocabulary,'name')
+      })
     };
   },
   actions: {
@@ -15,7 +17,10 @@ export default Ember.Route.extend(AuthenticatedRouteMixin, {
       .then( (r)=> {
         this.get('notifications').success('O termo foi criado com sucesso.');
 
-        this.transitionTo('vocabulary.item.term.index');
+        this.transitionTo(
+          'vocabulary.item.terms.index',
+          this.get('currentModel.vocabulary.id')
+        );
         // success
         return r;
       })

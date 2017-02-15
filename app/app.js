@@ -18,12 +18,14 @@ loadInitializers(App, config.modulePrefix);
 Ember.Controller.reopen({
   notifications: Ember.inject.service('notification-messages'),
   settings: Ember.inject.service('settings'),
-  session: Ember.inject.service('session')
+  session: Ember.inject.service('session'),
+  i18n: Ember.inject.service()
 });
 
 Ember.Route.reopen({
   notifications: Ember.inject.service('notification-messages'),
-  settings: Ember.inject.service('settings')
+  settings: Ember.inject.service('settings'),
+  i18n: Ember.inject.service()
 });
 
 export default App;

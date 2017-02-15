@@ -1,11 +1,15 @@
 import Ember from 'ember';
 import ApplicationRouteMixin from 'ember-simple-auth/mixins/application-route-mixin';
+import ENV from "../config/environment";
 
 export default Ember.Route.extend(ApplicationRouteMixin, {
   session: Ember.inject.service('session'),
+
   beforeModel() {
     this.get('notifications').setDefaultAutoClear(true);
     this.get('notifications').setDefaultClearDuration(5200);
+
+    return this.getLocalesFromHost();
   },
   model() {
     return Ember.RSVP.hash({
@@ -15,6 +19,29 @@ export default Ember.Route.extend(ApplicationRouteMixin, {
           resolve();
         }, 1000);
       })
+    });
+  },
+  /**
+   * Get locales from host
+   *
+   */
+  getLocalesFromHost() {
+    return new window.Promise( (resolve, reject)=> {
+      Ember.$.ajax({
+        url: `${ENV.API_HOST}/i18n/get-all-locales`,
+        type: 'GET'
+      })
+      .done( (data)=> {
+        if (data && data.locales) {
+          // load locales with ember-i18n
+          for(let name in data.locales) {
+            this.get('i18n').addTranslations(name, data.locales);
+          }
+        }
+
+        resolve();
+      })
+      .fail(reject);
     });
   },
   actions: {
@@ -33,7 +60,7 @@ export default Ember.Route.extend(ApplicationRouteMixin, {
      *
      * @param  {Object} err Error object
      */
-    error(err, x, y) {
+    error(err) {
       // handle token invalid response, this may occurs if the token is deleted in backend for block access
       if (
         err.status === 401 &&

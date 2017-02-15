@@ -5,6 +5,9 @@ module.exports = function(environment) {
     environment: environment,
     baseURL: '/admin/',
     locationType: 'hash',
+    i18n: {
+      defaultLocale: 'en-us'
+    },
     EmberENV: {
       EXTEND_PROTOTYPES: {
         Date: false,

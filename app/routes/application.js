@@ -33,7 +33,7 @@ export default Ember.Route.extend(ApplicationRouteMixin, {
      *
      * @param  {Object} err Error object
      */
-    error(err) {
+    error(err, x, y) {
       // handle token invalid response, this may occurs if the token is deleted in backend for block access
       if (
         err.status === 401 &&
@@ -55,6 +55,10 @@ export default Ember.Route.extend(ApplicationRouteMixin, {
         // redirect ... to 404
         this.transitionTo('/not-found');
       } else {
+        this.get('notifications').error('Ocorreu um erro inesperado no servidor!<br>Tente novamente mais tarde ou entre em contato com o administrador do sistema.', {
+          htmlContent: true,
+          clearDuration: 10000
+        });
         Ember.Logger.error(err);
       }
     },

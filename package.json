@@ -69,7 +69,8 @@
   "wejs": {
     "dependencies": {
       "we-plugin-user-settings": true,
-      "we-passport-oauth2-password": true
+      "we-passport-oauth2-password": true,
+      "we-plugin-i18n-api": true
     }
   },
   "ember-addon": {

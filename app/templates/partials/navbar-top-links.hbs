@@ -7,19 +7,19 @@
     {{#dd.menu as |ddm|}}
       {{#active-link}}
         {{#link-to 'profile.index'}}
-          <i class="glyphicon glyphicon-pencil"></i> Editar conta
+          <i class="glyphicon glyphicon-pencil"></i> {{t 'menu.user.edit'}}
         {{/link-to}}
       {{/active-link}}
 
       {{#active-link}}
         {{#link-to 'profile.change-password'}}
-          <i class="glyphicon glyphicon-lock"></i> Mudar senha
+          <i class="glyphicon glyphicon-lock"></i> {{t 'auth.change-password'}}
         {{/link-to}}
       {{/active-link}}
       <li role="separator" class="divider"></li>
       {{#active-link}}
         {{#link-to "logout"}}
-          <i class="glyphicon glyphicon-off"></i> Logout
+          <i class="glyphicon glyphicon-off"></i> {{t 'Logout'}}
         {{/link-to}}
       {{/active-link}}
     {{/dd.menu}}

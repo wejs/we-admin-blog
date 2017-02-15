@@ -3,37 +3,37 @@
     {{#ember-metismenu classNames="nav"}}
       <li>
         {{#link-to 'articles.index'}}
-          <i class="fa fa-file-text"></i> Artigos
+          <i class="fa fa-file-text"></i> {{t 'article.find'}}
         {{/link-to}}
        </li>
       <li>
         {{#link-to 'menus.index'}}
-          <i class="fa fa-bars"></i> Menus e links
+          <i class="fa fa-bars"></i> {{t 'menu.find'}}
         {{/link-to}}
       </li>
       <li>
         {{#link-to 'vocabulary'}}
-          <i class="fa fa-tags"></i> Vocabulários
+          <i class="fa fa-tags"></i> {{t 'vocabulary.find'}}
         {{/link-to}}
       </li>
       <li>
         {{#link-to 'url-alia.index'}}
-          <i class="fa fa-random"></i> Urls alternativas
+          <i class="fa fa-random"></i> {{t 'urlAlias.find'}}
         {{/link-to}}
       </li>
       <li>
         {{#link-to 'users.index'}}
-          <i class="fa fa-users"></i> Usuários
+          <i class="fa fa-users"></i> {{t 'user.find'}}
         {{/link-to}}
       </li>
       <li>
         {{#link-to 'roles'}}
-          <i class="fa fa-credit-card" aria-hidden="true"></i> Papéis de usuários
+          <i class="fa fa-credit-card" aria-hidden="true"></i> {{t 'roles.link'}}
         {{/link-to}}
       </li>
       <li>
         {{#link-to 'permissions'}}
-          <i class="fa fa-unlock-alt"></i> Permissões
+          <i class="fa fa-unlock-alt"></i> {{t 'permission.link'}}
         {{/link-to}}
       </li>
     {{/ember-metismenu}}

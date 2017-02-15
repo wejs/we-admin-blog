@@ -7,6 +7,7 @@ module.exports = function(environment) {
     locationType: 'hash',
     i18n: {
       defaultLocale: 'en-us'
+      // defaultLocale: 'pt-br'
     },
     EmberENV: {
       EXTEND_PROTOTYPES: {

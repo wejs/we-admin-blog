@@ -35,7 +35,7 @@ export default Ember.Route.extend(ApplicationRouteMixin, {
         if (data && data.locales) {
           // load locales with ember-i18n
           for(let name in data.locales) {
-            this.get('i18n').addTranslations(name, data.locales);
+            this.get('i18n').addTranslations(name, data.locales[name]);
           }
         }
 

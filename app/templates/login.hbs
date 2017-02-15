@@ -3,19 +3,20 @@
     {{bootstrap-loading}}
   {{else}}
     <form class="form-signin" {{action 'authenticate' on='submit'}}>
-      <h2 class="form-signin-heading">Área restrita</h2>
-      <label for="inputEmail" class="sr-only">Email</label>
+      <h2 class="form-signin-heading">{{t 'Login'}}</h2>
 
-      {{input id='identification' type="email" placeholder="Endereço de email" value=identification required="required" autofocus="true" class="form-control"}}
-      <label for="inputPassword" class="sr-only">Senha</label>
-      {{input id='password' placeholder="Senha ..." type='password' value=password required="required" class="form-control"}}
+      <label for="inputEmail" class="sr-only">{{t 'form-login-email'}}</label>
+      {{input id='identification' type="email" placeholder=(t "form-placeholder-login-email") value=identification required="required" autofocus="true" class="form-control"}}
+
+      <label for="inputPassword" class="sr-only">{{t 'form-login-password'}}</label>
+      {{input id='password' placeholder=(t "form-placeholder-login-password") type='password' value=password required="required" class="form-control"}}
       {{!--
       <div class="checkbox">
         <label>
           <input type="checkbox" value="remember-me"> Remember me
         </label>
       </div> --}}
-      <button class="btn btn-lg btn-primary btn-block" type="submit">Entrar</button>
+      <button class="btn btn-lg btn-primary btn-block" type="submit">{{t 'form-login-submit'}}</button>
     </form>
   {{/if}}
 </div></div>

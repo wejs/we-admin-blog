@@ -1,37 +1,37 @@
 {{#if model.record.id}}
-<h1 class="page-header">Editar artigo "{{model.record.title}}"</h1>
+  <h1 class="page-header">{{t 'article.edit' title=model.record.title}}</h1>
 {{else}}
-<h1 class="page-header">Criar</h1>
+  <h1 class="page-header">{{t 'article.create'}}</h1>
 {{/if}}
 
 <form {{action "save" model.record on="submit"}}>
   <fieldset>
     <div class="form-group">
-      <label>Título*</label>
-      {{input value=model.record.title class="form-control" placeholder="Título do artigo" required="required"}}
+      <label>{{t 'form-article-title'}}*:</label>
+      {{input value=model.record.title class="form-control" placeholder=(t 'form-placeholder-article-title') required="required"}}
     </div>
     <div class="form-group">
-      <label>Sobre:</label>
+      <label>{{t 'form-article-about'}}:</label>
       {{textarea value=model.record.about class="form-control"}}
     </div>
     <div class="form-group">
-      <label>Texto:</label>
+      <label>{{t 'form-article-body'}}:</label>
       {{tinymce-editor value=model.record.body}}
     </div>
   </fieldset>
   <fieldset>
     <div class="form-group">
-      <label>Imagem de destaque:</label>
+      <label>{{t 'form-article-featuredImage'}}:</label>
       {{image-uploader value=model.record.featuredImage}}
     </div>
     <div class="form-group">
-      <label>Galeria de imagens:</label>
+      <label>{{t 'form-article-images'}}:</label>
       {{image-uploader value=model.record.images multiple=true}}
     </div>
   </fieldset>
   <fieldset>
     <div class="form-group">
-      <label>Categoria:</label>
+      <label>{{t 'form-article-category'}}:</label>
       {{#power-select
         search=(action "searchCategoryTerms")
         selected=model.record.category
@@ -42,7 +42,7 @@
       {{/power-select}}
     </div>
     <div class="form-group">
-      <label>Tags:</label>
+      <label>{{t 'form-article-tags'}}:</label>
       {{#power-select-multiple
         search=(action "searchTagsTerms")
         selected=model.record.tags
@@ -56,19 +56,18 @@
   <fieldset>
     <div class="form-group">
       <label>
-        {{input type="checkbox" checked=model.record.published}} Published?
+        {{input type="checkbox" checked=model.record.published}} {{t 'form-article-published'}}?
       </label>
     </div>
   </fieldset>
-
   <div>
     <button class="btn btn-primary">
       <i class="fa fa-save"></i>
-      Salvar
+      {{t 'article.Save'}}
     </button>
     <button {{action 'goTo' 'articles.index'}} type="button" class="btn btn-default">
       <i class="fa fa-step-backward"></i>
-      Artigos
+      {{t 'article.find'}}
     </button>
   </div>
 </form>

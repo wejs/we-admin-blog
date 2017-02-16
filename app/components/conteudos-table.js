@@ -5,6 +5,7 @@ import ServerModelsTable from 'ember-models-table/components/models-table-server
 // ref https://github.com/onechiporenko/ember-models-table/blob/master/addon/components/models-table-server-paginated.js
 
 export default ServerModelsTable.extend({
+  i18n: Ember.inject.service(),
   /**
    * The property on meta to load the pages count from.
    *
@@ -54,5 +55,22 @@ export default ServerModelsTable.extend({
     changePublishedStatus() {
       this.sendAction('changePublishedStatus', ...arguments);
     }
+  },
+
+  init() {
+    this._super();
+    const i18n = this.get('i18n');
+    this.set('customMessages', Ember.Object.create({
+      "searchLabel": i18n.t("models.table.search"),
+      "searchPlaceholder": "",
+      "columns-title": i18n.t("models.table.columns"),
+      "columns-showAll": i18n.t("models.table.show.all"),
+      "columns-hideAll": i18n.t("models.table.hide.all"),
+      "columns-restoreDefaults": i18n.t("models.table.restore.defaults"),
+      "tableSummary": String(i18n.t("models.table.restore.table.summary")),
+      // "tableSummary": "Show %@ - %@ of %@",
+      "allColumnsAreHidden": i18n.t('models.table.all.columns.are.hidden'),
+      "noDataToShow": i18n.t('models.table.no.records.to.show')
+    }));
   }
 });

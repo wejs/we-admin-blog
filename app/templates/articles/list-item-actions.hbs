@@ -1,13 +1,21 @@
-{{#link-to 'articles.item' record.id class="btn btn-default btn-sm"}}Ver/editar{{/link-to}}
-<button {{action 'deleteRecord' record}} type="button" class="btn btn-default btn-sm">
-  Deletar
-</button>
+{{#link-to 'articles.item' record.id class="btn btn-default btn-sm"}}
+  <i class="glyphicon glyphicon-pencil text-success"></i>
+  {{t 'Edit'}}
+{{/link-to}}
+
 {{#if record.published}}
   <button {{action 'changePublishedStatus' record false}} type="button" class="btn btn-default btn-sm">
-    Despublicar
+    <i class="glyphicon glyphicon-unchecked text-danger"></i>
+    {{t 'article.published.btn.unpublish'}}
   </button>
 {{else}}
   <button {{action 'changePublishedStatus' record true}} type="button" class="btn btn-default btn-sm">
-    Publicar
+    <i class="glyphicon glyphicon-check text-success"></i>
+    {{t 'article.published.btn.publish'}}
   </button>
 {{/if}}
+
+<button {{action 'deleteRecord' record}} type="button" class="btn btn-default btn-sm">
+  <i class="glyphicon glyphicon-remove text-danger"></i>
+  {{t 'Delete'}}
+</button>

@@ -10,7 +10,7 @@
       </td>
       <td class="image-table-actions">
         <button class="btn btn-sm btn-default" {{action 'removeImage' image}}>
-          <i class="glyphicon glyphicon-remove text-danger"></i> Remover
+          <i class="glyphicon glyphicon-remove text-danger"></i> {{t 'image.remove'}}
         </button>
       </td>
     </tr>
@@ -21,7 +21,7 @@
       <tr>
         <td colspan="3">
           <button class="btn btn-sm btn-default" {{action 'openImageUploader'}}>
-            <i class="glyphicon glyphicon-plus"></i> Adicionar imagem
+            <i class="glyphicon glyphicon-plus"></i> {{t 'image.Add'}}
           </button>
         </td>
       </tr>
@@ -37,7 +37,7 @@
 }}
   {{#modal.header}}
     <h4 class="modal-title">
-      <i class="glyphicon glyphicon-picture"></i> Adicionar imagem
+      <i class="glyphicon glyphicon-picture"></i> {{t 'image.selector'}}
     </h4>
   {{/modal.header}}
   {{#modal.body}}
@@ -68,7 +68,11 @@
     {{/if}}
   {{/modal.body}}
   {{#modal.footer as |footer|}}
-    {{#bs-button onClick=(action modal.close) type="default"}}Cancelar{{/bs-button}}
-    {{#bs-button onClick=(action modal.submit) type="primary"}}Adicionar{{/bs-button}}
+    {{#bs-button onClick=(action modal.close) type="default"}}
+      {{t 'Cancel'}}
+    {{/bs-button}}
+    {{#bs-button onClick=(action modal.submit) type="primary"}}
+      {{t 'image.Add'}}
+    {{/bs-button}}
   {{/modal.footer}}
 {{/bs-modal}}

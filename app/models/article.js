@@ -12,5 +12,7 @@ export default DS.Model.extend({
   createdAt: DS.attr('date'),
   updatedAt: DS.attr('date'),
   tags: DS.attr(),
-  category: DS.attr()
+  category: DS.attr(),
+  featuredImage: DS.attr('array'),
+  images: DS.attr('array')
 });

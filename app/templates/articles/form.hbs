@@ -21,7 +21,12 @@
   </fieldset>
   <fieldset>
     <div class="form-group">
+      <label>Imagem de destaque:</label>
       {{image-uploader value=model.record.featuredImage}}
+    </div>
+    <div class="form-group">
+      <label>Galeria de imagens:</label>
+      {{image-uploader value=model.record.images multiple=true}}
     </div>
   </fieldset>
   <fieldset>

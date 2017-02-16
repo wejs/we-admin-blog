@@ -6,27 +6,44 @@ export default Ember.Component.extend({
   url: `${ENV.API_HOST}/api/v1/image`,
   uploader: null,
 
+  multiple: false,
+
   percent: 0,
-  value: null,
-  salvedFile: null,
-  selectedFiles: null,
+  value: Ember.A([]),
+  selectedFile: null,
   previewImageSrc: null,
 
   uploadingImage: false,
-
   description: null,
 
-  display: Ember.computed('salvedFile', function() {
-    return this.get('salvedFile');
+  canAddMore: Ember.computed('value', 'multiple', function() {
+    const isMultiple = this.get('multiple');
+    if (
+      // multiple:
+      isMultiple ||
+      // single and empty:
+      !isMultiple && !this.get('value.length')
+    ) {
+      return true;
+    } else {
+      return false;
+    }
+  }),
+
+  fileToShow: Ember.computed('value', function() {
+    const value = this.get('value');
+    if (Ember.isArray(value)) {
+      return value[0];
+    } else {
+      return null;
+    }
   }),
 
   actions: {
     startUpload() {},
     selected(files) {
       const file = files[0];
-
-      this.get('selectedFile', file);
-
+      this.set('selectedFile', file);
       const reader = new FileReader();
 
       reader.onload = (e)=> {
@@ -36,43 +53,56 @@ export default Ember.Component.extend({
       reader.readAsDataURL(file);
     },
     progress(uploader, e) {
-      console.log('proigressE>', uploader, e);
       this.set('percent', e.percent);
     },
     didUpload(uploader, e) {
-      this.set('salvedFile', e.image);
+      const value = this.get('value');
+      value.pushObject(e.image);
+
       this.set('uploader', null);
+      this.set('description', null);
       this.set('selectedFile', null);
     },
     didError(uploader, jqXHR, textStatus, errorThrown) {
       console.log('didError>', uploader, jqXHR, textStatus, errorThrown);
     },
-
-    removeImage() {
+    removeImage(image) {
       if (confirm(`Tem certeza que deseja remover essa imagem?`)) {
-        this.set('value', null);
+        const value = this.get('value');
+        value.removeObject(image);
         this.set('uploader', null);
-        this.set('salvedFile', null);
         this.set('selectedFile', null);
       }
     },
-
-    upload(selectedFile) {
+    upload() {
       this.get('uploader')
-      .upload(selectedFile)
+      .upload(this.get('selectedFile'), {
+        description: (this.get('description') || '')
+      })
       .then( (r)=> {
         this.set('uploader', null);
         this.set('selectedFile', null);
         this.set('uploadingImage', false);
         return r;
       })
-      .cath( (err)=> {
+      .catch( (err)=> {
         console.log('erro no upload', err);
       });
     },
 
     openImageUploader() {
       this.set('uploadingImage', true);
+    },
+
+    onHideUploadModal() {
+      if (this.get('uploadingImage')) {
+        this.set('uploadingImage', false);
+      }
+
+      this.set('uploader', null);
+      this.set('selectedFile', null);
+      this.set('description', null);
+      this.set('uploadingImage', false);
     }
   }
 });

@@ -39,6 +39,6 @@ export default Ember.Route.extend(AuthenticatedRouteMixin, {
       .catch( (err)=> {
         this.send('queryError', err);
       });
-    },
+    }
   }
 });

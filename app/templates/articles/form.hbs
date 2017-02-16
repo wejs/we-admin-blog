@@ -19,6 +19,30 @@
       {{tinymce-editor value=model.record.body}}
     </div>
   </fieldset>
+  <fieldset>
+    <div class="form-group">
+      <label>Categoria:</label>
+      {{#power-select
+        search=(action "searchCategoryTerms")
+        selected=model.record.category
+        onchange=(action (mut model.record.category))
+        as |term|
+      }}
+        {{term}}
+      {{/power-select}}
+    </div>
+    <div class="form-group">
+      <label>Tags:</label>
+      {{#power-select-multiple
+        search=(action "searchTagsTerms")
+        selected=model.record.tags
+        onchange=(action (mut model.record.tags))
+        as |term|
+      }}
+        {{term}}
+      {{/power-select-multiple}}
+    </div>
+  </fieldset>
   <div>
     <button class="btn btn-primary">
       <i class="fa fa-save"></i>

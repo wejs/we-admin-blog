@@ -7,8 +7,6 @@
 const path = require('path');
 
 module.exports = function loadPlugin(projectPath, Plugin) {
-
-
   const plugin = new Plugin(__dirname);
   // set plugin configs
   // plugin.setConfigs({

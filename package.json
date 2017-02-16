@@ -61,6 +61,7 @@
     "ember-resolver": "^2.0.3",
     "ember-simple-auth": "1.2.0-beta.2",
     "ember-sortable": "1.9.1",
+    "ember-uploader": "1.2.3",
     "fs-extra": "^2.0.0",
     "loader.js": "^4.0.1",
     "we-plugin-i18n-api": "^1.0.0",

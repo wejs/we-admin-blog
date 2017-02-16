@@ -21,6 +21,11 @@
   </fieldset>
   <fieldset>
     <div class="form-group">
+      {{image-uploader value=model.record.featuredImage}}
+    </div>
+  </fieldset>
+  <fieldset>
+    <div class="form-group">
       <label>Categoria:</label>
       {{#power-select
         search=(action "searchCategoryTerms")
@@ -43,6 +48,7 @@
       {{/power-select-multiple}}
     </div>
   </fieldset>
+
   <div>
     <button class="btn btn-primary">
       <i class="fa fa-save"></i>

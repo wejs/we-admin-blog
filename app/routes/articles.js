@@ -39,6 +39,9 @@ export default Ember.Route.extend(AuthenticatedRouteMixin, {
       .catch( (err)=> {
         this.send('queryError', err);
       });
+    },
+    changeDate(x, y, z) {
+      console.log('>', x, y, z);
     }
   }
 });

@@ -2,10 +2,15 @@
   <div class="sidebar-nav navbar-collapse">
     {{#ember-metismenu classNames="nav"}}
       <li>
+        {{#link-to 'index'}}
+          <i class="fa fa-bar-chart"></i> {{t 'admin.Dashboard'}}
+        {{/link-to}}
+      </li>
+      <li>
         {{#link-to 'articles.index'}}
           <i class="fa fa-file-text"></i> {{t 'article.find'}}
         {{/link-to}}
-       </li>
+      </li>
       <li>
         {{#link-to 'menus.index'}}
           <i class="fa fa-bars"></i> {{t 'menu.find'}}

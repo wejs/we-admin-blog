@@ -16,6 +16,12 @@ export default Ember.Controller.extend({
       return this.get('ajax')
       .request(url)
       .then((json) => json.term );
+    },
+    changeDate(record, field, dates) {
+      if (!dates || !dates[0]) {
+        return;
+      }
+      this.get('model.record').set(field, dates[0]);
     }
   }
 });

@@ -3,7 +3,7 @@
   <h2>Links</h2>
   <div class="menu-links-actions">
     <button class="btn btn-default" {{action 'openLinkForm'}}>
-      <i class="glyphicon glyphicon-plus"></i> Add link
+      <i class="glyphicon glyphicon-plus"></i> {{t 'link.create'}}
     </button>
     {{#if model.record.sorted}}
       <button {{action 'saveLinksOrder' model.record.sortedLinks}} type="button" class="btn btn-primary">Salvar ordem</button>
@@ -20,7 +20,7 @@
             {{item.text}} - <span class="label label-default">{{item.href}}</span>
 
             <button class="btn btn-sm btn-default" {{action 'openLinkForm' item}}>
-              <i class="glyphicon glyphicon-pencil"></i> Ediar
+              <i class="glyphicon glyphicon-pencil"></i> {{t 'Edit'}}
             </button>
           {{/sortable-item}}
         {{/unless}}
@@ -36,12 +36,12 @@
         {{#if model.editingRecord.id}}
           <h4 class="modal-title">
             <i class="glyphicon glyphicon-link"></i>
-            Editar link "{{model.editingRecord.text}}"
+            {{t 'Edit'}}
           </h4>
         {{else}}
           <h4 class="modal-title">
             <i class="glyphicon glyphicon-link"></i>
-            Criar link
+            {{t 'link.create'}}
           </h4>
         {{/if}}
       {{/modal.header}}
@@ -49,8 +49,12 @@
         {{partial 'links/form'}}
       {{/modal.body}}
       {{#modal.footer as |footer|}}
-        {{#bs-button onClick=(action modal.close) type="default"}}Cancelar{{/bs-button}}
-        {{#bs-button onClick=(action modal.submit) type="primary"}}Salvar{{/bs-button}}
+        {{#bs-button onClick=(action modal.close) type="default"}}
+          {{t 'Cancel'}}
+        {{/bs-button}}
+        {{#bs-button onClick=(action modal.submit) type="primary"}}
+          {{t 'Save'}}
+        {{/bs-button}}
       {{/modal.footer}}
     {{/bs-modal}}
   </div>

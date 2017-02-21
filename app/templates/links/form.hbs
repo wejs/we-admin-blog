@@ -1,32 +1,32 @@
 <form {{action "onSaveLink" model.editingRecord modal on="submit"}}>
   <fieldset>
     <div class="form-group">
-      <label>HREF*</label>
-      {{input value=model.editingRecord.href class="form-control" placeholder="Url do link" required="required"}}
+      <label>{{t 'form-link-href'}}*:</label>
+      {{input value=model.editingRecord.href class="form-control" placeholder=(t 'form-placeholder-link-href') required="required"}}
     </div>
     <div class="form-group">
-      <label>Text*</label>
-      {{input value=model.editingRecord.text class="form-control" placeholder="Texto do link" required="required"}}
+      <label>{{t 'form-link-text'}}*:</label>
+      {{input value=model.editingRecord.text class="form-control" placeholder=(t 'form-placeholder-link-text') required="required"}}
     </div>
     <div class="form-group">
-      <label>Título</label>
-      {{input value=model.editingRecord.title class="form-control" placeholder="Título do link"}}
+      <label>{{t 'form-link-title'}}:</label>
+      {{input value=model.editingRecord.title class="form-control" placeholder=(t 'form-placeholder-link-title')}}
     </div>
     <div class="form-group">
-      <label>Class</label>
-      {{input value=model.editingRecord.class class="form-control" placeholder="Classe de css do link"}}
+      <label>{{t 'form-link-class'}}:</label>
+      {{input value=model.editingRecord.class class="form-control" placeholder=(t 'form-placeholder-link-class')}}
     </div>
     <div class="form-group">
-      <label>Target</label>
-      {{input value=model.editingRecord.target class="form-control" placeholder="Target do link"}}
+      <label>{{t 'form-link-target'}}:</label>
+      {{input value=model.editingRecord.target class="form-control" placeholder=(t 'form-placeholder-link-href')}}
     </div>
     <div class="form-group">
-      <label>Rel</label>
-      {{input value=model.editingRecord.rel class="form-control" placeholder="Rel do link"}}
+      <label>{{t 'form-link-rel'}}:</label>
+      {{input value=model.editingRecord.rel class="form-control" placeholder=(t 'form-placeholder-link-rel')}}
     </div>
     <div class="form-group">
-      <label>Tecla</label>
-      {{input value=model.editingRecord.key class="form-control" placeholder="Tecla do link"}}
+      <label>{{t 'form-link-key'}}</label>
+      {{input value=model.editingRecord.key class="form-control" placeholder=(t 'form-placeholder-link-key')}}
     </div>
   </fieldset>
 </form>

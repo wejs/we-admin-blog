@@ -21,6 +21,19 @@
           <label>Biografia / sobre</label>
           {{textarea value=model.user.biography class="form-control" rows="4"}}
         </div>
+
+        <div class="form-group">
+          <label>Language</label>
+          {{#power-select
+            options=settings.data.locales
+            selected=model.user.language
+            searchEnabled=false
+            onchange=(action (mut model.user.language) )
+            as |locale|
+          }}
+            {{locale}}
+          {{/power-select}}
+        </div>
       </fieldset>
       <div>
         <button class="btn btn-default">

@@ -4,6 +4,10 @@ import ENV from "../../config/environment";
 export default Ember.Controller.extend({
   ajax: Ember.inject.service(),
 
+  editorOptions: {
+    min_height: 400
+  },
+
   actions: {
     searchCategoryTerms(term) {
       let url = `${ENV.API_HOST}/api/v1/term-texts?term=${term}&vocabularyName=Category`;

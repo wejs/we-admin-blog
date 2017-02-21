@@ -9,7 +9,7 @@
     <div class="col-md-8">
 
       <div class="panel panel-default">
-        <div class="panel-heading">Dados</div>
+        <div class="panel-heading">{{t 'article.form.terms.Data'}}</div>
         <div class="panel-body">
           <fieldset>
             <div class="form-group">
@@ -22,14 +22,14 @@
             </div>
             <div class="form-group">
               <label>{{t 'form-article-body'}}:</label>
-              {{tinymce-editor value=model.record.body}}
+              {{tinymce-editor options=editorOptions value=model.record.body}}
             </div>
           </fieldset>
         </div>
       </div>
 
       <div class="panel panel-default">
-        <div class="panel-heading">Imagens</div>
+        <div class="panel-heading">{{t 'article.form.terms.Images'}}</div>
         <div class="panel-body">
           <fieldset>
             <div class="form-group">
@@ -58,7 +58,7 @@
     <div class="col-md-4">
 
       <div class="panel panel-default">
-        <div class="panel-heading">Publicar</div>
+        <div class="panel-heading">{{t 'article.form.publish.Title'}}</div>
         <div class="panel-body">
           <fieldset>
             <div class="form-group">
@@ -71,7 +71,7 @@
       </div>
 
       <div class="panel panel-default">
-        <div class="panel-heading">Termos</div>
+        <div class="panel-heading">{{t 'article.form.terms.Title'}}</div>
         <div class="panel-body">
           <fieldset>
             <div class="form-group">
@@ -101,11 +101,11 @@
       </div>
 
       <div class="panel panel-default">
-        <div class="panel-heading">Dates</div>
+        <div class="panel-heading">{{t 'article.form.terms.Dates'}}</div>
         <div class="panel-body">
           <fieldset>
             <div class="form-group">
-              <label>Created at:</label>
+              <label>{{t 'form-article-createdAt'}}:</label>
               {{ember-flatpickr
                 altFormat="F j, Y h:i K"
                 dateFormat=false
@@ -127,7 +127,7 @@
                 wrap=false}}
             </div>
             <div class="form-group">
-              <label>Updated at:</label>
+              <label>{{t 'form-article-updatedAt'}}:</label>
               {{ember-flatpickr
                 altFormat="F j, Y h:i K"
                 dateFormat=false

@@ -5,6 +5,7 @@ export default Ember.Route.extend(AuthenticatedRouteMixin, {
   term: Ember.inject.service(),
   model() {
     const vocabulary = this.modelFor('vocabulary.item').record;
+    const i18n = this.get('i18n');
 
     return  Ember.RSVP.hash({
       vocabulary: vocabulary,
@@ -19,19 +20,19 @@ export default Ember.Route.extend(AuthenticatedRouteMixin, {
         {
           propertyName: 'text',
           filteredBy: 'text_starts-with',
-          title: 'Text'
+          title: i18n.t('form-term-text')
         },
         {
           propertyName: 'createdAt',
           filteredBy: 'createdAt',
-          title: 'Criado em',
+          title: i18n.t('form-term-createdAt'),
           template: 'partials/list-item-created-at'
         },
         {
           propertyName: 'actions',
           disableSorting: true,
           disableFiltering: true,
-          title: 'Actions',
+          title:  i18n.t('Actions'),
           template: 'vocabulary/item/terms/list-item-actions'
         }
       ]

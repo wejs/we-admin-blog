@@ -3,7 +3,7 @@ import ApplicationRouteMixin from 'ember-simple-auth/mixins/application-route-mi
 import ENV from "../config/environment";
 
 export default Ember.Route.extend(ApplicationRouteMixin, {
-  session: Ember.inject.service('session'),
+  session: Ember.inject.service(),
 
   beforeModel() {
     this.get('notifications').setDefaultAutoClear(true);
@@ -17,10 +17,14 @@ export default Ember.Route.extend(ApplicationRouteMixin, {
       minimumLoadingDelay: new window.Promise( (resolve)=> {
         setTimeout( ()=> {
           resolve();
-        }, 1000);
+        }, 500);
       })
     });
   },
+  afterModel() {
+    this.set('i18n.locale', this.get('settings.data.activeLocale'));
+  },
+
   /**
    * Get locales from host
    *

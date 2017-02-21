@@ -113,6 +113,26 @@ define('we-admin-blog/components/app-version', ['exports', 'ember-cli-app-versio
     name: name
   });
 });
+define('we-admin-blog/components/article-tag-selector', ['exports', 'ember'], function (exports, _ember) {
+  exports['default'] = _ember['default'].Component.extend({
+    terms: null,
+    newTerm: null,
+    // Event throw after user add one tag
+    onAddTag: null,
+
+    actions: {
+      onAddTag: function onAddTag() {
+        if (this.get('onAddTag') && this.get('newTerm')) {
+          this.sendAction(this.get('onAddTag'), this.get('newTerm'));
+        }
+      },
+      onRemoveTag: function onRemoveTag(term) {
+        var terms = this.get('terms');
+        terms.removeObject(term);
+      }
+    }
+  });
+});
 define('we-admin-blog/components/basic-dropdown', ['exports', 'ember-basic-dropdown/components/basic-dropdown'], function (exports, _emberBasicDropdownComponentsBasicDropdown) {
   Object.defineProperty(exports, 'default', {
     enumerable: true,
@@ -496,6 +516,14 @@ define('we-admin-blog/components/conteudos-table', ['exports', 'ember', 'ember-m
         "allColumnsAreHidden": i18n.t('models.table.all.columns.are.hidden'),
         "noDataToShow": i18n.t('models.table.no.records.to.show')
       }));
+    }
+  });
+});
+define('we-admin-blog/components/ember-flatpickr', ['exports', 'ember-flatpickr/components/ember-flatpickr'], function (exports, _emberFlatpickrComponentsEmberFlatpickr) {
+  Object.defineProperty(exports, 'default', {
+    enumerable: true,
+    get: function get() {
+      return _emberFlatpickrComponentsEmberFlatpickr['default'];
     }
   });
 });
@@ -907,6 +935,9 @@ define('we-admin-blog/components/user-role-checkbox', ['exports', 'ember'], func
     }
   });
 });
+define('we-admin-blog/components/we-datepicker', ['exports', 'ember'], function (exports, _ember) {
+  exports['default'] = _ember['default'].Component.extend({});
+});
 define('we-admin-blog/components/we-image', ['exports', 'ember'], function (exports, _ember) {
 
   /**
@@ -951,25 +982,9 @@ define('we-admin-blog/controllers/articles/create', ['exports', 'ember', 'we-adm
   exports['default'] = _ember['default'].Controller.extend({
     ajax: _ember['default'].inject.service(),
 
-    actions: {
-      searchCategoryTerms: function searchCategoryTerms(term) {
-        var url = _weAdminBlogConfigEnvironment['default'].API_HOST + '/api/v1/term-texts?term=' + term + '&vocabularyName=Category';
-        return this.get('ajax').request(url).then(function (json) {
-          return json.term;
-        });
-      },
-      searchTagsTerms: function searchTagsTerms(term) {
-        var url = _weAdminBlogConfigEnvironment['default'].API_HOST + '/api/v1/term-texts?term=' + term + '&vocabularyName=Tags';
-        return this.get('ajax').request(url).then(function (json) {
-          return json.term;
-        });
-      }
-    }
-  });
-});
-define('we-admin-blog/controllers/articles/item', ['exports', 'ember', 'we-admin-blog/config/environment'], function (exports, _ember, _weAdminBlogConfigEnvironment) {
-  exports['default'] = _ember['default'].Controller.extend({
-    ajax: _ember['default'].inject.service(),
+    editorOptions: {
+      min_height: 400
+    },
 
     actions: {
       searchCategoryTerms: function searchCategoryTerms(term) {
@@ -983,6 +998,42 @@ define('we-admin-blog/controllers/articles/item', ['exports', 'ember', 'we-admin
         return this.get('ajax').request(url).then(function (json) {
           return json.term;
         });
+      },
+      changeDate: function changeDate(record, field, dates) {
+        if (!dates || !dates[0]) {
+          return;
+        }
+        this.get('model.record').set(field, dates[0]);
+      }
+    }
+  });
+});
+define('we-admin-blog/controllers/articles/item', ['exports', 'ember', 'we-admin-blog/config/environment'], function (exports, _ember, _weAdminBlogConfigEnvironment) {
+  exports['default'] = _ember['default'].Controller.extend({
+    ajax: _ember['default'].inject.service(),
+
+    editorOptions: {
+      min_height: 400
+    },
+
+    actions: {
+      searchCategoryTerms: function searchCategoryTerms(term) {
+        var url = _weAdminBlogConfigEnvironment['default'].API_HOST + '/api/v1/term-texts?term=' + term + '&vocabularyName=Category';
+        return this.get('ajax').request(url).then(function (json) {
+          return json.term;
+        });
+      },
+      searchTagsTerms: function searchTagsTerms(term) {
+        var url = _weAdminBlogConfigEnvironment['default'].API_HOST + '/api/v1/term-texts?term=' + term + '&vocabularyName=Tags';
+        return this.get('ajax').request(url).then(function (json) {
+          return json.term;
+        });
+      },
+      changeDate: function changeDate(record, field, dates) {
+        if (!dates || !dates[0]) {
+          return;
+        }
+        this.get('model.record').set(field, dates[0]);
       }
     }
   });
@@ -1918,7 +1969,7 @@ define('we-admin-blog/router', ['exports', 'ember', 'we-admin-blog/config/enviro
 });
 define('we-admin-blog/routes/application', ['exports', 'ember', 'ember-simple-auth/mixins/application-route-mixin', 'we-admin-blog/config/environment'], function (exports, _ember, _emberSimpleAuthMixinsApplicationRouteMixin, _weAdminBlogConfigEnvironment) {
   exports['default'] = _ember['default'].Route.extend(_emberSimpleAuthMixinsApplicationRouteMixin['default'], {
-    session: _ember['default'].inject.service('session'),
+    session: _ember['default'].inject.service(),
 
     beforeModel: function beforeModel() {
       this.get('notifications').setDefaultAutoClear(true);
@@ -1932,10 +1983,14 @@ define('we-admin-blog/routes/application', ['exports', 'ember', 'ember-simple-au
         minimumLoadingDelay: new window.Promise(function (resolve) {
           setTimeout(function () {
             resolve();
-          }, 1000);
+          }, 500);
         })
       });
     },
+    afterModel: function afterModel() {
+      this.set('i18n.locale', this.get('settings.data.activeLocale'));
+    },
+
     /**
      * Get locales from host
      *
@@ -2070,6 +2125,9 @@ define('we-admin-blog/routes/articles', ['exports', 'ember', 'ember-simple-auth/
         })['catch'](function (err) {
           _this3.send('queryError', err);
         });
+      },
+      changeDate: function changeDate(x, y, z) {
+        console.log('>', x, y, z);
       }
     }
   });
@@ -2148,8 +2206,25 @@ define('we-admin-blog/routes/articles/item', ['exports', 'ember', 'ember-simple-
     }
   });
 });
-define('we-admin-blog/routes/index', ['exports', 'ember', 'ember-simple-auth/mixins/authenticated-route-mixin'], function (exports, _ember, _emberSimpleAuthMixinsAuthenticatedRouteMixin) {
-  exports['default'] = _ember['default'].Route.extend(_emberSimpleAuthMixinsAuthenticatedRouteMixin['default']);
+define('we-admin-blog/routes/index', ['exports', 'ember', 'we-admin-blog/config/environment', 'ember-simple-auth/mixins/authenticated-route-mixin'], function (exports, _ember, _weAdminBlogConfigEnvironment, _emberSimpleAuthMixinsAuthenticatedRouteMixin) {
+  exports['default'] = _ember['default'].Route.extend(_emberSimpleAuthMixinsAuthenticatedRouteMixin['default'], {
+    ajax: _ember['default'].inject.service(),
+
+    model: function model() {
+
+      return _ember['default'].RSVP.hash({
+        articleCount: this.get('ajax').request(_weAdminBlogConfigEnvironment['default'].API_HOST + '/article/count').then(function (json) {
+          return json.count;
+        }),
+        unPublishedArticles: this.get('store').query('article', {
+          published: false
+        }),
+        newUsers: this.get('ajax').request(_weAdminBlogConfigEnvironment['default'].API_HOST + '/user?limit=10').then(function (json) {
+          return json;
+        })
+      });
+    }
+  });
 });
 define('we-admin-blog/routes/login', ['exports', 'ember', 'ember-simple-auth/mixins/unauthenticated-route-mixin'], function (exports, _ember, _emberSimpleAuthMixinsUnauthenticatedRouteMixin) {
   exports['default'] = _ember['default'].Route.extend(_emberSimpleAuthMixinsUnauthenticatedRouteMixin['default']);
@@ -2217,6 +2292,8 @@ define('we-admin-blog/routes/menus/create', ['exports', 'ember', 'ember-simple-a
 define('we-admin-blog/routes/menus/index', ['exports', 'ember', 'ember-simple-auth/mixins/authenticated-route-mixin'], function (exports, _ember, _emberSimpleAuthMixinsAuthenticatedRouteMixin) {
   exports['default'] = _ember['default'].Route.extend(_emberSimpleAuthMixinsAuthenticatedRouteMixin['default'], {
     model: function model() {
+      var i18n = this.get('i18n');
+
       return _ember['default'].RSVP.hash({
         records: this.get('store').query('menu', {}),
         columns: [{
@@ -2225,17 +2302,17 @@ define('we-admin-blog/routes/menus/index', ['exports', 'ember', 'ember-simple-au
         }, {
           propertyName: 'name',
           filteredBy: 'name_starts-with',
-          title: 'Name'
+          title: i18n.t('form-menu-name')
         }, {
           propertyName: 'createdAt',
           filteredBy: 'createdAt',
-          title: 'Criado em',
+          title: i18n.t('form-menu-createdAt'),
           template: 'partials/list-item-created-at'
         }, {
           propertyName: 'actions',
           disableSorting: true,
           disableFiltering: true,
-          title: 'Actions',
+          title: i18n.t('Actions'),
           template: 'menus/list-item-actions'
         }]
       });
@@ -2555,6 +2632,8 @@ define('we-admin-blog/routes/url-alia/create', ['exports', 'ember', 'ember-simpl
 define('we-admin-blog/routes/url-alia/index', ['exports', 'ember', 'ember-simple-auth/mixins/authenticated-route-mixin'], function (exports, _ember, _emberSimpleAuthMixinsAuthenticatedRouteMixin) {
   exports['default'] = _ember['default'].Route.extend(_emberSimpleAuthMixinsAuthenticatedRouteMixin['default'], {
     model: function model() {
+      var i18n = this.get('i18n');
+
       return _ember['default'].RSVP.hash({
         records: this.get('store').query('url-alia', {}),
         columns: [{
@@ -2563,25 +2642,21 @@ define('we-admin-blog/routes/url-alia/index', ['exports', 'ember', 'ember-simple
         }, {
           propertyName: 'alias',
           filteredBy: 'alias',
-          title: 'Alias'
+          title: i18n.t('form-urlAlias-alias')
         }, {
           propertyName: 'target',
           filteredBy: 'targer',
-          title: 'Target'
-        }, {
-          propertyName: 'locale',
-          filteredBy: 'locale',
-          title: 'Locale'
+          title: i18n.t('form-urlAlias-target')
         }, {
           propertyName: 'createdAt',
           filteredBy: 'createdAt',
-          title: 'Criado em',
+          title: i18n.t('form-urlAlias-createdAt'),
           template: 'partials/list-item-created-at'
         }, {
           propertyName: 'actions',
           disableSorting: true,
           disableFiltering: true,
-          title: 'Actions',
+          title: i18n.t('Actions'),
           template: 'url-alia/list-item-actions'
         }]
       });
@@ -2809,6 +2884,8 @@ define('we-admin-blog/routes/vocabulary/create', ['exports', 'ember', 'ember-sim
 define('we-admin-blog/routes/vocabulary/index', ['exports', 'ember', 'ember-simple-auth/mixins/authenticated-route-mixin'], function (exports, _ember, _emberSimpleAuthMixinsAuthenticatedRouteMixin) {
   exports['default'] = _ember['default'].Route.extend(_emberSimpleAuthMixinsAuthenticatedRouteMixin['default'], {
     model: function model() {
+      var i18n = this.get('i18n');
+
       return _ember['default'].RSVP.hash({
         records: this.get('store').query('vocabulary', {}),
         columns: [{
@@ -2817,17 +2894,17 @@ define('we-admin-blog/routes/vocabulary/index', ['exports', 'ember', 'ember-simp
         }, {
           propertyName: 'name',
           filteredBy: 'name_starts-with',
-          title: 'Nome'
+          title: i18n.t('form-vocabulary-name')
         }, {
           propertyName: 'createdAt',
           filteredBy: 'createdAt',
-          title: 'Criado em',
+          title: i18n.t('form-vocabulary-createdAt'),
           template: 'partials/list-item-created-at'
         }, {
           propertyName: 'actions',
           disableSorting: true,
           disableFiltering: true,
-          title: 'Actions',
+          title: i18n.t('Actions'),
           template: 'vocabulary/list-item-actions'
         }]
       });
@@ -2889,6 +2966,7 @@ define('we-admin-blog/routes/vocabulary/item/terms/index', ['exports', 'ember', 
     term: _ember['default'].inject.service(),
     model: function model() {
       var vocabulary = this.modelFor('vocabulary.item').record;
+      var i18n = this.get('i18n');
 
       return _ember['default'].RSVP.hash({
         vocabulary: vocabulary,
@@ -2901,17 +2979,17 @@ define('we-admin-blog/routes/vocabulary/item/terms/index', ['exports', 'ember', 
         }, {
           propertyName: 'text',
           filteredBy: 'text_starts-with',
-          title: 'Text'
+          title: i18n.t('form-term-text')
         }, {
           propertyName: 'createdAt',
           filteredBy: 'createdAt',
-          title: 'Criado em',
+          title: i18n.t('form-term-createdAt'),
           template: 'partials/list-item-created-at'
         }, {
           propertyName: 'actions',
           disableSorting: true,
           disableFiltering: true,
-          title: 'Actions',
+          title: i18n.t('Actions'),
           template: 'vocabulary/item/terms/list-item-actions'
         }]
       });
@@ -3862,12 +3940,12 @@ define("we-admin-blog/templates/articles/form", ["exports"], function (exports) 
           "loc": {
             "source": null,
             "start": {
-              "line": 35,
-              "column": 6
+              "line": 79,
+              "column": 14
             },
             "end": {
-              "line": 42,
-              "column": 6
+              "line": 86,
+              "column": 14
             }
           },
           "moduleName": "we-admin-blog/templates/articles/form.hbs"
@@ -3878,7 +3956,7 @@ define("we-admin-blog/templates/articles/form", ["exports"], function (exports) 
         hasRendered: false,
         buildFragment: function buildFragment(dom) {
           var el0 = dom.createDocumentFragment();
-          var el1 = dom.createTextNode("        ");
+          var el1 = dom.createTextNode("                ");
           dom.appendChild(el0, el1);
           var el1 = dom.createComment("");
           dom.appendChild(el0, el1);
@@ -3891,7 +3969,7 @@ define("we-admin-blog/templates/articles/form", ["exports"], function (exports) 
           morphs[0] = dom.createMorphAt(fragment, 1, 1, contextualElement);
           return morphs;
         },
-        statements: [["content", "term", ["loc", [null, [41, 8], [41, 16]]]]],
+        statements: [["content", "term", ["loc", [null, [85, 16], [85, 24]]]]],
         locals: ["term"],
         templates: []
       };
@@ -3904,12 +3982,12 @@ define("we-admin-blog/templates/articles/form", ["exports"], function (exports) 
           "loc": {
             "source": null,
             "start": {
-              "line": 46,
-              "column": 6
+              "line": 90,
+              "column": 14
             },
             "end": {
-              "line": 53,
-              "column": 6
+              "line": 97,
+              "column": 14
             }
           },
           "moduleName": "we-admin-blog/templates/articles/form.hbs"
@@ -3920,7 +3998,7 @@ define("we-admin-blog/templates/articles/form", ["exports"], function (exports) 
         hasRendered: false,
         buildFragment: function buildFragment(dom) {
           var el0 = dom.createDocumentFragment();
-          var el1 = dom.createTextNode("        ");
+          var el1 = dom.createTextNode("                ");
           dom.appendChild(el0, el1);
           var el1 = dom.createComment("");
           dom.appendChild(el0, el1);
@@ -3933,7 +4011,7 @@ define("we-admin-blog/templates/articles/form", ["exports"], function (exports) 
           morphs[0] = dom.createMorphAt(fragment, 1, 1, contextualElement);
           return morphs;
         },
-        statements: [["content", "term", ["loc", [null, [52, 8], [52, 16]]]]],
+        statements: [["content", "term", ["loc", [null, [96, 16], [96, 24]]]]],
         locals: ["term"],
         templates: []
       };
@@ -3952,7 +4030,7 @@ define("we-admin-blog/templates/articles/form", ["exports"], function (exports) 
             "column": 0
           },
           "end": {
-            "line": 73,
+            "line": 157,
             "column": 7
           }
         },
@@ -3971,216 +4049,386 @@ define("we-admin-blog/templates/articles/form", ["exports"], function (exports) 
         var el1 = dom.createElement("form");
         var el2 = dom.createTextNode("\n  ");
         dom.appendChild(el1, el2);
-        var el2 = dom.createElement("fieldset");
+        var el2 = dom.createElement("div");
+        dom.setAttribute(el2, "class", "row");
         var el3 = dom.createTextNode("\n    ");
         dom.appendChild(el2, el3);
         var el3 = dom.createElement("div");
-        dom.setAttribute(el3, "class", "form-group");
-        var el4 = dom.createTextNode("\n      ");
+        dom.setAttribute(el3, "class", "col-md-8");
+        var el4 = dom.createTextNode("\n\n      ");
         dom.appendChild(el3, el4);
-        var el4 = dom.createElement("label");
-        var el5 = dom.createComment("");
-        dom.appendChild(el4, el5);
-        var el5 = dom.createTextNode("*:");
-        dom.appendChild(el4, el5);
-        dom.appendChild(el3, el4);
-        var el4 = dom.createTextNode("\n      ");
-        dom.appendChild(el3, el4);
-        var el4 = dom.createComment("");
-        dom.appendChild(el3, el4);
-        var el4 = dom.createTextNode("\n    ");
-        dom.appendChild(el3, el4);
-        dom.appendChild(el2, el3);
-        var el3 = dom.createTextNode("\n    ");
-        dom.appendChild(el2, el3);
-        var el3 = dom.createElement("div");
-        dom.setAttribute(el3, "class", "form-group");
-        var el4 = dom.createTextNode("\n      ");
-        dom.appendChild(el3, el4);
-        var el4 = dom.createElement("label");
-        var el5 = dom.createComment("");
-        dom.appendChild(el4, el5);
-        var el5 = dom.createTextNode(":");
-        dom.appendChild(el4, el5);
-        dom.appendChild(el3, el4);
-        var el4 = dom.createTextNode("\n      ");
-        dom.appendChild(el3, el4);
-        var el4 = dom.createComment("");
-        dom.appendChild(el3, el4);
-        var el4 = dom.createTextNode("\n    ");
-        dom.appendChild(el3, el4);
-        dom.appendChild(el2, el3);
-        var el3 = dom.createTextNode("\n    ");
-        dom.appendChild(el2, el3);
-        var el3 = dom.createElement("div");
-        dom.setAttribute(el3, "class", "form-group");
-        var el4 = dom.createTextNode("\n      ");
-        dom.appendChild(el3, el4);
-        var el4 = dom.createElement("label");
-        var el5 = dom.createComment("");
-        dom.appendChild(el4, el5);
-        var el5 = dom.createTextNode(":");
-        dom.appendChild(el4, el5);
-        dom.appendChild(el3, el4);
-        var el4 = dom.createTextNode("\n      ");
-        dom.appendChild(el3, el4);
-        var el4 = dom.createComment("");
-        dom.appendChild(el3, el4);
-        var el4 = dom.createTextNode("\n    ");
-        dom.appendChild(el3, el4);
-        dom.appendChild(el2, el3);
-        var el3 = dom.createTextNode("\n  ");
-        dom.appendChild(el2, el3);
-        dom.appendChild(el1, el2);
-        var el2 = dom.createTextNode("\n  ");
-        dom.appendChild(el1, el2);
-        var el2 = dom.createElement("fieldset");
-        var el3 = dom.createTextNode("\n    ");
-        dom.appendChild(el2, el3);
-        var el3 = dom.createElement("div");
-        dom.setAttribute(el3, "class", "form-group");
-        var el4 = dom.createTextNode("\n      ");
-        dom.appendChild(el3, el4);
-        var el4 = dom.createElement("label");
-        var el5 = dom.createComment("");
-        dom.appendChild(el4, el5);
-        var el5 = dom.createTextNode(":");
-        dom.appendChild(el4, el5);
-        dom.appendChild(el3, el4);
-        var el4 = dom.createTextNode("\n      ");
-        dom.appendChild(el3, el4);
-        var el4 = dom.createComment("");
-        dom.appendChild(el3, el4);
-        var el4 = dom.createTextNode("\n    ");
-        dom.appendChild(el3, el4);
-        dom.appendChild(el2, el3);
-        var el3 = dom.createTextNode("\n    ");
-        dom.appendChild(el2, el3);
-        var el3 = dom.createElement("div");
-        dom.setAttribute(el3, "class", "form-group");
-        var el4 = dom.createTextNode("\n      ");
-        dom.appendChild(el3, el4);
-        var el4 = dom.createElement("label");
-        var el5 = dom.createComment("");
-        dom.appendChild(el4, el5);
-        var el5 = dom.createTextNode(":");
-        dom.appendChild(el4, el5);
-        dom.appendChild(el3, el4);
-        var el4 = dom.createTextNode("\n      ");
-        dom.appendChild(el3, el4);
-        var el4 = dom.createComment("");
-        dom.appendChild(el3, el4);
-        var el4 = dom.createTextNode("\n    ");
-        dom.appendChild(el3, el4);
-        dom.appendChild(el2, el3);
-        var el3 = dom.createTextNode("\n  ");
-        dom.appendChild(el2, el3);
-        dom.appendChild(el1, el2);
-        var el2 = dom.createTextNode("\n  ");
-        dom.appendChild(el1, el2);
-        var el2 = dom.createElement("fieldset");
-        var el3 = dom.createTextNode("\n    ");
-        dom.appendChild(el2, el3);
-        var el3 = dom.createElement("div");
-        dom.setAttribute(el3, "class", "form-group");
-        var el4 = dom.createTextNode("\n      ");
-        dom.appendChild(el3, el4);
-        var el4 = dom.createElement("label");
-        var el5 = dom.createComment("");
-        dom.appendChild(el4, el5);
-        var el5 = dom.createTextNode(":");
-        dom.appendChild(el4, el5);
-        dom.appendChild(el3, el4);
-        var el4 = dom.createTextNode("\n");
-        dom.appendChild(el3, el4);
-        var el4 = dom.createComment("");
-        dom.appendChild(el3, el4);
-        var el4 = dom.createTextNode("    ");
-        dom.appendChild(el3, el4);
-        dom.appendChild(el2, el3);
-        var el3 = dom.createTextNode("\n    ");
-        dom.appendChild(el2, el3);
-        var el3 = dom.createElement("div");
-        dom.setAttribute(el3, "class", "form-group");
-        var el4 = dom.createTextNode("\n      ");
-        dom.appendChild(el3, el4);
-        var el4 = dom.createElement("label");
-        var el5 = dom.createComment("");
-        dom.appendChild(el4, el5);
-        var el5 = dom.createTextNode(":");
-        dom.appendChild(el4, el5);
-        dom.appendChild(el3, el4);
-        var el4 = dom.createTextNode("\n");
-        dom.appendChild(el3, el4);
-        var el4 = dom.createComment("");
-        dom.appendChild(el3, el4);
-        var el4 = dom.createTextNode("    ");
-        dom.appendChild(el3, el4);
-        dom.appendChild(el2, el3);
-        var el3 = dom.createTextNode("\n  ");
-        dom.appendChild(el2, el3);
-        dom.appendChild(el1, el2);
-        var el2 = dom.createTextNode("\n  ");
-        dom.appendChild(el1, el2);
-        var el2 = dom.createElement("fieldset");
-        var el3 = dom.createTextNode("\n    ");
-        dom.appendChild(el2, el3);
-        var el3 = dom.createElement("div");
-        dom.setAttribute(el3, "class", "form-group");
-        var el4 = dom.createTextNode("\n      ");
-        dom.appendChild(el3, el4);
-        var el4 = dom.createElement("label");
+        var el4 = dom.createElement("div");
+        dom.setAttribute(el4, "class", "panel panel-default");
         var el5 = dom.createTextNode("\n        ");
         dom.appendChild(el4, el5);
-        var el5 = dom.createComment("");
+        var el5 = dom.createElement("div");
+        dom.setAttribute(el5, "class", "panel-heading");
+        var el6 = dom.createComment("");
+        dom.appendChild(el5, el6);
         dom.appendChild(el4, el5);
-        var el5 = dom.createTextNode(" ");
+        var el5 = dom.createTextNode("\n        ");
         dom.appendChild(el4, el5);
-        var el5 = dom.createComment("");
+        var el5 = dom.createElement("div");
+        dom.setAttribute(el5, "class", "panel-body");
+        var el6 = dom.createTextNode("\n          ");
+        dom.appendChild(el5, el6);
+        var el6 = dom.createElement("fieldset");
+        var el7 = dom.createTextNode("\n            ");
+        dom.appendChild(el6, el7);
+        var el7 = dom.createElement("div");
+        dom.setAttribute(el7, "class", "form-group");
+        var el8 = dom.createTextNode("\n              ");
+        dom.appendChild(el7, el8);
+        var el8 = dom.createElement("label");
+        var el9 = dom.createComment("");
+        dom.appendChild(el8, el9);
+        var el9 = dom.createTextNode("*:");
+        dom.appendChild(el8, el9);
+        dom.appendChild(el7, el8);
+        var el8 = dom.createTextNode("\n              ");
+        dom.appendChild(el7, el8);
+        var el8 = dom.createComment("");
+        dom.appendChild(el7, el8);
+        var el8 = dom.createTextNode("\n            ");
+        dom.appendChild(el7, el8);
+        dom.appendChild(el6, el7);
+        var el7 = dom.createTextNode("\n            ");
+        dom.appendChild(el6, el7);
+        var el7 = dom.createElement("div");
+        dom.setAttribute(el7, "class", "form-group");
+        var el8 = dom.createTextNode("\n              ");
+        dom.appendChild(el7, el8);
+        var el8 = dom.createElement("label");
+        var el9 = dom.createComment("");
+        dom.appendChild(el8, el9);
+        var el9 = dom.createTextNode(":");
+        dom.appendChild(el8, el9);
+        dom.appendChild(el7, el8);
+        var el8 = dom.createTextNode("\n              ");
+        dom.appendChild(el7, el8);
+        var el8 = dom.createComment("");
+        dom.appendChild(el7, el8);
+        var el8 = dom.createTextNode("\n            ");
+        dom.appendChild(el7, el8);
+        dom.appendChild(el6, el7);
+        var el7 = dom.createTextNode("\n            ");
+        dom.appendChild(el6, el7);
+        var el7 = dom.createElement("div");
+        dom.setAttribute(el7, "class", "form-group");
+        var el8 = dom.createTextNode("\n              ");
+        dom.appendChild(el7, el8);
+        var el8 = dom.createElement("label");
+        var el9 = dom.createComment("");
+        dom.appendChild(el8, el9);
+        var el9 = dom.createTextNode(":");
+        dom.appendChild(el8, el9);
+        dom.appendChild(el7, el8);
+        var el8 = dom.createTextNode("\n              ");
+        dom.appendChild(el7, el8);
+        var el8 = dom.createComment("");
+        dom.appendChild(el7, el8);
+        var el8 = dom.createTextNode("\n            ");
+        dom.appendChild(el7, el8);
+        dom.appendChild(el6, el7);
+        var el7 = dom.createTextNode("\n          ");
+        dom.appendChild(el6, el7);
+        dom.appendChild(el5, el6);
+        var el6 = dom.createTextNode("\n        ");
+        dom.appendChild(el5, el6);
         dom.appendChild(el4, el5);
-        var el5 = dom.createTextNode("?\n      ");
+        var el5 = dom.createTextNode("\n      ");
+        dom.appendChild(el4, el5);
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n\n      ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createElement("div");
+        dom.setAttribute(el4, "class", "panel panel-default");
+        var el5 = dom.createTextNode("\n        ");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createElement("div");
+        dom.setAttribute(el5, "class", "panel-heading");
+        var el6 = dom.createComment("");
+        dom.appendChild(el5, el6);
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("\n        ");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createElement("div");
+        dom.setAttribute(el5, "class", "panel-body");
+        var el6 = dom.createTextNode("\n          ");
+        dom.appendChild(el5, el6);
+        var el6 = dom.createElement("fieldset");
+        var el7 = dom.createTextNode("\n            ");
+        dom.appendChild(el6, el7);
+        var el7 = dom.createElement("div");
+        dom.setAttribute(el7, "class", "form-group");
+        var el8 = dom.createTextNode("\n              ");
+        dom.appendChild(el7, el8);
+        var el8 = dom.createElement("label");
+        var el9 = dom.createComment("");
+        dom.appendChild(el8, el9);
+        var el9 = dom.createTextNode(":");
+        dom.appendChild(el8, el9);
+        dom.appendChild(el7, el8);
+        var el8 = dom.createTextNode("\n              ");
+        dom.appendChild(el7, el8);
+        var el8 = dom.createComment("");
+        dom.appendChild(el7, el8);
+        var el8 = dom.createTextNode("\n            ");
+        dom.appendChild(el7, el8);
+        dom.appendChild(el6, el7);
+        var el7 = dom.createTextNode("\n            ");
+        dom.appendChild(el6, el7);
+        var el7 = dom.createElement("div");
+        dom.setAttribute(el7, "class", "form-group");
+        var el8 = dom.createTextNode("\n              ");
+        dom.appendChild(el7, el8);
+        var el8 = dom.createElement("label");
+        var el9 = dom.createComment("");
+        dom.appendChild(el8, el9);
+        var el9 = dom.createTextNode(":");
+        dom.appendChild(el8, el9);
+        dom.appendChild(el7, el8);
+        var el8 = dom.createTextNode("\n              ");
+        dom.appendChild(el7, el8);
+        var el8 = dom.createComment("");
+        dom.appendChild(el7, el8);
+        var el8 = dom.createTextNode("\n            ");
+        dom.appendChild(el7, el8);
+        dom.appendChild(el6, el7);
+        var el7 = dom.createTextNode("\n          ");
+        dom.appendChild(el6, el7);
+        dom.appendChild(el5, el6);
+        var el6 = dom.createTextNode("\n        ");
+        dom.appendChild(el5, el6);
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("\n      ");
+        dom.appendChild(el4, el5);
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n\n      ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createElement("div");
+        var el5 = dom.createTextNode("\n        ");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createElement("button");
+        dom.setAttribute(el5, "class", "btn btn-primary");
+        var el6 = dom.createTextNode("\n          ");
+        dom.appendChild(el5, el6);
+        var el6 = dom.createElement("i");
+        dom.setAttribute(el6, "class", "fa fa-save");
+        dom.appendChild(el5, el6);
+        var el6 = dom.createTextNode("\n          ");
+        dom.appendChild(el5, el6);
+        var el6 = dom.createComment("");
+        dom.appendChild(el5, el6);
+        var el6 = dom.createTextNode("\n        ");
+        dom.appendChild(el5, el6);
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("\n        ");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createElement("button");
+        dom.setAttribute(el5, "type", "button");
+        dom.setAttribute(el5, "class", "btn btn-default");
+        var el6 = dom.createTextNode("\n          ");
+        dom.appendChild(el5, el6);
+        var el6 = dom.createElement("i");
+        dom.setAttribute(el6, "class", "fa fa-step-backward");
+        dom.appendChild(el5, el6);
+        var el6 = dom.createTextNode("\n          ");
+        dom.appendChild(el5, el6);
+        var el6 = dom.createComment("");
+        dom.appendChild(el5, el6);
+        var el6 = dom.createTextNode("\n        ");
+        dom.appendChild(el5, el6);
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("\n      ");
         dom.appendChild(el4, el5);
         dom.appendChild(el3, el4);
         var el4 = dom.createTextNode("\n    ");
         dom.appendChild(el3, el4);
         dom.appendChild(el2, el3);
-        var el3 = dom.createTextNode("\n  ");
-        dom.appendChild(el2, el3);
-        dom.appendChild(el1, el2);
-        var el2 = dom.createTextNode("\n  ");
-        dom.appendChild(el1, el2);
-        var el2 = dom.createElement("div");
         var el3 = dom.createTextNode("\n    ");
         dom.appendChild(el2, el3);
-        var el3 = dom.createElement("button");
-        dom.setAttribute(el3, "class", "btn btn-primary");
-        var el4 = dom.createTextNode("\n      ");
+        var el3 = dom.createElement("div");
+        dom.setAttribute(el3, "class", "col-md-4");
+        var el4 = dom.createTextNode("\n\n      ");
         dom.appendChild(el3, el4);
-        var el4 = dom.createElement("i");
-        dom.setAttribute(el4, "class", "fa fa-save");
+        var el4 = dom.createElement("div");
+        dom.setAttribute(el4, "class", "panel panel-default");
+        var el5 = dom.createTextNode("\n        ");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createElement("div");
+        dom.setAttribute(el5, "class", "panel-heading");
+        var el6 = dom.createComment("");
+        dom.appendChild(el5, el6);
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("\n        ");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createElement("div");
+        dom.setAttribute(el5, "class", "panel-body");
+        var el6 = dom.createTextNode("\n          ");
+        dom.appendChild(el5, el6);
+        var el6 = dom.createElement("fieldset");
+        var el7 = dom.createTextNode("\n            ");
+        dom.appendChild(el6, el7);
+        var el7 = dom.createElement("div");
+        dom.setAttribute(el7, "class", "form-group");
+        var el8 = dom.createTextNode("\n              ");
+        dom.appendChild(el7, el8);
+        var el8 = dom.createElement("label");
+        var el9 = dom.createTextNode("\n                ");
+        dom.appendChild(el8, el9);
+        var el9 = dom.createComment("");
+        dom.appendChild(el8, el9);
+        var el9 = dom.createTextNode(" ");
+        dom.appendChild(el8, el9);
+        var el9 = dom.createComment("");
+        dom.appendChild(el8, el9);
+        var el9 = dom.createTextNode("?\n              ");
+        dom.appendChild(el8, el9);
+        dom.appendChild(el7, el8);
+        var el8 = dom.createTextNode("\n            ");
+        dom.appendChild(el7, el8);
+        dom.appendChild(el6, el7);
+        var el7 = dom.createTextNode("\n          ");
+        dom.appendChild(el6, el7);
+        dom.appendChild(el5, el6);
+        var el6 = dom.createTextNode("\n        ");
+        dom.appendChild(el5, el6);
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("\n      ");
+        dom.appendChild(el4, el5);
         dom.appendChild(el3, el4);
-        var el4 = dom.createTextNode("\n      ");
+        var el4 = dom.createTextNode("\n\n      ");
         dom.appendChild(el3, el4);
-        var el4 = dom.createComment("");
+        var el4 = dom.createElement("div");
+        dom.setAttribute(el4, "class", "panel panel-default");
+        var el5 = dom.createTextNode("\n        ");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createElement("div");
+        dom.setAttribute(el5, "class", "panel-heading");
+        var el6 = dom.createComment("");
+        dom.appendChild(el5, el6);
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("\n        ");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createElement("div");
+        dom.setAttribute(el5, "class", "panel-body");
+        var el6 = dom.createTextNode("\n          ");
+        dom.appendChild(el5, el6);
+        var el6 = dom.createElement("fieldset");
+        var el7 = dom.createTextNode("\n            ");
+        dom.appendChild(el6, el7);
+        var el7 = dom.createElement("div");
+        dom.setAttribute(el7, "class", "form-group");
+        var el8 = dom.createTextNode("\n              ");
+        dom.appendChild(el7, el8);
+        var el8 = dom.createElement("label");
+        var el9 = dom.createComment("");
+        dom.appendChild(el8, el9);
+        var el9 = dom.createTextNode(":");
+        dom.appendChild(el8, el9);
+        dom.appendChild(el7, el8);
+        var el8 = dom.createTextNode("\n");
+        dom.appendChild(el7, el8);
+        var el8 = dom.createComment("");
+        dom.appendChild(el7, el8);
+        var el8 = dom.createTextNode("            ");
+        dom.appendChild(el7, el8);
+        dom.appendChild(el6, el7);
+        var el7 = dom.createTextNode("\n            ");
+        dom.appendChild(el6, el7);
+        var el7 = dom.createElement("div");
+        dom.setAttribute(el7, "class", "form-group");
+        var el8 = dom.createTextNode("\n              ");
+        dom.appendChild(el7, el8);
+        var el8 = dom.createElement("label");
+        var el9 = dom.createComment("");
+        dom.appendChild(el8, el9);
+        var el9 = dom.createTextNode(":");
+        dom.appendChild(el8, el9);
+        dom.appendChild(el7, el8);
+        var el8 = dom.createTextNode("\n");
+        dom.appendChild(el7, el8);
+        var el8 = dom.createComment("");
+        dom.appendChild(el7, el8);
+        var el8 = dom.createTextNode("            ");
+        dom.appendChild(el7, el8);
+        dom.appendChild(el6, el7);
+        var el7 = dom.createTextNode("\n          ");
+        dom.appendChild(el6, el7);
+        dom.appendChild(el5, el6);
+        var el6 = dom.createTextNode("\n        ");
+        dom.appendChild(el5, el6);
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("\n      ");
+        dom.appendChild(el4, el5);
         dom.appendChild(el3, el4);
-        var el4 = dom.createTextNode("\n    ");
+        var el4 = dom.createTextNode("\n\n      ");
         dom.appendChild(el3, el4);
-        dom.appendChild(el2, el3);
-        var el3 = dom.createTextNode("\n    ");
-        dom.appendChild(el2, el3);
-        var el3 = dom.createElement("button");
-        dom.setAttribute(el3, "type", "button");
-        dom.setAttribute(el3, "class", "btn btn-default");
-        var el4 = dom.createTextNode("\n      ");
+        var el4 = dom.createElement("div");
+        dom.setAttribute(el4, "class", "panel panel-default");
+        var el5 = dom.createTextNode("\n        ");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createElement("div");
+        dom.setAttribute(el5, "class", "panel-heading");
+        var el6 = dom.createComment("");
+        dom.appendChild(el5, el6);
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("\n        ");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createElement("div");
+        dom.setAttribute(el5, "class", "panel-body");
+        var el6 = dom.createTextNode("\n          ");
+        dom.appendChild(el5, el6);
+        var el6 = dom.createElement("fieldset");
+        var el7 = dom.createTextNode("\n            ");
+        dom.appendChild(el6, el7);
+        var el7 = dom.createElement("div");
+        dom.setAttribute(el7, "class", "form-group");
+        var el8 = dom.createTextNode("\n              ");
+        dom.appendChild(el7, el8);
+        var el8 = dom.createElement("label");
+        var el9 = dom.createComment("");
+        dom.appendChild(el8, el9);
+        var el9 = dom.createTextNode(":");
+        dom.appendChild(el8, el9);
+        dom.appendChild(el7, el8);
+        var el8 = dom.createTextNode("\n              ");
+        dom.appendChild(el7, el8);
+        var el8 = dom.createComment("");
+        dom.appendChild(el7, el8);
+        var el8 = dom.createTextNode("\n            ");
+        dom.appendChild(el7, el8);
+        dom.appendChild(el6, el7);
+        var el7 = dom.createTextNode("\n            ");
+        dom.appendChild(el6, el7);
+        var el7 = dom.createElement("div");
+        dom.setAttribute(el7, "class", "form-group");
+        var el8 = dom.createTextNode("\n              ");
+        dom.appendChild(el7, el8);
+        var el8 = dom.createElement("label");
+        var el9 = dom.createComment("");
+        dom.appendChild(el8, el9);
+        var el9 = dom.createTextNode(":");
+        dom.appendChild(el8, el9);
+        dom.appendChild(el7, el8);
+        var el8 = dom.createTextNode("\n              ");
+        dom.appendChild(el7, el8);
+        var el8 = dom.createComment("");
+        dom.appendChild(el7, el8);
+        var el8 = dom.createTextNode("\n            ");
+        dom.appendChild(el7, el8);
+        dom.appendChild(el6, el7);
+        var el7 = dom.createTextNode("\n          ");
+        dom.appendChild(el6, el7);
+        dom.appendChild(el5, el6);
+        var el6 = dom.createTextNode("\n        ");
+        dom.appendChild(el5, el6);
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("\n      ");
+        dom.appendChild(el4, el5);
         dom.appendChild(el3, el4);
-        var el4 = dom.createElement("i");
-        dom.setAttribute(el4, "class", "fa fa-step-backward");
-        dom.appendChild(el3, el4);
-        var el4 = dom.createTextNode("\n      ");
-        dom.appendChild(el3, el4);
-        var el4 = dom.createComment("");
-        dom.appendChild(el3, el4);
-        var el4 = dom.createTextNode("\n    ");
+        var el4 = dom.createTextNode("\n\n    ");
         dom.appendChild(el3, el4);
         dom.appendChild(el2, el3);
         var el3 = dom.createTextNode("\n  ");
@@ -4195,43 +4443,63 @@ define("we-admin-blog/templates/articles/form", ["exports"], function (exports) 
         var element0 = dom.childAt(fragment, [2]);
         var element1 = dom.childAt(element0, [1]);
         var element2 = dom.childAt(element1, [1]);
-        var element3 = dom.childAt(element1, [3]);
-        var element4 = dom.childAt(element1, [5]);
-        var element5 = dom.childAt(element0, [3]);
-        var element6 = dom.childAt(element5, [1]);
-        var element7 = dom.childAt(element5, [3]);
-        var element8 = dom.childAt(element0, [5]);
-        var element9 = dom.childAt(element8, [1]);
-        var element10 = dom.childAt(element8, [3]);
-        var element11 = dom.childAt(element0, [7, 1, 1]);
-        var element12 = dom.childAt(element0, [9]);
+        var element3 = dom.childAt(element2, [1]);
+        var element4 = dom.childAt(element3, [3, 1]);
+        var element5 = dom.childAt(element4, [1]);
+        var element6 = dom.childAt(element4, [3]);
+        var element7 = dom.childAt(element4, [5]);
+        var element8 = dom.childAt(element2, [3]);
+        var element9 = dom.childAt(element8, [3, 1]);
+        var element10 = dom.childAt(element9, [1]);
+        var element11 = dom.childAt(element9, [3]);
+        var element12 = dom.childAt(element2, [5]);
         var element13 = dom.childAt(element12, [3]);
-        var morphs = new Array(21);
+        var element14 = dom.childAt(element1, [3]);
+        var element15 = dom.childAt(element14, [1]);
+        var element16 = dom.childAt(element15, [3, 1, 1, 1]);
+        var element17 = dom.childAt(element14, [3]);
+        var element18 = dom.childAt(element17, [3, 1]);
+        var element19 = dom.childAt(element18, [1]);
+        var element20 = dom.childAt(element18, [3]);
+        var element21 = dom.childAt(element14, [5]);
+        var element22 = dom.childAt(element21, [3, 1]);
+        var element23 = dom.childAt(element22, [1]);
+        var element24 = dom.childAt(element22, [3]);
+        var morphs = new Array(30);
         morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
         morphs[1] = dom.createElementMorph(element0);
-        morphs[2] = dom.createMorphAt(dom.childAt(element2, [1]), 0, 0);
-        morphs[3] = dom.createMorphAt(element2, 3, 3);
-        morphs[4] = dom.createMorphAt(dom.childAt(element3, [1]), 0, 0);
-        morphs[5] = dom.createMorphAt(element3, 3, 3);
-        morphs[6] = dom.createMorphAt(dom.childAt(element4, [1]), 0, 0);
-        morphs[7] = dom.createMorphAt(element4, 3, 3);
-        morphs[8] = dom.createMorphAt(dom.childAt(element6, [1]), 0, 0);
-        morphs[9] = dom.createMorphAt(element6, 3, 3);
-        morphs[10] = dom.createMorphAt(dom.childAt(element7, [1]), 0, 0);
-        morphs[11] = dom.createMorphAt(element7, 3, 3);
-        morphs[12] = dom.createMorphAt(dom.childAt(element9, [1]), 0, 0);
-        morphs[13] = dom.createMorphAt(element9, 3, 3);
-        morphs[14] = dom.createMorphAt(dom.childAt(element10, [1]), 0, 0);
-        morphs[15] = dom.createMorphAt(element10, 3, 3);
-        morphs[16] = dom.createMorphAt(element11, 1, 1);
-        morphs[17] = dom.createMorphAt(element11, 3, 3);
-        morphs[18] = dom.createMorphAt(dom.childAt(element12, [1]), 3, 3);
-        morphs[19] = dom.createElementMorph(element13);
-        morphs[20] = dom.createMorphAt(element13, 3, 3);
+        morphs[2] = dom.createMorphAt(dom.childAt(element3, [1]), 0, 0);
+        morphs[3] = dom.createMorphAt(dom.childAt(element5, [1]), 0, 0);
+        morphs[4] = dom.createMorphAt(element5, 3, 3);
+        morphs[5] = dom.createMorphAt(dom.childAt(element6, [1]), 0, 0);
+        morphs[6] = dom.createMorphAt(element6, 3, 3);
+        morphs[7] = dom.createMorphAt(dom.childAt(element7, [1]), 0, 0);
+        morphs[8] = dom.createMorphAt(element7, 3, 3);
+        morphs[9] = dom.createMorphAt(dom.childAt(element8, [1]), 0, 0);
+        morphs[10] = dom.createMorphAt(dom.childAt(element10, [1]), 0, 0);
+        morphs[11] = dom.createMorphAt(element10, 3, 3);
+        morphs[12] = dom.createMorphAt(dom.childAt(element11, [1]), 0, 0);
+        morphs[13] = dom.createMorphAt(element11, 3, 3);
+        morphs[14] = dom.createMorphAt(dom.childAt(element12, [1]), 3, 3);
+        morphs[15] = dom.createElementMorph(element13);
+        morphs[16] = dom.createMorphAt(element13, 3, 3);
+        morphs[17] = dom.createMorphAt(dom.childAt(element15, [1]), 0, 0);
+        morphs[18] = dom.createMorphAt(element16, 1, 1);
+        morphs[19] = dom.createMorphAt(element16, 3, 3);
+        morphs[20] = dom.createMorphAt(dom.childAt(element17, [1]), 0, 0);
+        morphs[21] = dom.createMorphAt(dom.childAt(element19, [1]), 0, 0);
+        morphs[22] = dom.createMorphAt(element19, 3, 3);
+        morphs[23] = dom.createMorphAt(dom.childAt(element20, [1]), 0, 0);
+        morphs[24] = dom.createMorphAt(element20, 3, 3);
+        morphs[25] = dom.createMorphAt(dom.childAt(element21, [1]), 0, 0);
+        morphs[26] = dom.createMorphAt(dom.childAt(element23, [1]), 0, 0);
+        morphs[27] = dom.createMorphAt(element23, 3, 3);
+        morphs[28] = dom.createMorphAt(dom.childAt(element24, [1]), 0, 0);
+        morphs[29] = dom.createMorphAt(element24, 3, 3);
         dom.insertBoundary(fragment, 0);
         return morphs;
       },
-      statements: [["block", "if", [["get", "model.record.id", ["loc", [null, [1, 6], [1, 21]]]]], [], 0, 1, ["loc", [null, [1, 0], [5, 7]]]], ["element", "action", ["save", ["get", "model.record", ["loc", [null, [7, 22], [7, 34]]]]], ["on", "submit"], ["loc", [null, [7, 6], [7, 48]]]], ["inline", "t", ["form-article-title"], [], ["loc", [null, [10, 13], [10, 39]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.record.title", ["loc", [null, [11, 20], [11, 38]]]]], [], []], "class", "form-control", "placeholder", ["subexpr", "t", ["form-placeholder-article-title"], [], ["loc", [null, [11, 72], [11, 108]]]], "required", "required"], ["loc", [null, [11, 6], [11, 130]]]], ["inline", "t", ["form-article-about"], [], ["loc", [null, [14, 13], [14, 39]]]], ["inline", "textarea", [], ["value", ["subexpr", "@mut", [["get", "model.record.about", ["loc", [null, [15, 23], [15, 41]]]]], [], []], "class", "form-control"], ["loc", [null, [15, 6], [15, 64]]]], ["inline", "t", ["form-article-body"], [], ["loc", [null, [18, 13], [18, 38]]]], ["inline", "tinymce-editor", [], ["value", ["subexpr", "@mut", [["get", "model.record.body", ["loc", [null, [19, 29], [19, 46]]]]], [], []]], ["loc", [null, [19, 6], [19, 48]]]], ["inline", "t", ["form-article-featuredImage"], [], ["loc", [null, [24, 13], [24, 47]]]], ["inline", "image-uploader", [], ["value", ["subexpr", "@mut", [["get", "model.record.featuredImage", ["loc", [null, [25, 29], [25, 55]]]]], [], []]], ["loc", [null, [25, 6], [25, 57]]]], ["inline", "t", ["form-article-images"], [], ["loc", [null, [28, 13], [28, 40]]]], ["inline", "image-uploader", [], ["value", ["subexpr", "@mut", [["get", "model.record.images", ["loc", [null, [29, 29], [29, 48]]]]], [], []], "multiple", true], ["loc", [null, [29, 6], [29, 64]]]], ["inline", "t", ["form-article-category"], [], ["loc", [null, [34, 13], [34, 42]]]], ["block", "power-select", [], ["search", ["subexpr", "action", ["searchCategoryTerms"], [], ["loc", [null, [36, 15], [36, 45]]]], "selected", ["subexpr", "@mut", [["get", "model.record.category", ["loc", [null, [37, 17], [37, 38]]]]], [], []], "onchange", ["subexpr", "action", [["subexpr", "mut", [["get", "model.record.category", ["loc", [null, [38, 30], [38, 51]]]]], [], ["loc", [null, [38, 25], [38, 52]]]]], [], ["loc", [null, [38, 17], [38, 53]]]]], 2, null, ["loc", [null, [35, 6], [42, 23]]]], ["inline", "t", ["form-article-tags"], [], ["loc", [null, [45, 13], [45, 38]]]], ["block", "power-select-multiple", [], ["search", ["subexpr", "action", ["searchTagsTerms"], [], ["loc", [null, [47, 15], [47, 41]]]], "selected", ["subexpr", "@mut", [["get", "model.record.tags", ["loc", [null, [48, 17], [48, 34]]]]], [], []], "onchange", ["subexpr", "action", [["subexpr", "mut", [["get", "model.record.tags", ["loc", [null, [49, 30], [49, 47]]]]], [], ["loc", [null, [49, 25], [49, 48]]]]], [], ["loc", [null, [49, 17], [49, 49]]]]], 3, null, ["loc", [null, [46, 6], [53, 32]]]], ["inline", "input", [], ["type", "checkbox", "checked", ["subexpr", "@mut", [["get", "model.record.published", ["loc", [null, [59, 40], [59, 62]]]]], [], []]], ["loc", [null, [59, 8], [59, 64]]]], ["inline", "t", ["form-article-published"], [], ["loc", [null, [59, 65], [59, 95]]]], ["inline", "t", ["article.Save"], [], ["loc", [null, [66, 6], [66, 26]]]], ["element", "action", ["goTo", "articles.index"], [], ["loc", [null, [68, 12], [68, 46]]]], ["inline", "t", ["article.find"], [], ["loc", [null, [70, 6], [70, 26]]]]],
+      statements: [["block", "if", [["get", "model.record.id", ["loc", [null, [1, 6], [1, 21]]]]], [], 0, 1, ["loc", [null, [1, 0], [5, 7]]]], ["element", "action", ["save", ["get", "model.record", ["loc", [null, [7, 22], [7, 34]]]]], ["on", "submit"], ["loc", [null, [7, 6], [7, 48]]]], ["inline", "t", ["article.form.terms.Data"], [], ["loc", [null, [12, 35], [12, 66]]]], ["inline", "t", ["form-article-title"], [], ["loc", [null, [16, 21], [16, 47]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.record.title", ["loc", [null, [17, 28], [17, 46]]]]], [], []], "class", "form-control", "placeholder", ["subexpr", "t", ["form-placeholder-article-title"], [], ["loc", [null, [17, 80], [17, 116]]]], "required", "required"], ["loc", [null, [17, 14], [17, 138]]]], ["inline", "t", ["form-article-about"], [], ["loc", [null, [20, 21], [20, 47]]]], ["inline", "textarea", [], ["value", ["subexpr", "@mut", [["get", "model.record.about", ["loc", [null, [21, 31], [21, 49]]]]], [], []], "class", "form-control"], ["loc", [null, [21, 14], [21, 72]]]], ["inline", "t", ["form-article-body"], [], ["loc", [null, [24, 21], [24, 46]]]], ["inline", "tinymce-editor", [], ["options", ["subexpr", "@mut", [["get", "editorOptions", ["loc", [null, [25, 39], [25, 52]]]]], [], []], "value", ["subexpr", "@mut", [["get", "model.record.body", ["loc", [null, [25, 59], [25, 76]]]]], [], []]], ["loc", [null, [25, 14], [25, 78]]]], ["inline", "t", ["article.form.terms.Images"], [], ["loc", [null, [32, 35], [32, 68]]]], ["inline", "t", ["form-article-featuredImage"], [], ["loc", [null, [36, 21], [36, 55]]]], ["inline", "image-uploader", [], ["value", ["subexpr", "@mut", [["get", "model.record.featuredImage", ["loc", [null, [37, 37], [37, 63]]]]], [], []]], ["loc", [null, [37, 14], [37, 65]]]], ["inline", "t", ["form-article-images"], [], ["loc", [null, [40, 21], [40, 48]]]], ["inline", "image-uploader", [], ["value", ["subexpr", "@mut", [["get", "model.record.images", ["loc", [null, [41, 37], [41, 56]]]]], [], []], "multiple", true], ["loc", [null, [41, 14], [41, 72]]]], ["inline", "t", ["article.Save"], [], ["loc", [null, [50, 10], [50, 30]]]], ["element", "action", ["goTo", "articles.index"], [], ["loc", [null, [52, 16], [52, 50]]]], ["inline", "t", ["article.find"], [], ["loc", [null, [54, 10], [54, 30]]]], ["inline", "t", ["article.form.publish.Title"], [], ["loc", [null, [61, 35], [61, 69]]]], ["inline", "input", [], ["type", "checkbox", "checked", ["subexpr", "@mut", [["get", "model.record.published", ["loc", [null, [66, 48], [66, 70]]]]], [], []]], ["loc", [null, [66, 16], [66, 72]]]], ["inline", "t", ["form-article-published"], [], ["loc", [null, [66, 73], [66, 103]]]], ["inline", "t", ["article.form.terms.Title"], [], ["loc", [null, [74, 35], [74, 67]]]], ["inline", "t", ["form-article-category"], [], ["loc", [null, [78, 21], [78, 50]]]], ["block", "power-select", [], ["search", ["subexpr", "action", ["searchCategoryTerms"], [], ["loc", [null, [80, 23], [80, 53]]]], "selected", ["subexpr", "@mut", [["get", "model.record.category", ["loc", [null, [81, 25], [81, 46]]]]], [], []], "onchange", ["subexpr", "action", [["subexpr", "mut", [["get", "model.record.category", ["loc", [null, [82, 38], [82, 59]]]]], [], ["loc", [null, [82, 33], [82, 60]]]]], [], ["loc", [null, [82, 25], [82, 61]]]]], 2, null, ["loc", [null, [79, 14], [86, 31]]]], ["inline", "t", ["form-article-tags"], [], ["loc", [null, [89, 21], [89, 46]]]], ["block", "power-select-multiple", [], ["search", ["subexpr", "action", ["searchTagsTerms"], [], ["loc", [null, [91, 23], [91, 49]]]], "selected", ["subexpr", "@mut", [["get", "model.record.tags", ["loc", [null, [92, 25], [92, 42]]]]], [], []], "onchange", ["subexpr", "action", [["subexpr", "mut", [["get", "model.record.tags", ["loc", [null, [93, 38], [93, 55]]]]], [], ["loc", [null, [93, 33], [93, 56]]]]], [], ["loc", [null, [93, 25], [93, 57]]]]], 3, null, ["loc", [null, [90, 14], [97, 40]]]], ["inline", "t", ["article.form.terms.Dates"], [], ["loc", [null, [104, 35], [104, 67]]]], ["inline", "t", ["form-article-createdAt"], [], ["loc", [null, [108, 21], [108, 51]]]], ["inline", "ember-flatpickr", [], ["altFormat", "F j, Y h:i K", "dateFormat", false, "enableSeconds", false, "enableTime", true, "allowInput", false, "altInputClass", "form-control", "altInput", true, "clickOpens", true, "locale", "en", "mode", "single", "nextArrow", ">", "onChange", ["subexpr", "action", ["changeDate", ["get", "model.record", ["loc", [null, [121, 46], [121, 58]]]], "createdAt"], [], ["loc", [null, [121, 25], [121, 71]]]], "parseDate", false, "placeholder", "Choose a Date", "prevArrow", "<", "timeFormat", "H:i", "value", ["subexpr", "readonly", [["get", "model.record.createdAt", ["loc", [null, [126, 32], [126, 54]]]]], [], ["loc", [null, [126, 22], [126, 55]]]], "wrap", false], ["loc", [null, [109, 14], [127, 28]]]], ["inline", "t", ["form-article-updatedAt"], [], ["loc", [null, [130, 21], [130, 51]]]], ["inline", "ember-flatpickr", [], ["altFormat", "F j, Y h:i K", "dateFormat", false, "enableSeconds", false, "enableTime", true, "allowInput", false, "altInputClass", "form-control", "altInput", true, "clickOpens", true, "locale", "en", "mode", "single", "nextArrow", ">", "onChange", ["subexpr", "action", ["changeDate", ["get", "model.record", ["loc", [null, [143, 46], [143, 58]]]], "updatedAt"], [], ["loc", [null, [143, 25], [143, 71]]]], "parseDate", false, "placeholder", "Choose a Date", "prevArrow", "<", "timeFormat", "H:i", "value", ["subexpr", "readonly", [["get", "model.record.updatedAt", ["loc", [null, [148, 32], [148, 54]]]]], [], ["loc", [null, [148, 22], [148, 55]]]], "wrap", false], ["loc", [null, [131, 14], [149, 28]]]]],
       locals: [],
       templates: [child0, child1, child2, child3]
     };
@@ -4625,6 +4893,177 @@ define("we-admin-blog/templates/articles/list-item-actions", ["exports"], functi
       statements: [["block", "link-to", ["articles.item", ["get", "record.id", ["loc", [null, [1, 27], [1, 36]]]]], ["class", "btn btn-default btn-sm"], 0, null, ["loc", [null, [1, 0], [4, 12]]]], ["block", "if", [["get", "record.published", ["loc", [null, [6, 6], [6, 22]]]]], [], 1, 2, ["loc", [null, [6, 0], [16, 7]]]], ["element", "action", ["deleteRecord", ["get", "record", ["loc", [null, [18, 32], [18, 38]]]]], [], ["loc", [null, [18, 8], [18, 40]]]], ["inline", "t", ["Delete"], [], ["loc", [null, [20, 2], [20, 16]]]]],
       locals: [],
       templates: [child0, child1, child2]
+    };
+  })());
+});
+define("we-admin-blog/templates/components/article-tag-selector", ["exports"], function (exports) {
+  exports["default"] = Ember.HTMLBars.template((function () {
+    var child0 = (function () {
+      return {
+        meta: {
+          "fragmentReason": false,
+          "revision": "Ember@2.6.2",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 3,
+              "column": 2
+            },
+            "end": {
+              "line": 10,
+              "column": 2
+            }
+          },
+          "moduleName": "we-admin-blog/templates/components/article-tag-selector.hbs"
+        },
+        isEmpty: false,
+        arity: 1,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createTextNode("    ");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createElement("tr");
+          var el2 = dom.createTextNode("\n      ");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createElement("td");
+          dom.setAttribute(el2, "class", "article-tag-selector-term");
+          var el3 = dom.createComment("");
+          dom.appendChild(el2, el3);
+          dom.appendChild(el1, el2);
+          var el2 = dom.createTextNode("\n      ");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createElement("td");
+          dom.setAttribute(el2, "width", "35px");
+          var el3 = dom.createTextNode("\n        ");
+          dom.appendChild(el2, el3);
+          var el3 = dom.createElement("button");
+          dom.setAttribute(el3, "type", "button");
+          dom.setAttribute(el3, "class", "btn btn-sm btn-default");
+          var el4 = dom.createElement("i");
+          dom.setAttribute(el4, "class", "glyphicon glyphicon-remove text-danger");
+          dom.appendChild(el3, el4);
+          dom.appendChild(el2, el3);
+          var el3 = dom.createTextNode("\n      ");
+          dom.appendChild(el2, el3);
+          dom.appendChild(el1, el2);
+          var el2 = dom.createTextNode("\n    ");
+          dom.appendChild(el1, el2);
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var element0 = dom.childAt(fragment, [1]);
+          var element1 = dom.childAt(element0, [3, 1]);
+          var morphs = new Array(2);
+          morphs[0] = dom.createMorphAt(dom.childAt(element0, [1]), 0, 0);
+          morphs[1] = dom.createElementMorph(element1);
+          return morphs;
+        },
+        statements: [["content", "term", ["loc", [null, [5, 44], [5, 52]]]], ["element", "action", ["onRemoveTag"], [], ["loc", [null, [7, 16], [7, 40]]]]],
+        locals: ["term"],
+        templates: []
+      };
+    })();
+    return {
+      meta: {
+        "fragmentReason": {
+          "name": "missing-wrapper",
+          "problems": ["multiple-nodes"]
+        },
+        "revision": "Ember@2.6.2",
+        "loc": {
+          "source": null,
+          "start": {
+            "line": 1,
+            "column": 0
+          },
+          "end": {
+            "line": 24,
+            "column": 7
+          }
+        },
+        "moduleName": "we-admin-blog/templates/components/article-tag-selector.hbs"
+      },
+      isEmpty: false,
+      arity: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      buildFragment: function buildFragment(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createElement("table");
+        dom.setAttribute(el1, "class", "table table-condensed table-bordered");
+        var el2 = dom.createTextNode("\n  ");
+        dom.appendChild(el1, el2);
+        var el2 = dom.createElement("tbody");
+        var el3 = dom.createTextNode("\n");
+        dom.appendChild(el2, el3);
+        var el3 = dom.createComment("");
+        dom.appendChild(el2, el3);
+        var el3 = dom.createTextNode("  ");
+        dom.appendChild(el2, el3);
+        dom.appendChild(el1, el2);
+        var el2 = dom.createTextNode("\n");
+        dom.appendChild(el1, el2);
+        dom.appendChild(el0, el1);
+        var el1 = dom.createTextNode("\n\n");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createElement("form");
+        dom.setAttribute(el1, "class", "form-inline");
+        var el2 = dom.createTextNode("\n  ");
+        dom.appendChild(el1, el2);
+        var el2 = dom.createElement("fieldset");
+        var el3 = dom.createTextNode("\n    ");
+        dom.appendChild(el2, el3);
+        var el3 = dom.createElement("div");
+        dom.setAttribute(el3, "class", "form-group");
+        var el4 = dom.createTextNode("\n      ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createComment("");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n      ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createElement("button");
+        dom.setAttribute(el4, "class", "btn btn-default");
+        var el5 = dom.createTextNode("\n        ");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createElement("i");
+        dom.setAttribute(el5, "class", "fa fa-plus");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("\n        ");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createComment("");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("\n      ");
+        dom.appendChild(el4, el5);
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n    ");
+        dom.appendChild(el3, el4);
+        dom.appendChild(el2, el3);
+        var el3 = dom.createTextNode("\n  ");
+        dom.appendChild(el2, el3);
+        dom.appendChild(el1, el2);
+        var el2 = dom.createTextNode("\n");
+        dom.appendChild(el1, el2);
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+        var element2 = dom.childAt(fragment, [2]);
+        var element3 = dom.childAt(element2, [1, 1]);
+        var morphs = new Array(4);
+        morphs[0] = dom.createMorphAt(dom.childAt(fragment, [0, 1]), 1, 1);
+        morphs[1] = dom.createElementMorph(element2);
+        morphs[2] = dom.createMorphAt(element3, 1, 1);
+        morphs[3] = dom.createMorphAt(dom.childAt(element3, [3]), 3, 3);
+        return morphs;
+      },
+      statements: [["block", "each", [["get", "terms", ["loc", [null, [3, 10], [3, 15]]]]], [], 0, null, ["loc", [null, [3, 2], [10, 11]]]], ["element", "action", ["onAddTag"], [], ["loc", [null, [14, 26], [14, 47]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "newTerm", ["loc", [null, [17, 20], [17, 27]]]]], [], []], "class", "form-control"], ["loc", [null, [17, 6], [17, 50]]]], ["inline", "t", ["article.tag.Add"], [], ["loc", [null, [20, 8], [20, 31]]]]],
+      locals: [],
+      templates: [child0]
     };
   })());
 });
@@ -10564,6 +11003,52 @@ define("we-admin-blog/templates/components/user-role-checkbox", ["exports"], fun
     };
   })());
 });
+define("we-admin-blog/templates/components/we-datepicker", ["exports"], function (exports) {
+  exports["default"] = Ember.HTMLBars.template((function () {
+    return {
+      meta: {
+        "fragmentReason": {
+          "name": "missing-wrapper",
+          "problems": ["wrong-type"]
+        },
+        "revision": "Ember@2.6.2",
+        "loc": {
+          "source": null,
+          "start": {
+            "line": 1,
+            "column": 0
+          },
+          "end": {
+            "line": 2,
+            "column": 0
+          }
+        },
+        "moduleName": "we-admin-blog/templates/components/we-datepicker.hbs"
+      },
+      isEmpty: false,
+      arity: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      buildFragment: function buildFragment(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createComment("");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createTextNode("\n");
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+        var morphs = new Array(1);
+        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+        dom.insertBoundary(fragment, 0);
+        return morphs;
+      },
+      statements: [["content", "yield", ["loc", [null, [1, 0], [1, 9]]]]],
+      locals: [],
+      templates: []
+    };
+  })());
+});
 define("we-admin-blog/templates/components/we-image", ["exports"], function (exports) {
   exports["default"] = Ember.HTMLBars.template((function () {
     return {
@@ -10610,7 +11095,896 @@ define("we-admin-blog/templates/components/we-image", ["exports"], function (exp
     };
   })());
 });
-define("we-admin-blog/templates/index",["exports"],function(exports){exports["default"] = Ember.HTMLBars.template((function(){return {meta:{"fragmentReason":{"name":"missing-wrapper","problems":["multiple-nodes","wrong-type"]},"revision":"Ember@2.6.2","loc":{"source":null,"start":{"line":1,"column":0},"end":{"line":538,"column":14}},"moduleName":"we-admin-blog/templates/index.hbs"},isEmpty:false,arity:0,cachedFragment:null,hasRendered:false,buildFragment:function buildFragment(dom){var el0=dom.createDocumentFragment();var el1=dom.createElement("div");dom.setAttribute(el1,"class","row");var el2=dom.createTextNode("\n    ");dom.appendChild(el1,el2);var el2=dom.createElement("div");dom.setAttribute(el2,"class","col-lg-12");var el3=dom.createTextNode("\n        ");dom.appendChild(el2,el3);var el3=dom.createElement("h1");dom.setAttribute(el3,"class","page-header");var el4=dom.createTextNode("Dashboard");dom.appendChild(el3,el4);dom.appendChild(el2,el3);var el3=dom.createTextNode("\n    ");dom.appendChild(el2,el3);dom.appendChild(el1,el2);var el2=dom.createTextNode("\n    ");dom.appendChild(el1,el2);var el2=dom.createComment(" /.col-lg-12 ");dom.appendChild(el1,el2);var el2=dom.createTextNode("\n");dom.appendChild(el1,el2);dom.appendChild(el0,el1);var el1=dom.createTextNode("\n");dom.appendChild(el0,el1);var el1=dom.createComment(" /.row ");dom.appendChild(el0,el1);var el1=dom.createTextNode("\n");dom.appendChild(el0,el1);var el1=dom.createElement("div");dom.setAttribute(el1,"class","row");var el2=dom.createTextNode("\n    ");dom.appendChild(el1,el2);var el2=dom.createElement("div");dom.setAttribute(el2,"class","col-lg-3 col-md-6");var el3=dom.createTextNode("\n        ");dom.appendChild(el2,el3);var el3=dom.createElement("div");dom.setAttribute(el3,"class","panel panel-primary");var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("div");dom.setAttribute(el4,"class","panel-heading");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("div");dom.setAttribute(el5,"class","row");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("div");dom.setAttribute(el6,"class","col-xs-3");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("i");dom.setAttribute(el7,"class","fa fa-comments fa-5x");dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("div");dom.setAttribute(el6,"class","col-xs-9 text-right");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","huge");var el8=dom.createTextNode("26");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");var el8=dom.createTextNode("New Comments!");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("a");dom.setAttribute(el4,"href","#");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("div");dom.setAttribute(el5,"class","panel-footer");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("span");dom.setAttribute(el6,"class","pull-left");var el7=dom.createTextNode("View Details");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("span");dom.setAttribute(el6,"class","pull-right");var el7=dom.createElement("i");dom.setAttribute(el7,"class","fa fa-arrow-circle-right");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("div");dom.setAttribute(el6,"class","clearfix");dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n        ");dom.appendChild(el3,el4);dom.appendChild(el2,el3);var el3=dom.createTextNode("\n    ");dom.appendChild(el2,el3);dom.appendChild(el1,el2);var el2=dom.createTextNode("\n    ");dom.appendChild(el1,el2);var el2=dom.createElement("div");dom.setAttribute(el2,"class","col-lg-3 col-md-6");var el3=dom.createTextNode("\n        ");dom.appendChild(el2,el3);var el3=dom.createElement("div");dom.setAttribute(el3,"class","panel panel-green");var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("div");dom.setAttribute(el4,"class","panel-heading");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("div");dom.setAttribute(el5,"class","row");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("div");dom.setAttribute(el6,"class","col-xs-3");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("i");dom.setAttribute(el7,"class","fa fa-tasks fa-5x");dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("div");dom.setAttribute(el6,"class","col-xs-9 text-right");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","huge");var el8=dom.createTextNode("12");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");var el8=dom.createTextNode("New Tasks!");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("a");dom.setAttribute(el4,"href","#");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("div");dom.setAttribute(el5,"class","panel-footer");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("span");dom.setAttribute(el6,"class","pull-left");var el7=dom.createTextNode("View Details");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("span");dom.setAttribute(el6,"class","pull-right");var el7=dom.createElement("i");dom.setAttribute(el7,"class","fa fa-arrow-circle-right");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("div");dom.setAttribute(el6,"class","clearfix");dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n        ");dom.appendChild(el3,el4);dom.appendChild(el2,el3);var el3=dom.createTextNode("\n    ");dom.appendChild(el2,el3);dom.appendChild(el1,el2);var el2=dom.createTextNode("\n    ");dom.appendChild(el1,el2);var el2=dom.createElement("div");dom.setAttribute(el2,"class","col-lg-3 col-md-6");var el3=dom.createTextNode("\n        ");dom.appendChild(el2,el3);var el3=dom.createElement("div");dom.setAttribute(el3,"class","panel panel-yellow");var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("div");dom.setAttribute(el4,"class","panel-heading");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("div");dom.setAttribute(el5,"class","row");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("div");dom.setAttribute(el6,"class","col-xs-3");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("i");dom.setAttribute(el7,"class","fa fa-shopping-cart fa-5x");dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("div");dom.setAttribute(el6,"class","col-xs-9 text-right");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","huge");var el8=dom.createTextNode("124");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");var el8=dom.createTextNode("New Orders!");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("a");dom.setAttribute(el4,"href","#");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("div");dom.setAttribute(el5,"class","panel-footer");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("span");dom.setAttribute(el6,"class","pull-left");var el7=dom.createTextNode("View Details");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("span");dom.setAttribute(el6,"class","pull-right");var el7=dom.createElement("i");dom.setAttribute(el7,"class","fa fa-arrow-circle-right");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("div");dom.setAttribute(el6,"class","clearfix");dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n        ");dom.appendChild(el3,el4);dom.appendChild(el2,el3);var el3=dom.createTextNode("\n    ");dom.appendChild(el2,el3);dom.appendChild(el1,el2);var el2=dom.createTextNode("\n    ");dom.appendChild(el1,el2);var el2=dom.createElement("div");dom.setAttribute(el2,"class","col-lg-3 col-md-6");var el3=dom.createTextNode("\n        ");dom.appendChild(el2,el3);var el3=dom.createElement("div");dom.setAttribute(el3,"class","panel panel-red");var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("div");dom.setAttribute(el4,"class","panel-heading");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("div");dom.setAttribute(el5,"class","row");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("div");dom.setAttribute(el6,"class","col-xs-3");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("i");dom.setAttribute(el7,"class","fa fa-support fa-5x");dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("div");dom.setAttribute(el6,"class","col-xs-9 text-right");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","huge");var el8=dom.createTextNode("13");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");var el8=dom.createTextNode("Support Tickets!");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("a");dom.setAttribute(el4,"href","#");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("div");dom.setAttribute(el5,"class","panel-footer");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("span");dom.setAttribute(el6,"class","pull-left");var el7=dom.createTextNode("View Details");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("span");dom.setAttribute(el6,"class","pull-right");var el7=dom.createElement("i");dom.setAttribute(el7,"class","fa fa-arrow-circle-right");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("div");dom.setAttribute(el6,"class","clearfix");dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n        ");dom.appendChild(el3,el4);dom.appendChild(el2,el3);var el3=dom.createTextNode("\n    ");dom.appendChild(el2,el3);dom.appendChild(el1,el2);var el2=dom.createTextNode("\n");dom.appendChild(el1,el2);dom.appendChild(el0,el1);var el1=dom.createTextNode("\n");dom.appendChild(el0,el1);var el1=dom.createComment(" /.row ");dom.appendChild(el0,el1);var el1=dom.createTextNode("\n");dom.appendChild(el0,el1);var el1=dom.createElement("div");dom.setAttribute(el1,"class","row");var el2=dom.createTextNode("\n    ");dom.appendChild(el1,el2);var el2=dom.createElement("div");dom.setAttribute(el2,"class","col-lg-8");var el3=dom.createTextNode("\n        ");dom.appendChild(el2,el3);var el3=dom.createElement("div");dom.setAttribute(el3,"class","panel panel-default");var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("div");dom.setAttribute(el4,"class","panel-heading");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("i");dom.setAttribute(el5,"class","fa fa-bar-chart-o fa-fw");dom.appendChild(el4,el5);var el5=dom.createTextNode(" Area Chart Example\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("div");dom.setAttribute(el5,"class","pull-right");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("div");dom.setAttribute(el6,"class","btn-group");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("button");dom.setAttribute(el7,"type","button");dom.setAttribute(el7,"class","btn btn-default btn-xs dropdown-toggle");dom.setAttribute(el7,"data-toggle","dropdown");var el8=dom.createTextNode("\n                            Actions\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("span");dom.setAttribute(el8,"class","caret");dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("ul");dom.setAttribute(el7,"class","dropdown-menu pull-right");dom.setAttribute(el7,"role","menu");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("li");var el9=dom.createElement("a");dom.setAttribute(el9,"href","#");var el10=dom.createTextNode("Action");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("li");var el9=dom.createElement("a");dom.setAttribute(el9,"href","#");var el10=dom.createTextNode("Another action");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("li");var el9=dom.createElement("a");dom.setAttribute(el9,"href","#");var el10=dom.createTextNode("Something else here");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("li");dom.setAttribute(el8,"class","divider");dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("li");var el9=dom.createElement("a");dom.setAttribute(el9,"href","#");var el10=dom.createTextNode("Separated link");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createComment(" /.panel-heading ");dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("div");dom.setAttribute(el4,"class","panel-body");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("div");dom.setAttribute(el5,"id","morris-area-chart");dom.appendChild(el4,el5);var el5=dom.createTextNode("\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createComment(" /.panel-body ");dom.appendChild(el3,el4);var el4=dom.createTextNode("\n        ");dom.appendChild(el3,el4);dom.appendChild(el2,el3);var el3=dom.createTextNode("\n        ");dom.appendChild(el2,el3);var el3=dom.createComment(" /.panel ");dom.appendChild(el2,el3);var el3=dom.createTextNode("\n        ");dom.appendChild(el2,el3);var el3=dom.createElement("div");dom.setAttribute(el3,"class","panel panel-default");var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("div");dom.setAttribute(el4,"class","panel-heading");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("i");dom.setAttribute(el5,"class","fa fa-bar-chart-o fa-fw");dom.appendChild(el4,el5);var el5=dom.createTextNode(" Bar Chart Example\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("div");dom.setAttribute(el5,"class","pull-right");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("div");dom.setAttribute(el6,"class","btn-group");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("button");dom.setAttribute(el7,"type","button");dom.setAttribute(el7,"class","btn btn-default btn-xs dropdown-toggle");dom.setAttribute(el7,"data-toggle","dropdown");var el8=dom.createTextNode("\n                            Actions\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("span");dom.setAttribute(el8,"class","caret");dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("ul");dom.setAttribute(el7,"class","dropdown-menu pull-right");dom.setAttribute(el7,"role","menu");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("li");var el9=dom.createElement("a");dom.setAttribute(el9,"href","#");var el10=dom.createTextNode("Action");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("li");var el9=dom.createElement("a");dom.setAttribute(el9,"href","#");var el10=dom.createTextNode("Another action");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("li");var el9=dom.createElement("a");dom.setAttribute(el9,"href","#");var el10=dom.createTextNode("Something else here");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("li");dom.setAttribute(el8,"class","divider");dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("li");var el9=dom.createElement("a");dom.setAttribute(el9,"href","#");var el10=dom.createTextNode("Separated link");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createComment(" /.panel-heading ");dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("div");dom.setAttribute(el4,"class","panel-body");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("div");dom.setAttribute(el5,"class","row");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("div");dom.setAttribute(el6,"class","col-lg-4");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","table-responsive");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("table");dom.setAttribute(el8,"class","table table-bordered table-hover table-striped");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("thead");var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("tr");var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("th");var el12=dom.createTextNode("#");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("th");var el12=dom.createTextNode("Date");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("th");var el12=dom.createTextNode("Time");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("th");var el12=dom.createTextNode("Amount");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                    ");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                ");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("tbody");var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("tr");var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("3326");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("10/21/2013");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("3:29 PM");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("$321.33");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                    ");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("tr");var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("3325");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("10/21/2013");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("3:20 PM");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("$234.34");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                    ");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("tr");var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("3324");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("10/21/2013");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("3:03 PM");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("$724.17");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                    ");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("tr");var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("3323");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("10/21/2013");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("3:00 PM");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("$23.71");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                    ");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("tr");var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("3322");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("10/21/2013");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("2:49 PM");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("$8345.23");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                    ");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("tr");var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("3321");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("10/21/2013");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("2:23 PM");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("$245.12");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                    ");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("tr");var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("3320");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("10/21/2013");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("2:15 PM");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("$5663.54");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                    ");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("tr");var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("3319");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("10/21/2013");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("2:13 PM");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("td");var el12=dom.createTextNode("$943.45");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                    ");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                ");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createComment(" /.table-responsive ");dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createComment(" /.col-lg-4 (nested) ");dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("div");dom.setAttribute(el6,"class","col-lg-8");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"id","morris-bar-chart");dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createComment(" /.col-lg-8 (nested) ");dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createComment(" /.row ");dom.appendChild(el4,el5);var el5=dom.createTextNode("\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createComment(" /.panel-body ");dom.appendChild(el3,el4);var el4=dom.createTextNode("\n        ");dom.appendChild(el3,el4);dom.appendChild(el2,el3);var el3=dom.createTextNode("\n        ");dom.appendChild(el2,el3);var el3=dom.createComment(" /.panel ");dom.appendChild(el2,el3);var el3=dom.createTextNode("\n        ");dom.appendChild(el2,el3);var el3=dom.createElement("div");dom.setAttribute(el3,"class","panel panel-default");var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("div");dom.setAttribute(el4,"class","panel-heading");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("i");dom.setAttribute(el5,"class","fa fa-clock-o fa-fw");dom.appendChild(el4,el5);var el5=dom.createTextNode(" Responsive Timeline\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createComment(" /.panel-heading ");dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("div");dom.setAttribute(el4,"class","panel-body");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("ul");dom.setAttribute(el5,"class","timeline");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("li");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","timeline-badge");var el8=dom.createElement("i");dom.setAttribute(el8,"class","fa fa-check");dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","timeline-panel");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","timeline-heading");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("h4");dom.setAttribute(el9,"class","timeline-title");var el10=dom.createTextNode("Lorem ipsum dolor");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("p");var el10=dom.createElement("small");dom.setAttribute(el10,"class","text-muted");var el11=dom.createElement("i");dom.setAttribute(el11,"class","fa fa-clock-o");dom.appendChild(el10,el11);var el11=dom.createTextNode(" 11 hours ago via Twitter");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                ");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","timeline-body");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("p");var el10=dom.createTextNode("Lorem ipsum dolor sit amet, consectetur adipisicing elit. Libero laboriosam dolor perspiciatis omnis exercitationem. Beatae, officia pariatur? Est cum veniam excepturi. Maiores praesentium, porro voluptas suscipit facere rem dicta, debitis.");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("li");dom.setAttribute(el6,"class","timeline-inverted");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","timeline-badge warning");var el8=dom.createElement("i");dom.setAttribute(el8,"class","fa fa-credit-card");dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","timeline-panel");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","timeline-heading");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("h4");dom.setAttribute(el9,"class","timeline-title");var el10=dom.createTextNode("Lorem ipsum dolor");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","timeline-body");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("p");var el10=dom.createTextNode("Lorem ipsum dolor sit amet, consectetur adipisicing elit. Autem dolorem quibusdam, tenetur commodi provident cumque magni voluptatem libero, quis rerum. Fugiat esse debitis optio, tempore. Animi officiis alias, officia repellendus.");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("p");var el10=dom.createTextNode("Lorem ipsum dolor sit amet, consectetur adipisicing elit. Laudantium maiores odit qui est tempora eos, nostrum provident explicabo dignissimos debitis vel! Adipisci eius voluptates, ad aut recusandae minus eaque facere.");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("li");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","timeline-badge danger");var el8=dom.createElement("i");dom.setAttribute(el8,"class","fa fa-bomb");dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","timeline-panel");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","timeline-heading");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("h4");dom.setAttribute(el9,"class","timeline-title");var el10=dom.createTextNode("Lorem ipsum dolor");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","timeline-body");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("p");var el10=dom.createTextNode("Lorem ipsum dolor sit amet, consectetur adipisicing elit. Repellendus numquam facilis enim eaque, tenetur nam id qui vel velit similique nihil iure molestias aliquam, voluptatem totam quaerat, magni commodi quisquam.");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("li");dom.setAttribute(el6,"class","timeline-inverted");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","timeline-panel");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","timeline-heading");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("h4");dom.setAttribute(el9,"class","timeline-title");var el10=dom.createTextNode("Lorem ipsum dolor");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","timeline-body");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("p");var el10=dom.createTextNode("Lorem ipsum dolor sit amet, consectetur adipisicing elit. Voluptates est quaerat asperiores sapiente, eligendi, nihil. Itaque quos, alias sapiente rerum quas odit! Aperiam officiis quidem delectus libero, omnis ut debitis!");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("li");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","timeline-badge info");var el8=dom.createElement("i");dom.setAttribute(el8,"class","fa fa-save");dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","timeline-panel");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","timeline-heading");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("h4");dom.setAttribute(el9,"class","timeline-title");var el10=dom.createTextNode("Lorem ipsum dolor");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","timeline-body");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("p");var el10=dom.createTextNode("Lorem ipsum dolor sit amet, consectetur adipisicing elit. Nobis minus modi quam ipsum alias at est molestiae excepturi delectus nesciunt, quibusdam debitis amet, beatae consequuntur impedit nulla qui! Laborum, atque.");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("hr");dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("div");dom.setAttribute(el9,"class","btn-group");var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("button");dom.setAttribute(el10,"type","button");dom.setAttribute(el10,"class","btn btn-primary btn-sm dropdown-toggle");dom.setAttribute(el10,"data-toggle","dropdown");var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("i");dom.setAttribute(el11,"class","fa fa-gear");dom.appendChild(el10,el11);var el11=dom.createTextNode(" ");dom.appendChild(el10,el11);var el11=dom.createElement("span");dom.setAttribute(el11,"class","caret");dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                    ");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("ul");dom.setAttribute(el10,"class","dropdown-menu");dom.setAttribute(el10,"role","menu");var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("li");var el12=dom.createElement("a");dom.setAttribute(el12,"href","#");var el13=dom.createTextNode("Action");dom.appendChild(el12,el13);dom.appendChild(el11,el12);var el12=dom.createTextNode("\n                                        ");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("li");var el12=dom.createElement("a");dom.setAttribute(el12,"href","#");var el13=dom.createTextNode("Another action");dom.appendChild(el12,el13);dom.appendChild(el11,el12);var el12=dom.createTextNode("\n                                        ");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("li");var el12=dom.createElement("a");dom.setAttribute(el12,"href","#");var el13=dom.createTextNode("Something else here");dom.appendChild(el12,el13);dom.appendChild(el11,el12);var el12=dom.createTextNode("\n                                        ");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("li");dom.setAttribute(el11,"class","divider");dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                        ");dom.appendChild(el10,el11);var el11=dom.createElement("li");var el12=dom.createElement("a");dom.setAttribute(el12,"href","#");var el13=dom.createTextNode("Separated link");dom.appendChild(el12,el13);dom.appendChild(el11,el12);var el12=dom.createTextNode("\n                                        ");dom.appendChild(el11,el12);dom.appendChild(el10,el11);var el11=dom.createTextNode("\n                                    ");dom.appendChild(el10,el11);dom.appendChild(el9,el10);var el10=dom.createTextNode("\n                                ");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("li");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","timeline-panel");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","timeline-heading");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("h4");dom.setAttribute(el9,"class","timeline-title");var el10=dom.createTextNode("Lorem ipsum dolor");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","timeline-body");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("p");var el10=dom.createTextNode("Lorem ipsum dolor sit amet, consectetur adipisicing elit. Sequi fuga odio quibusdam. Iure expedita, incidunt unde quis nam! Quod, quisquam. Officia quam qui adipisci quas consequuntur nostrum sequi. Consequuntur, commodi.");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("li");dom.setAttribute(el6,"class","timeline-inverted");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","timeline-badge success");var el8=dom.createElement("i");dom.setAttribute(el8,"class","fa fa-graduation-cap");dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","timeline-panel");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","timeline-heading");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("h4");dom.setAttribute(el9,"class","timeline-title");var el10=dom.createTextNode("Lorem ipsum dolor");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","timeline-body");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("p");var el10=dom.createTextNode("Lorem ipsum dolor sit amet, consectetur adipisicing elit. Deserunt obcaecati, quaerat tempore officia voluptas debitis consectetur culpa amet, accusamus dolorum fugiat, animi dicta aperiam, enim incidunt quisquam maxime neque eaque.");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createComment(" /.panel-body ");dom.appendChild(el3,el4);var el4=dom.createTextNode("\n        ");dom.appendChild(el3,el4);dom.appendChild(el2,el3);var el3=dom.createTextNode("\n        ");dom.appendChild(el2,el3);var el3=dom.createComment(" /.panel ");dom.appendChild(el2,el3);var el3=dom.createTextNode("\n    ");dom.appendChild(el2,el3);dom.appendChild(el1,el2);var el2=dom.createTextNode("\n    ");dom.appendChild(el1,el2);var el2=dom.createComment(" /.col-lg-8 ");dom.appendChild(el1,el2);var el2=dom.createTextNode("\n    ");dom.appendChild(el1,el2);var el2=dom.createElement("div");dom.setAttribute(el2,"class","col-lg-4");var el3=dom.createTextNode("\n        ");dom.appendChild(el2,el3);var el3=dom.createElement("div");dom.setAttribute(el3,"class","panel panel-default");var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("div");dom.setAttribute(el4,"class","panel-heading");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("i");dom.setAttribute(el5,"class","fa fa-bell fa-fw");dom.appendChild(el4,el5);var el5=dom.createTextNode(" Notifications Panel\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createComment(" /.panel-heading ");dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("div");dom.setAttribute(el4,"class","panel-body");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("div");dom.setAttribute(el5,"class","list-group");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("a");dom.setAttribute(el6,"href","#");dom.setAttribute(el6,"class","list-group-item");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("i");dom.setAttribute(el7,"class","fa fa-comment fa-fw");dom.appendChild(el6,el7);var el7=dom.createTextNode(" New Comment\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("span");dom.setAttribute(el7,"class","pull-right text-muted small");var el8=dom.createElement("em");var el9=dom.createTextNode("4 minutes ago");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("a");dom.setAttribute(el6,"href","#");dom.setAttribute(el6,"class","list-group-item");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("i");dom.setAttribute(el7,"class","fa fa-twitter fa-fw");dom.appendChild(el6,el7);var el7=dom.createTextNode(" 3 New Followers\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("span");dom.setAttribute(el7,"class","pull-right text-muted small");var el8=dom.createElement("em");var el9=dom.createTextNode("12 minutes ago");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("a");dom.setAttribute(el6,"href","#");dom.setAttribute(el6,"class","list-group-item");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("i");dom.setAttribute(el7,"class","fa fa-envelope fa-fw");dom.appendChild(el6,el7);var el7=dom.createTextNode(" Message Sent\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("span");dom.setAttribute(el7,"class","pull-right text-muted small");var el8=dom.createElement("em");var el9=dom.createTextNode("27 minutes ago");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("a");dom.setAttribute(el6,"href","#");dom.setAttribute(el6,"class","list-group-item");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("i");dom.setAttribute(el7,"class","fa fa-tasks fa-fw");dom.appendChild(el6,el7);var el7=dom.createTextNode(" New Task\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("span");dom.setAttribute(el7,"class","pull-right text-muted small");var el8=dom.createElement("em");var el9=dom.createTextNode("43 minutes ago");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("a");dom.setAttribute(el6,"href","#");dom.setAttribute(el6,"class","list-group-item");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("i");dom.setAttribute(el7,"class","fa fa-upload fa-fw");dom.appendChild(el6,el7);var el7=dom.createTextNode(" Server Rebooted\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("span");dom.setAttribute(el7,"class","pull-right text-muted small");var el8=dom.createElement("em");var el9=dom.createTextNode("11:32 AM");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("a");dom.setAttribute(el6,"href","#");dom.setAttribute(el6,"class","list-group-item");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("i");dom.setAttribute(el7,"class","fa fa-bolt fa-fw");dom.appendChild(el6,el7);var el7=dom.createTextNode(" Server Crashed!\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("span");dom.setAttribute(el7,"class","pull-right text-muted small");var el8=dom.createElement("em");var el9=dom.createTextNode("11:13 AM");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("a");dom.setAttribute(el6,"href","#");dom.setAttribute(el6,"class","list-group-item");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("i");dom.setAttribute(el7,"class","fa fa-warning fa-fw");dom.appendChild(el6,el7);var el7=dom.createTextNode(" Server Not Responding\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("span");dom.setAttribute(el7,"class","pull-right text-muted small");var el8=dom.createElement("em");var el9=dom.createTextNode("10:57 AM");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("a");dom.setAttribute(el6,"href","#");dom.setAttribute(el6,"class","list-group-item");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("i");dom.setAttribute(el7,"class","fa fa-shopping-cart fa-fw");dom.appendChild(el6,el7);var el7=dom.createTextNode(" New Order Placed\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("span");dom.setAttribute(el7,"class","pull-right text-muted small");var el8=dom.createElement("em");var el9=dom.createTextNode("9:49 AM");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("a");dom.setAttribute(el6,"href","#");dom.setAttribute(el6,"class","list-group-item");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("i");dom.setAttribute(el7,"class","fa fa-money fa-fw");dom.appendChild(el6,el7);var el7=dom.createTextNode(" Payment Received\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("span");dom.setAttribute(el7,"class","pull-right text-muted small");var el8=dom.createElement("em");var el9=dom.createTextNode("Yesterday");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createComment(" /.list-group ");dom.appendChild(el4,el5);var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("a");dom.setAttribute(el5,"href","#");dom.setAttribute(el5,"class","btn btn-default btn-block");var el6=dom.createTextNode("View All Alerts");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createComment(" /.panel-body ");dom.appendChild(el3,el4);var el4=dom.createTextNode("\n        ");dom.appendChild(el3,el4);dom.appendChild(el2,el3);var el3=dom.createTextNode("\n        ");dom.appendChild(el2,el3);var el3=dom.createComment(" /.panel ");dom.appendChild(el2,el3);var el3=dom.createTextNode("\n        ");dom.appendChild(el2,el3);var el3=dom.createElement("div");dom.setAttribute(el3,"class","panel panel-default");var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("div");dom.setAttribute(el4,"class","panel-heading");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("i");dom.setAttribute(el5,"class","fa fa-bar-chart-o fa-fw");dom.appendChild(el4,el5);var el5=dom.createTextNode(" Donut Chart Example\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("div");dom.setAttribute(el4,"class","panel-body");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("div");dom.setAttribute(el5,"id","morris-donut-chart");dom.appendChild(el4,el5);var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("a");dom.setAttribute(el5,"href","#");dom.setAttribute(el5,"class","btn btn-default btn-block");var el6=dom.createTextNode("View Details");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createComment(" /.panel-body ");dom.appendChild(el3,el4);var el4=dom.createTextNode("\n        ");dom.appendChild(el3,el4);dom.appendChild(el2,el3);var el3=dom.createTextNode("\n        ");dom.appendChild(el2,el3);var el3=dom.createComment(" /.panel ");dom.appendChild(el2,el3);var el3=dom.createTextNode("\n        ");dom.appendChild(el2,el3);var el3=dom.createElement("div");dom.setAttribute(el3,"class","chat-panel panel panel-default");var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("div");dom.setAttribute(el4,"class","panel-heading");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("i");dom.setAttribute(el5,"class","fa fa-comments fa-fw");dom.appendChild(el4,el5);var el5=dom.createTextNode(" Chat\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("div");dom.setAttribute(el5,"class","btn-group pull-right");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("button");dom.setAttribute(el6,"type","button");dom.setAttribute(el6,"class","btn btn-default btn-xs dropdown-toggle");dom.setAttribute(el6,"data-toggle","dropdown");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("i");dom.setAttribute(el7,"class","fa fa-chevron-down");dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("ul");dom.setAttribute(el6,"class","dropdown-menu slidedown");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("li");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("a");dom.setAttribute(el8,"href","#");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("i");dom.setAttribute(el9,"class","fa fa-refresh fa-fw");dom.appendChild(el8,el9);var el9=dom.createTextNode(" Refresh\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("li");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("a");dom.setAttribute(el8,"href","#");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("i");dom.setAttribute(el9,"class","fa fa-check-circle fa-fw");dom.appendChild(el8,el9);var el9=dom.createTextNode(" Available\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("li");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("a");dom.setAttribute(el8,"href","#");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("i");dom.setAttribute(el9,"class","fa fa-times fa-fw");dom.appendChild(el8,el9);var el9=dom.createTextNode(" Busy\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("li");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("a");dom.setAttribute(el8,"href","#");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("i");dom.setAttribute(el9,"class","fa fa-clock-o fa-fw");dom.appendChild(el8,el9);var el9=dom.createTextNode(" Away\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("li");dom.setAttribute(el7,"class","divider");dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("li");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("a");dom.setAttribute(el8,"href","#");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("i");dom.setAttribute(el9,"class","fa fa-sign-out fa-fw");dom.appendChild(el8,el9);var el9=dom.createTextNode(" Sign Out\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createComment(" /.panel-heading ");dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("div");dom.setAttribute(el4,"class","panel-body");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("ul");dom.setAttribute(el5,"class","chat");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("li");dom.setAttribute(el6,"class","left clearfix");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("span");dom.setAttribute(el7,"class","chat-img pull-left");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("img");dom.setAttribute(el8,"src","http://placehold.it/50/55C1E7/fff");dom.setAttribute(el8,"alt","User Avatar");dom.setAttribute(el8,"class","img-circle");dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","chat-body clearfix");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","header");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("strong");dom.setAttribute(el9,"class","primary-font");var el10=dom.createTextNode("Jack Sparrow");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("small");dom.setAttribute(el9,"class","pull-right text-muted");var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("i");dom.setAttribute(el10,"class","fa fa-clock-o fa-fw");dom.appendChild(el9,el10);var el10=dom.createTextNode(" 12 mins ago\n                                ");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("p");var el9=dom.createTextNode("\n                                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur bibendum ornare dolor, quis ullamcorper ligula sodales.\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("li");dom.setAttribute(el6,"class","right clearfix");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("span");dom.setAttribute(el7,"class","chat-img pull-right");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("img");dom.setAttribute(el8,"src","http://placehold.it/50/FA6F57/fff");dom.setAttribute(el8,"alt","User Avatar");dom.setAttribute(el8,"class","img-circle");dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","chat-body clearfix");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","header");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("small");dom.setAttribute(el9,"class"," text-muted");var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("i");dom.setAttribute(el10,"class","fa fa-clock-o fa-fw");dom.appendChild(el9,el10);var el10=dom.createTextNode(" 13 mins ago");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("strong");dom.setAttribute(el9,"class","pull-right primary-font");var el10=dom.createTextNode("Bhaumik Patel");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("p");var el9=dom.createTextNode("\n                                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur bibendum ornare dolor, quis ullamcorper ligula sodales.\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("li");dom.setAttribute(el6,"class","left clearfix");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("span");dom.setAttribute(el7,"class","chat-img pull-left");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("img");dom.setAttribute(el8,"src","http://placehold.it/50/55C1E7/fff");dom.setAttribute(el8,"alt","User Avatar");dom.setAttribute(el8,"class","img-circle");dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","chat-body clearfix");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","header");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("strong");dom.setAttribute(el9,"class","primary-font");var el10=dom.createTextNode("Jack Sparrow");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("small");dom.setAttribute(el9,"class","pull-right text-muted");var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("i");dom.setAttribute(el10,"class","fa fa-clock-o fa-fw");dom.appendChild(el9,el10);var el10=dom.createTextNode(" 14 mins ago");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("p");var el9=dom.createTextNode("\n                                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur bibendum ornare dolor, quis ullamcorper ligula sodales.\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("li");dom.setAttribute(el6,"class","right clearfix");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("span");dom.setAttribute(el7,"class","chat-img pull-right");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("img");dom.setAttribute(el8,"src","http://placehold.it/50/FA6F57/fff");dom.setAttribute(el8,"alt","User Avatar");dom.setAttribute(el8,"class","img-circle");dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("div");dom.setAttribute(el7,"class","chat-body clearfix");var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("div");dom.setAttribute(el8,"class","header");var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("small");dom.setAttribute(el9,"class"," text-muted");var el10=dom.createTextNode("\n                                    ");dom.appendChild(el9,el10);var el10=dom.createElement("i");dom.setAttribute(el10,"class","fa fa-clock-o fa-fw");dom.appendChild(el9,el10);var el10=dom.createTextNode(" 15 mins ago");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                                ");dom.appendChild(el8,el9);var el9=dom.createElement("strong");dom.setAttribute(el9,"class","pull-right primary-font");var el10=dom.createTextNode("Bhaumik Patel");dom.appendChild(el9,el10);dom.appendChild(el8,el9);var el9=dom.createTextNode("\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                            ");dom.appendChild(el7,el8);var el8=dom.createElement("p");var el9=dom.createTextNode("\n                                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur bibendum ornare dolor, quis ullamcorper ligula sodales.\n                            ");dom.appendChild(el8,el9);dom.appendChild(el7,el8);var el8=dom.createTextNode("\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createComment(" /.panel-body ");dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createElement("div");dom.setAttribute(el4,"class","panel-footer");var el5=dom.createTextNode("\n                ");dom.appendChild(el4,el5);var el5=dom.createElement("div");dom.setAttribute(el5,"class","input-group");var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("input");dom.setAttribute(el6,"id","btn-input");dom.setAttribute(el6,"type","text");dom.setAttribute(el6,"class","form-control input-sm");dom.setAttribute(el6,"placeholder","Type your message here...");dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                    ");dom.appendChild(el5,el6);var el6=dom.createElement("span");dom.setAttribute(el6,"class","input-group-btn");var el7=dom.createTextNode("\n                        ");dom.appendChild(el6,el7);var el7=dom.createElement("button");dom.setAttribute(el7,"class","btn btn-warning btn-sm");dom.setAttribute(el7,"id","btn-chat");var el8=dom.createTextNode("\n                            Send\n                        ");dom.appendChild(el7,el8);dom.appendChild(el6,el7);var el7=dom.createTextNode("\n                    ");dom.appendChild(el6,el7);dom.appendChild(el5,el6);var el6=dom.createTextNode("\n                ");dom.appendChild(el5,el6);dom.appendChild(el4,el5);var el5=dom.createTextNode("\n            ");dom.appendChild(el4,el5);dom.appendChild(el3,el4);var el4=dom.createTextNode("\n            ");dom.appendChild(el3,el4);var el4=dom.createComment(" /.panel-footer ");dom.appendChild(el3,el4);var el4=dom.createTextNode("\n        ");dom.appendChild(el3,el4);dom.appendChild(el2,el3);var el3=dom.createTextNode("\n        ");dom.appendChild(el2,el3);var el3=dom.createComment(" /.panel .chat-panel ");dom.appendChild(el2,el3);var el3=dom.createTextNode("\n    ");dom.appendChild(el2,el3);dom.appendChild(el1,el2);var el2=dom.createTextNode("\n    ");dom.appendChild(el1,el2);var el2=dom.createComment(" /.col-lg-4 ");dom.appendChild(el1,el2);var el2=dom.createTextNode("\n");dom.appendChild(el1,el2);dom.appendChild(el0,el1);var el1=dom.createTextNode("\n");dom.appendChild(el0,el1);var el1=dom.createComment(" /.row ");dom.appendChild(el0,el1);return el0;},buildRenderNodes:function buildRenderNodes(){return [];},statements:[],locals:[],templates:[]};})());});
+define("we-admin-blog/templates/index", ["exports"], function (exports) {
+  exports["default"] = Ember.HTMLBars.template((function () {
+    var child0 = (function () {
+      return {
+        meta: {
+          "fragmentReason": false,
+          "revision": "Ember@2.6.2",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 21,
+              "column": 6
+            },
+            "end": {
+              "line": 27,
+              "column": 6
+            }
+          },
+          "moduleName": "we-admin-blog/templates/index.hbs"
+        },
+        isEmpty: false,
+        arity: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createTextNode("        ");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createElement("div");
+          dom.setAttribute(el1, "class", "panel-footer");
+          var el2 = dom.createTextNode("\n          ");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createElement("span");
+          dom.setAttribute(el2, "class", "pull-left");
+          var el3 = dom.createComment("");
+          dom.appendChild(el2, el3);
+          dom.appendChild(el1, el2);
+          var el2 = dom.createTextNode("\n          ");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createElement("span");
+          dom.setAttribute(el2, "class", "pull-right");
+          var el3 = dom.createElement("i");
+          dom.setAttribute(el3, "class", "fa fa-arrow-circle-right");
+          dom.appendChild(el2, el3);
+          dom.appendChild(el1, el2);
+          var el2 = dom.createTextNode("\n          ");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createElement("div");
+          dom.setAttribute(el2, "class", "clearfix");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createTextNode("\n        ");
+          dom.appendChild(el1, el2);
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var morphs = new Array(1);
+          morphs[0] = dom.createMorphAt(dom.childAt(fragment, [1, 1]), 0, 0);
+          return morphs;
+        },
+        statements: [["inline", "t", ["admin.dashboard.view.all"], [], ["loc", [null, [23, 34], [23, 66]]]]],
+        locals: [],
+        templates: []
+      };
+    })();
+    var child1 = (function () {
+      return {
+        meta: {
+          "fragmentReason": false,
+          "revision": "Ember@2.6.2",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 43,
+              "column": 6
+            },
+            "end": {
+              "line": 49,
+              "column": 6
+            }
+          },
+          "moduleName": "we-admin-blog/templates/index.hbs"
+        },
+        isEmpty: false,
+        arity: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createTextNode("        ");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createElement("div");
+          dom.setAttribute(el1, "class", "panel-footer");
+          var el2 = dom.createTextNode("\n          ");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createElement("span");
+          dom.setAttribute(el2, "class", "pull-left");
+          var el3 = dom.createComment("");
+          dom.appendChild(el2, el3);
+          dom.appendChild(el1, el2);
+          var el2 = dom.createTextNode("\n          ");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createElement("span");
+          dom.setAttribute(el2, "class", "pull-right");
+          var el3 = dom.createElement("i");
+          dom.setAttribute(el3, "class", "fa fa-arrow-circle-right");
+          dom.appendChild(el2, el3);
+          dom.appendChild(el1, el2);
+          var el2 = dom.createTextNode("\n          ");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createElement("div");
+          dom.setAttribute(el2, "class", "clearfix");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createTextNode("\n        ");
+          dom.appendChild(el1, el2);
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var morphs = new Array(1);
+          morphs[0] = dom.createMorphAt(dom.childAt(fragment, [1, 1]), 0, 0);
+          return morphs;
+        },
+        statements: [["inline", "t", ["admin.dashboard.view.all"], [], ["loc", [null, [45, 34], [45, 66]]]]],
+        locals: [],
+        templates: []
+      };
+    })();
+    var child2 = (function () {
+      var child0 = (function () {
+        return {
+          meta: {
+            "fragmentReason": false,
+            "revision": "Ember@2.6.2",
+            "loc": {
+              "source": null,
+              "start": {
+                "line": 86,
+                "column": 24
+              },
+              "end": {
+                "line": 88,
+                "column": 24
+              }
+            },
+            "moduleName": "we-admin-blog/templates/index.hbs"
+          },
+          isEmpty: false,
+          arity: 0,
+          cachedFragment: null,
+          hasRendered: false,
+          buildFragment: function buildFragment(dom) {
+            var el0 = dom.createDocumentFragment();
+            var el1 = dom.createTextNode("                          ");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createComment("");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createTextNode("\n");
+            dom.appendChild(el0, el1);
+            return el0;
+          },
+          buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+            var morphs = new Array(1);
+            morphs[0] = dom.createMorphAt(fragment, 1, 1, contextualElement);
+            return morphs;
+          },
+          statements: [["inline", "t", ["View"], [], ["loc", [null, [87, 26], [87, 38]]]]],
+          locals: [],
+          templates: []
+        };
+      })();
+      return {
+        meta: {
+          "fragmentReason": false,
+          "revision": "Ember@2.6.2",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 75,
+              "column": 18
+            },
+            "end": {
+              "line": 91,
+              "column": 18
+            }
+          },
+          "moduleName": "we-admin-blog/templates/index.hbs"
+        },
+        isEmpty: false,
+        arity: 1,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createTextNode("                    ");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createElement("tr");
+          var el2 = dom.createTextNode("\n                      ");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createElement("td");
+          var el3 = dom.createComment("");
+          dom.appendChild(el2, el3);
+          dom.appendChild(el1, el2);
+          var el2 = dom.createTextNode("\n                      ");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createElement("td");
+          var el3 = dom.createComment("");
+          dom.appendChild(el2, el3);
+          dom.appendChild(el1, el2);
+          var el2 = dom.createTextNode("\n                      ");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createElement("td");
+          var el3 = dom.createTextNode("\n                        ");
+          dom.appendChild(el2, el3);
+          var el3 = dom.createComment("");
+          dom.appendChild(el2, el3);
+          var el3 = dom.createTextNode("\n                      ");
+          dom.appendChild(el2, el3);
+          dom.appendChild(el1, el2);
+          var el2 = dom.createTextNode("\n                      ");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createElement("td");
+          var el3 = dom.createTextNode("\n                        ");
+          dom.appendChild(el2, el3);
+          var el3 = dom.createComment("");
+          dom.appendChild(el2, el3);
+          var el3 = dom.createTextNode("\n                      ");
+          dom.appendChild(el2, el3);
+          dom.appendChild(el1, el2);
+          var el2 = dom.createTextNode("\n                      ");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createElement("td");
+          var el3 = dom.createTextNode("\n");
+          dom.appendChild(el2, el3);
+          var el3 = dom.createComment("");
+          dom.appendChild(el2, el3);
+          var el3 = dom.createTextNode("                      ");
+          dom.appendChild(el2, el3);
+          dom.appendChild(el1, el2);
+          var el2 = dom.createTextNode("\n                    ");
+          dom.appendChild(el1, el2);
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var element1 = dom.childAt(fragment, [1]);
+          var morphs = new Array(5);
+          morphs[0] = dom.createMorphAt(dom.childAt(element1, [1]), 0, 0);
+          morphs[1] = dom.createMorphAt(dom.childAt(element1, [3]), 0, 0);
+          morphs[2] = dom.createMorphAt(dom.childAt(element1, [5]), 1, 1);
+          morphs[3] = dom.createMorphAt(dom.childAt(element1, [7]), 1, 1);
+          morphs[4] = dom.createMorphAt(dom.childAt(element1, [9]), 1, 1);
+          return morphs;
+        },
+        statements: [["content", "article.id", ["loc", [null, [77, 26], [77, 40]]]], ["content", "article.title", ["loc", [null, [78, 26], [78, 43]]]], ["inline", "moment-format", [["get", "article.createdAt", ["loc", [null, [80, 40], [80, 57]]]], "LLL"], [], ["loc", [null, [80, 24], [80, 65]]]], ["inline", "moment-format", [["get", "article.updatedAt", ["loc", [null, [83, 40], [83, 57]]]], "LLL"], [], ["loc", [null, [83, 24], [83, 65]]]], ["block", "link-to", ["articles.item", ["get", "article.id", ["loc", [null, [86, 51], [86, 61]]]]], ["class", "btn btn-default btn-sm"], 0, null, ["loc", [null, [86, 24], [88, 36]]]]],
+        locals: ["article"],
+        templates: [child0]
+      };
+    })();
+    var child3 = (function () {
+      var child0 = (function () {
+        return {
+          meta: {
+            "fragmentReason": false,
+            "revision": "Ember@2.6.2",
+            "loc": {
+              "source": null,
+              "start": {
+                "line": 125,
+                "column": 24
+              },
+              "end": {
+                "line": 127,
+                "column": 24
+              }
+            },
+            "moduleName": "we-admin-blog/templates/index.hbs"
+          },
+          isEmpty: false,
+          arity: 0,
+          cachedFragment: null,
+          hasRendered: false,
+          buildFragment: function buildFragment(dom) {
+            var el0 = dom.createDocumentFragment();
+            var el1 = dom.createTextNode("                          ");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createElement("i");
+            dom.setAttribute(el1, "class", "glyphicon glyphicon-check text-success");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createTextNode("\n");
+            dom.appendChild(el0, el1);
+            return el0;
+          },
+          buildRenderNodes: function buildRenderNodes() {
+            return [];
+          },
+          statements: [],
+          locals: [],
+          templates: []
+        };
+      })();
+      var child1 = (function () {
+        return {
+          meta: {
+            "fragmentReason": false,
+            "revision": "Ember@2.6.2",
+            "loc": {
+              "source": null,
+              "start": {
+                "line": 127,
+                "column": 24
+              },
+              "end": {
+                "line": 129,
+                "column": 24
+              }
+            },
+            "moduleName": "we-admin-blog/templates/index.hbs"
+          },
+          isEmpty: false,
+          arity: 0,
+          cachedFragment: null,
+          hasRendered: false,
+          buildFragment: function buildFragment(dom) {
+            var el0 = dom.createDocumentFragment();
+            var el1 = dom.createTextNode("                          ");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createElement("i");
+            dom.setAttribute(el1, "class", "glyphicon glyphicon-unchecked");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createTextNode("\n");
+            dom.appendChild(el0, el1);
+            return el0;
+          },
+          buildRenderNodes: function buildRenderNodes() {
+            return [];
+          },
+          statements: [],
+          locals: [],
+          templates: []
+        };
+      })();
+      return {
+        meta: {
+          "fragmentReason": false,
+          "revision": "Ember@2.6.2",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 119,
+              "column": 18
+            },
+            "end": {
+              "line": 135,
+              "column": 18
+            }
+          },
+          "moduleName": "we-admin-blog/templates/index.hbs"
+        },
+        isEmpty: false,
+        arity: 1,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createTextNode("                    ");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createElement("tr");
+          var el2 = dom.createTextNode("\n                      ");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createElement("td");
+          var el3 = dom.createComment("");
+          dom.appendChild(el2, el3);
+          dom.appendChild(el1, el2);
+          var el2 = dom.createTextNode("\n                      ");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createElement("td");
+          var el3 = dom.createComment("");
+          dom.appendChild(el2, el3);
+          dom.appendChild(el1, el2);
+          var el2 = dom.createTextNode("\n");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createTextNode("                      ");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createElement("td");
+          var el3 = dom.createTextNode("\n");
+          dom.appendChild(el2, el3);
+          var el3 = dom.createComment("");
+          dom.appendChild(el2, el3);
+          var el3 = dom.createTextNode("                      ");
+          dom.appendChild(el2, el3);
+          dom.appendChild(el1, el2);
+          var el2 = dom.createTextNode("\n                      ");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createElement("td");
+          var el3 = dom.createTextNode("\n                        ");
+          dom.appendChild(el2, el3);
+          var el3 = dom.createComment("");
+          dom.appendChild(el2, el3);
+          var el3 = dom.createTextNode("\n                      ");
+          dom.appendChild(el2, el3);
+          dom.appendChild(el1, el2);
+          var el2 = dom.createTextNode("\n                    ");
+          dom.appendChild(el1, el2);
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var element0 = dom.childAt(fragment, [1]);
+          var morphs = new Array(4);
+          morphs[0] = dom.createMorphAt(dom.childAt(element0, [1]), 0, 0);
+          morphs[1] = dom.createMorphAt(dom.childAt(element0, [3]), 0, 0);
+          morphs[2] = dom.createMorphAt(dom.childAt(element0, [6]), 1, 1);
+          morphs[3] = dom.createMorphAt(dom.childAt(element0, [8]), 1, 1);
+          return morphs;
+        },
+        statements: [["content", "user.id", ["loc", [null, [121, 26], [121, 37]]]], ["content", "user.displayName", ["loc", [null, [122, 26], [122, 46]]]], ["block", "if", [["get", "user.active", ["loc", [null, [125, 30], [125, 41]]]]], [], 0, 1, ["loc", [null, [125, 24], [129, 31]]]], ["inline", "moment-format", [["get", "user.createdAt", ["loc", [null, [132, 40], [132, 54]]]], "LLL"], [], ["loc", [null, [132, 24], [132, 62]]]]],
+        locals: ["user"],
+        templates: [child0, child1]
+      };
+    })();
+    return {
+      meta: {
+        "fragmentReason": {
+          "name": "missing-wrapper",
+          "problems": ["multiple-nodes"]
+        },
+        "revision": "Ember@2.6.2",
+        "loc": {
+          "source": null,
+          "start": {
+            "line": 1,
+            "column": 0
+          },
+          "end": {
+            "line": 148,
+            "column": 0
+          }
+        },
+        "moduleName": "we-admin-blog/templates/index.hbs"
+      },
+      isEmpty: false,
+      arity: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      buildFragment: function buildFragment(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createElement("div");
+        dom.setAttribute(el1, "class", "row");
+        var el2 = dom.createTextNode("\n  ");
+        dom.appendChild(el1, el2);
+        var el2 = dom.createElement("div");
+        dom.setAttribute(el2, "class", "col-lg-12");
+        var el3 = dom.createTextNode("\n    ");
+        dom.appendChild(el2, el3);
+        var el3 = dom.createElement("h1");
+        dom.setAttribute(el3, "class", "page-header");
+        var el4 = dom.createComment("");
+        dom.appendChild(el3, el4);
+        dom.appendChild(el2, el3);
+        var el3 = dom.createTextNode("\n  ");
+        dom.appendChild(el2, el3);
+        dom.appendChild(el1, el2);
+        var el2 = dom.createTextNode("\n");
+        dom.appendChild(el1, el2);
+        dom.appendChild(el0, el1);
+        var el1 = dom.createTextNode("\n\n");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createElement("div");
+        dom.setAttribute(el1, "class", "row");
+        var el2 = dom.createTextNode("\n  ");
+        dom.appendChild(el1, el2);
+        var el2 = dom.createElement("div");
+        dom.setAttribute(el2, "class", "col-lg-3 col-md-6");
+        var el3 = dom.createTextNode("\n    ");
+        dom.appendChild(el2, el3);
+        var el3 = dom.createElement("div");
+        dom.setAttribute(el3, "class", "panel panel-primary");
+        var el4 = dom.createTextNode("\n      ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createElement("div");
+        dom.setAttribute(el4, "class", "panel-heading");
+        var el5 = dom.createTextNode("\n        ");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createElement("div");
+        dom.setAttribute(el5, "class", "row");
+        var el6 = dom.createTextNode("\n          ");
+        dom.appendChild(el5, el6);
+        var el6 = dom.createElement("div");
+        dom.setAttribute(el6, "class", "col-xs-3");
+        var el7 = dom.createTextNode("\n            ");
+        dom.appendChild(el6, el7);
+        var el7 = dom.createElement("i");
+        dom.setAttribute(el7, "class", "fa fa-users fa-5x");
+        dom.appendChild(el6, el7);
+        var el7 = dom.createTextNode("\n          ");
+        dom.appendChild(el6, el7);
+        dom.appendChild(el5, el6);
+        var el6 = dom.createTextNode("\n          ");
+        dom.appendChild(el5, el6);
+        var el6 = dom.createElement("div");
+        dom.setAttribute(el6, "class", "col-xs-9 text-right");
+        var el7 = dom.createTextNode("\n            ");
+        dom.appendChild(el6, el7);
+        var el7 = dom.createElement("div");
+        dom.setAttribute(el7, "class", "huge");
+        var el8 = dom.createComment("");
+        dom.appendChild(el7, el8);
+        dom.appendChild(el6, el7);
+        var el7 = dom.createTextNode("\n            ");
+        dom.appendChild(el6, el7);
+        var el7 = dom.createElement("div");
+        var el8 = dom.createComment("");
+        dom.appendChild(el7, el8);
+        dom.appendChild(el6, el7);
+        var el7 = dom.createTextNode("\n          ");
+        dom.appendChild(el6, el7);
+        dom.appendChild(el5, el6);
+        var el6 = dom.createTextNode("\n        ");
+        dom.appendChild(el5, el6);
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("\n      ");
+        dom.appendChild(el4, el5);
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createComment("");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("    ");
+        dom.appendChild(el3, el4);
+        dom.appendChild(el2, el3);
+        var el3 = dom.createTextNode("\n  ");
+        dom.appendChild(el2, el3);
+        dom.appendChild(el1, el2);
+        var el2 = dom.createTextNode("\n  ");
+        dom.appendChild(el1, el2);
+        var el2 = dom.createElement("div");
+        dom.setAttribute(el2, "class", "col-lg-3 col-md-6");
+        var el3 = dom.createTextNode("\n    ");
+        dom.appendChild(el2, el3);
+        var el3 = dom.createElement("div");
+        dom.setAttribute(el3, "class", "panel panel-yellow");
+        var el4 = dom.createTextNode("\n      ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createElement("div");
+        dom.setAttribute(el4, "class", "panel-heading");
+        var el5 = dom.createTextNode("\n        ");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createElement("div");
+        dom.setAttribute(el5, "class", "row");
+        var el6 = dom.createTextNode("\n          ");
+        dom.appendChild(el5, el6);
+        var el6 = dom.createElement("div");
+        dom.setAttribute(el6, "class", "col-xs-3");
+        var el7 = dom.createTextNode("\n            ");
+        dom.appendChild(el6, el7);
+        var el7 = dom.createElement("i");
+        dom.setAttribute(el7, "class", "fa fa-file-text fa-5x");
+        dom.appendChild(el6, el7);
+        var el7 = dom.createTextNode("\n          ");
+        dom.appendChild(el6, el7);
+        dom.appendChild(el5, el6);
+        var el6 = dom.createTextNode("\n          ");
+        dom.appendChild(el5, el6);
+        var el6 = dom.createElement("div");
+        dom.setAttribute(el6, "class", "col-xs-9 text-right");
+        var el7 = dom.createTextNode("\n            ");
+        dom.appendChild(el6, el7);
+        var el7 = dom.createElement("div");
+        dom.setAttribute(el7, "class", "huge");
+        var el8 = dom.createComment("");
+        dom.appendChild(el7, el8);
+        dom.appendChild(el6, el7);
+        var el7 = dom.createTextNode("\n            ");
+        dom.appendChild(el6, el7);
+        var el7 = dom.createElement("div");
+        var el8 = dom.createComment("");
+        dom.appendChild(el7, el8);
+        dom.appendChild(el6, el7);
+        var el7 = dom.createTextNode("\n          ");
+        dom.appendChild(el6, el7);
+        dom.appendChild(el5, el6);
+        var el6 = dom.createTextNode("\n        ");
+        dom.appendChild(el5, el6);
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("\n      ");
+        dom.appendChild(el4, el5);
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createComment("");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("    ");
+        dom.appendChild(el3, el4);
+        dom.appendChild(el2, el3);
+        var el3 = dom.createTextNode("\n  ");
+        dom.appendChild(el2, el3);
+        dom.appendChild(el1, el2);
+        var el2 = dom.createTextNode("\n");
+        dom.appendChild(el1, el2);
+        dom.appendChild(el0, el1);
+        var el1 = dom.createTextNode("\n");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createElement("div");
+        dom.setAttribute(el1, "class", "row");
+        var el2 = dom.createTextNode("\n  ");
+        dom.appendChild(el1, el2);
+        var el2 = dom.createElement("div");
+        dom.setAttribute(el2, "class", "col-lg-8");
+        var el3 = dom.createTextNode("\n\n    ");
+        dom.appendChild(el2, el3);
+        var el3 = dom.createElement("div");
+        dom.setAttribute(el3, "class", "panel panel-default");
+        var el4 = dom.createTextNode("\n      ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createElement("div");
+        dom.setAttribute(el4, "class", "panel-heading");
+        var el5 = dom.createTextNode("\n        ");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createElement("i");
+        dom.setAttribute(el5, "class", "fa fa-file-text");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode(" ");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createComment("");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("\n      ");
+        dom.appendChild(el4, el5);
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n      ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createElement("div");
+        dom.setAttribute(el4, "class", "panel-body");
+        var el5 = dom.createTextNode("\n        ");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createElement("div");
+        dom.setAttribute(el5, "class", "row");
+        var el6 = dom.createTextNode("\n          ");
+        dom.appendChild(el5, el6);
+        var el6 = dom.createElement("div");
+        dom.setAttribute(el6, "class", "col-lg-12");
+        var el7 = dom.createTextNode("\n            ");
+        dom.appendChild(el6, el7);
+        var el7 = dom.createElement("div");
+        dom.setAttribute(el7, "class", "table-responsive");
+        var el8 = dom.createTextNode("\n              ");
+        dom.appendChild(el7, el8);
+        var el8 = dom.createElement("table");
+        dom.setAttribute(el8, "class", "table table-bordered table-hover table-striped");
+        var el9 = dom.createTextNode("\n                ");
+        dom.appendChild(el8, el9);
+        var el9 = dom.createElement("thead");
+        var el10 = dom.createTextNode("\n                    ");
+        dom.appendChild(el9, el10);
+        var el10 = dom.createElement("tr");
+        var el11 = dom.createTextNode("\n                        ");
+        dom.appendChild(el10, el11);
+        var el11 = dom.createElement("th");
+        var el12 = dom.createTextNode("#");
+        dom.appendChild(el11, el12);
+        dom.appendChild(el10, el11);
+        var el11 = dom.createTextNode("\n                        ");
+        dom.appendChild(el10, el11);
+        var el11 = dom.createElement("th");
+        var el12 = dom.createComment("");
+        dom.appendChild(el11, el12);
+        dom.appendChild(el10, el11);
+        var el11 = dom.createTextNode("\n                        ");
+        dom.appendChild(el10, el11);
+        var el11 = dom.createElement("th");
+        var el12 = dom.createComment("");
+        dom.appendChild(el11, el12);
+        dom.appendChild(el10, el11);
+        var el11 = dom.createTextNode("\n                        ");
+        dom.appendChild(el10, el11);
+        var el11 = dom.createElement("th");
+        var el12 = dom.createComment("");
+        dom.appendChild(el11, el12);
+        dom.appendChild(el10, el11);
+        var el11 = dom.createTextNode("\n                        ");
+        dom.appendChild(el10, el11);
+        var el11 = dom.createElement("th");
+        var el12 = dom.createComment("");
+        dom.appendChild(el11, el12);
+        dom.appendChild(el10, el11);
+        var el11 = dom.createTextNode("\n                    ");
+        dom.appendChild(el10, el11);
+        dom.appendChild(el9, el10);
+        var el10 = dom.createTextNode("\n                ");
+        dom.appendChild(el9, el10);
+        dom.appendChild(el8, el9);
+        var el9 = dom.createTextNode("\n                ");
+        dom.appendChild(el8, el9);
+        var el9 = dom.createElement("tbody");
+        var el10 = dom.createTextNode("\n");
+        dom.appendChild(el9, el10);
+        var el10 = dom.createComment("");
+        dom.appendChild(el9, el10);
+        var el10 = dom.createTextNode("                ");
+        dom.appendChild(el9, el10);
+        dom.appendChild(el8, el9);
+        var el9 = dom.createTextNode("\n              ");
+        dom.appendChild(el8, el9);
+        dom.appendChild(el7, el8);
+        var el8 = dom.createTextNode("\n            ");
+        dom.appendChild(el7, el8);
+        dom.appendChild(el6, el7);
+        var el7 = dom.createTextNode("\n          ");
+        dom.appendChild(el6, el7);
+        dom.appendChild(el5, el6);
+        var el6 = dom.createTextNode("\n        ");
+        dom.appendChild(el5, el6);
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("\n      ");
+        dom.appendChild(el4, el5);
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n    ");
+        dom.appendChild(el3, el4);
+        dom.appendChild(el2, el3);
+        var el3 = dom.createTextNode("\n\n    ");
+        dom.appendChild(el2, el3);
+        var el3 = dom.createElement("div");
+        dom.setAttribute(el3, "class", "panel panel-default");
+        var el4 = dom.createTextNode("\n      ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createElement("div");
+        dom.setAttribute(el4, "class", "panel-heading");
+        var el5 = dom.createTextNode("\n        ");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createElement("i");
+        dom.setAttribute(el5, "class", "fa fa-users");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode(" ");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createComment("");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("\n      ");
+        dom.appendChild(el4, el5);
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n      ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createElement("div");
+        dom.setAttribute(el4, "class", "panel-body");
+        var el5 = dom.createTextNode("\n        ");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createElement("div");
+        dom.setAttribute(el5, "class", "row");
+        var el6 = dom.createTextNode("\n          ");
+        dom.appendChild(el5, el6);
+        var el6 = dom.createElement("div");
+        dom.setAttribute(el6, "class", "col-lg-12");
+        var el7 = dom.createTextNode("\n            ");
+        dom.appendChild(el6, el7);
+        var el7 = dom.createElement("div");
+        dom.setAttribute(el7, "class", "table-responsive");
+        var el8 = dom.createTextNode("\n              ");
+        dom.appendChild(el7, el8);
+        var el8 = dom.createElement("table");
+        dom.setAttribute(el8, "class", "table table-bordered table-hover table-striped");
+        var el9 = dom.createTextNode("\n                ");
+        dom.appendChild(el8, el9);
+        var el9 = dom.createElement("thead");
+        var el10 = dom.createTextNode("\n                    ");
+        dom.appendChild(el9, el10);
+        var el10 = dom.createElement("tr");
+        var el11 = dom.createTextNode("\n                        ");
+        dom.appendChild(el10, el11);
+        var el11 = dom.createElement("th");
+        var el12 = dom.createTextNode("#");
+        dom.appendChild(el11, el12);
+        dom.appendChild(el10, el11);
+        var el11 = dom.createTextNode("\n                        ");
+        dom.appendChild(el10, el11);
+        var el11 = dom.createElement("th");
+        var el12 = dom.createComment("");
+        dom.appendChild(el11, el12);
+        dom.appendChild(el10, el11);
+        var el11 = dom.createTextNode("\n");
+        dom.appendChild(el10, el11);
+        var el11 = dom.createTextNode("                        ");
+        dom.appendChild(el10, el11);
+        var el11 = dom.createElement("th");
+        var el12 = dom.createComment("");
+        dom.appendChild(el11, el12);
+        dom.appendChild(el10, el11);
+        var el11 = dom.createTextNode("\n                        ");
+        dom.appendChild(el10, el11);
+        var el11 = dom.createElement("th");
+        var el12 = dom.createComment("");
+        dom.appendChild(el11, el12);
+        dom.appendChild(el10, el11);
+        var el11 = dom.createTextNode("\n                    ");
+        dom.appendChild(el10, el11);
+        dom.appendChild(el9, el10);
+        var el10 = dom.createTextNode("\n                ");
+        dom.appendChild(el9, el10);
+        dom.appendChild(el8, el9);
+        var el9 = dom.createTextNode("\n                ");
+        dom.appendChild(el8, el9);
+        var el9 = dom.createElement("tbody");
+        var el10 = dom.createTextNode("\n");
+        dom.appendChild(el9, el10);
+        var el10 = dom.createComment("");
+        dom.appendChild(el9, el10);
+        var el10 = dom.createTextNode("                ");
+        dom.appendChild(el9, el10);
+        dom.appendChild(el8, el9);
+        var el9 = dom.createTextNode("\n              ");
+        dom.appendChild(el8, el9);
+        dom.appendChild(el7, el8);
+        var el8 = dom.createTextNode("\n            ");
+        dom.appendChild(el7, el8);
+        dom.appendChild(el6, el7);
+        var el7 = dom.createTextNode("\n          ");
+        dom.appendChild(el6, el7);
+        dom.appendChild(el5, el6);
+        var el6 = dom.createTextNode("\n        ");
+        dom.appendChild(el5, el6);
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("\n      ");
+        dom.appendChild(el4, el5);
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n    ");
+        dom.appendChild(el3, el4);
+        dom.appendChild(el2, el3);
+        var el3 = dom.createTextNode("\n\n  ");
+        dom.appendChild(el2, el3);
+        dom.appendChild(el1, el2);
+        var el2 = dom.createTextNode("\n  ");
+        dom.appendChild(el1, el2);
+        var el2 = dom.createElement("div");
+        dom.setAttribute(el2, "class", "col-lg-4");
+        var el3 = dom.createTextNode("\n  ");
+        dom.appendChild(el2, el3);
+        dom.appendChild(el1, el2);
+        var el2 = dom.createTextNode("\n");
+        dom.appendChild(el1, el2);
+        dom.appendChild(el0, el1);
+        var el1 = dom.createTextNode("\n");
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+        var element2 = dom.childAt(fragment, [2]);
+        var element3 = dom.childAt(element2, [1, 1]);
+        var element4 = dom.childAt(element3, [1, 1, 3]);
+        var element5 = dom.childAt(element2, [3, 1]);
+        var element6 = dom.childAt(element5, [1, 1, 3]);
+        var element7 = dom.childAt(fragment, [4, 1]);
+        var element8 = dom.childAt(element7, [1]);
+        var element9 = dom.childAt(element8, [3, 1, 1, 1, 1]);
+        var element10 = dom.childAt(element9, [1, 1]);
+        var element11 = dom.childAt(element7, [3]);
+        var element12 = dom.childAt(element11, [3, 1, 1, 1, 1]);
+        var element13 = dom.childAt(element12, [1, 1]);
+        var morphs = new Array(18);
+        morphs[0] = dom.createMorphAt(dom.childAt(fragment, [0, 1, 1]), 0, 0);
+        morphs[1] = dom.createMorphAt(dom.childAt(element4, [1]), 0, 0);
+        morphs[2] = dom.createMorphAt(dom.childAt(element4, [3]), 0, 0);
+        morphs[3] = dom.createMorphAt(element3, 3, 3);
+        morphs[4] = dom.createMorphAt(dom.childAt(element6, [1]), 0, 0);
+        morphs[5] = dom.createMorphAt(dom.childAt(element6, [3]), 0, 0);
+        morphs[6] = dom.createMorphAt(element5, 3, 3);
+        morphs[7] = dom.createMorphAt(dom.childAt(element8, [1]), 3, 3);
+        morphs[8] = dom.createMorphAt(dom.childAt(element10, [3]), 0, 0);
+        morphs[9] = dom.createMorphAt(dom.childAt(element10, [5]), 0, 0);
+        morphs[10] = dom.createMorphAt(dom.childAt(element10, [7]), 0, 0);
+        morphs[11] = dom.createMorphAt(dom.childAt(element10, [9]), 0, 0);
+        morphs[12] = dom.createMorphAt(dom.childAt(element9, [3]), 1, 1);
+        morphs[13] = dom.createMorphAt(dom.childAt(element11, [1]), 3, 3);
+        morphs[14] = dom.createMorphAt(dom.childAt(element13, [3]), 0, 0);
+        morphs[15] = dom.createMorphAt(dom.childAt(element13, [6]), 0, 0);
+        morphs[16] = dom.createMorphAt(dom.childAt(element13, [8]), 0, 0);
+        morphs[17] = dom.createMorphAt(dom.childAt(element12, [3]), 1, 1);
+        return morphs;
+      },
+      statements: [["inline", "t", ["admin.Dashboard"], [], ["loc", [null, [3, 28], [3, 51]]]], ["content", "model.newUsers.meta.count", ["loc", [null, [16, 30], [16, 59]]]], ["inline", "t", ["user.find"], [], ["loc", [null, [17, 17], [17, 34]]]], ["block", "link-to", ["users.index"], [], 0, null, ["loc", [null, [21, 6], [27, 18]]]], ["content", "model.articleCount", ["loc", [null, [38, 30], [38, 52]]]], ["inline", "t", ["article.find"], [], ["loc", [null, [39, 17], [39, 37]]]], ["block", "link-to", ["articles.index"], [], 1, null, ["loc", [null, [43, 6], [49, 18]]]], ["inline", "t", ["admin.dashboard.article.unpublished"], [], ["loc", [null, [58, 40], [58, 83]]]], ["inline", "t", ["form-article-title"], [], ["loc", [null, [68, 28], [68, 54]]]], ["inline", "t", ["form-article-createdAt"], [], ["loc", [null, [69, 28], [69, 58]]]], ["inline", "t", ["form-article-updatedAt"], [], ["loc", [null, [70, 28], [70, 58]]]], ["inline", "t", ["Actions"], [], ["loc", [null, [71, 28], [71, 43]]]], ["block", "each", [["get", "model.unPublishedArticles", ["loc", [null, [75, 26], [75, 51]]]]], [], 2, null, ["loc", [null, [75, 18], [91, 27]]]], ["inline", "t", ["user.newest"], [], ["loc", [null, [102, 36], [102, 55]]]], ["inline", "t", ["form-user-displayName"], [], ["loc", [null, [112, 28], [112, 57]]]], ["inline", "t", ["form-user-active"], [], ["loc", [null, [114, 28], [114, 52]]]], ["inline", "t", ["form-user-createdAt"], [], ["loc", [null, [115, 28], [115, 55]]]], ["block", "each", [["get", "model.newUsers.user", ["loc", [null, [119, 26], [119, 45]]]]], [], 3, null, ["loc", [null, [119, 18], [135, 27]]]]],
+      locals: [],
+      templates: [child0, child1, child2, child3]
+    };
+  })());
+});
 define("we-admin-blog/templates/links/form", ["exports"], function (exports) {
   exports["default"] = Ember.HTMLBars.template((function () {
     return {
@@ -10650,7 +12024,9 @@ define("we-admin-blog/templates/links/form", ["exports"], function (exports) {
         var el4 = dom.createTextNode("\n      ");
         dom.appendChild(el3, el4);
         var el4 = dom.createElement("label");
-        var el5 = dom.createTextNode("HREF*");
+        var el5 = dom.createComment("");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("*:");
         dom.appendChild(el4, el5);
         dom.appendChild(el3, el4);
         var el4 = dom.createTextNode("\n      ");
@@ -10667,7 +12043,9 @@ define("we-admin-blog/templates/links/form", ["exports"], function (exports) {
         var el4 = dom.createTextNode("\n      ");
         dom.appendChild(el3, el4);
         var el4 = dom.createElement("label");
-        var el5 = dom.createTextNode("Text*");
+        var el5 = dom.createComment("");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("*:");
         dom.appendChild(el4, el5);
         dom.appendChild(el3, el4);
         var el4 = dom.createTextNode("\n      ");
@@ -10684,7 +12062,9 @@ define("we-admin-blog/templates/links/form", ["exports"], function (exports) {
         var el4 = dom.createTextNode("\n      ");
         dom.appendChild(el3, el4);
         var el4 = dom.createElement("label");
-        var el5 = dom.createTextNode("Título");
+        var el5 = dom.createComment("");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode(":");
         dom.appendChild(el4, el5);
         dom.appendChild(el3, el4);
         var el4 = dom.createTextNode("\n      ");
@@ -10701,7 +12081,9 @@ define("we-admin-blog/templates/links/form", ["exports"], function (exports) {
         var el4 = dom.createTextNode("\n      ");
         dom.appendChild(el3, el4);
         var el4 = dom.createElement("label");
-        var el5 = dom.createTextNode("Class");
+        var el5 = dom.createComment("");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode(":");
         dom.appendChild(el4, el5);
         dom.appendChild(el3, el4);
         var el4 = dom.createTextNode("\n      ");
@@ -10718,7 +12100,9 @@ define("we-admin-blog/templates/links/form", ["exports"], function (exports) {
         var el4 = dom.createTextNode("\n      ");
         dom.appendChild(el3, el4);
         var el4 = dom.createElement("label");
-        var el5 = dom.createTextNode("Target");
+        var el5 = dom.createComment("");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode(":");
         dom.appendChild(el4, el5);
         dom.appendChild(el3, el4);
         var el4 = dom.createTextNode("\n      ");
@@ -10735,7 +12119,9 @@ define("we-admin-blog/templates/links/form", ["exports"], function (exports) {
         var el4 = dom.createTextNode("\n      ");
         dom.appendChild(el3, el4);
         var el4 = dom.createElement("label");
-        var el5 = dom.createTextNode("Rel");
+        var el5 = dom.createComment("");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode(":");
         dom.appendChild(el4, el5);
         dom.appendChild(el3, el4);
         var el4 = dom.createTextNode("\n      ");
@@ -10752,7 +12138,7 @@ define("we-admin-blog/templates/links/form", ["exports"], function (exports) {
         var el4 = dom.createTextNode("\n      ");
         dom.appendChild(el3, el4);
         var el4 = dom.createElement("label");
-        var el5 = dom.createTextNode("Tecla");
+        var el5 = dom.createComment("");
         dom.appendChild(el4, el5);
         dom.appendChild(el3, el4);
         var el4 = dom.createTextNode("\n      ");
@@ -10773,18 +12159,32 @@ define("we-admin-blog/templates/links/form", ["exports"], function (exports) {
       buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
         var element0 = dom.childAt(fragment, [0]);
         var element1 = dom.childAt(element0, [1]);
-        var morphs = new Array(8);
+        var element2 = dom.childAt(element1, [1]);
+        var element3 = dom.childAt(element1, [3]);
+        var element4 = dom.childAt(element1, [5]);
+        var element5 = dom.childAt(element1, [7]);
+        var element6 = dom.childAt(element1, [9]);
+        var element7 = dom.childAt(element1, [11]);
+        var element8 = dom.childAt(element1, [13]);
+        var morphs = new Array(15);
         morphs[0] = dom.createElementMorph(element0);
-        morphs[1] = dom.createMorphAt(dom.childAt(element1, [1]), 3, 3);
-        morphs[2] = dom.createMorphAt(dom.childAt(element1, [3]), 3, 3);
-        morphs[3] = dom.createMorphAt(dom.childAt(element1, [5]), 3, 3);
-        morphs[4] = dom.createMorphAt(dom.childAt(element1, [7]), 3, 3);
-        morphs[5] = dom.createMorphAt(dom.childAt(element1, [9]), 3, 3);
-        morphs[6] = dom.createMorphAt(dom.childAt(element1, [11]), 3, 3);
-        morphs[7] = dom.createMorphAt(dom.childAt(element1, [13]), 3, 3);
+        morphs[1] = dom.createMorphAt(dom.childAt(element2, [1]), 0, 0);
+        morphs[2] = dom.createMorphAt(element2, 3, 3);
+        morphs[3] = dom.createMorphAt(dom.childAt(element3, [1]), 0, 0);
+        morphs[4] = dom.createMorphAt(element3, 3, 3);
+        morphs[5] = dom.createMorphAt(dom.childAt(element4, [1]), 0, 0);
+        morphs[6] = dom.createMorphAt(element4, 3, 3);
+        morphs[7] = dom.createMorphAt(dom.childAt(element5, [1]), 0, 0);
+        morphs[8] = dom.createMorphAt(element5, 3, 3);
+        morphs[9] = dom.createMorphAt(dom.childAt(element6, [1]), 0, 0);
+        morphs[10] = dom.createMorphAt(element6, 3, 3);
+        morphs[11] = dom.createMorphAt(dom.childAt(element7, [1]), 0, 0);
+        morphs[12] = dom.createMorphAt(element7, 3, 3);
+        morphs[13] = dom.createMorphAt(dom.childAt(element8, [1]), 0, 0);
+        morphs[14] = dom.createMorphAt(element8, 3, 3);
         return morphs;
       },
-      statements: [["element", "action", ["onSaveLink", ["get", "model.editingRecord", ["loc", [null, [1, 28], [1, 47]]]], ["get", "modal", ["loc", [null, [1, 48], [1, 53]]]]], ["on", "submit"], ["loc", [null, [1, 6], [1, 67]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.editingRecord.href", ["loc", [null, [5, 20], [5, 44]]]]], [], []], "class", "form-control", "placeholder", "Url do link", "required", "required"], ["loc", [null, [5, 6], [5, 113]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.editingRecord.text", ["loc", [null, [9, 20], [9, 44]]]]], [], []], "class", "form-control", "placeholder", "Texto do link", "required", "required"], ["loc", [null, [9, 6], [9, 115]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.editingRecord.title", ["loc", [null, [13, 20], [13, 45]]]]], [], []], "class", "form-control", "placeholder", "Título do link"], ["loc", [null, [13, 6], [13, 97]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.editingRecord.class", ["loc", [null, [17, 20], [17, 45]]]]], [], []], "class", "form-control", "placeholder", "Classe de css do link"], ["loc", [null, [17, 6], [17, 104]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.editingRecord.target", ["loc", [null, [21, 20], [21, 46]]]]], [], []], "class", "form-control", "placeholder", "Target do link"], ["loc", [null, [21, 6], [21, 98]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.editingRecord.rel", ["loc", [null, [25, 20], [25, 43]]]]], [], []], "class", "form-control", "placeholder", "Rel do link"], ["loc", [null, [25, 6], [25, 92]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.editingRecord.key", ["loc", [null, [29, 20], [29, 43]]]]], [], []], "class", "form-control", "placeholder", "Tecla do link"], ["loc", [null, [29, 6], [29, 94]]]]],
+      statements: [["element", "action", ["onSaveLink", ["get", "model.editingRecord", ["loc", [null, [1, 28], [1, 47]]]], ["get", "modal", ["loc", [null, [1, 48], [1, 53]]]]], ["on", "submit"], ["loc", [null, [1, 6], [1, 67]]]], ["inline", "t", ["form-link-href"], [], ["loc", [null, [4, 13], [4, 35]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.editingRecord.href", ["loc", [null, [5, 20], [5, 44]]]]], [], []], "class", "form-control", "placeholder", ["subexpr", "t", ["form-placeholder-link-href"], [], ["loc", [null, [5, 78], [5, 110]]]], "required", "required"], ["loc", [null, [5, 6], [5, 132]]]], ["inline", "t", ["form-link-text"], [], ["loc", [null, [8, 13], [8, 35]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.editingRecord.text", ["loc", [null, [9, 20], [9, 44]]]]], [], []], "class", "form-control", "placeholder", ["subexpr", "t", ["form-placeholder-link-text"], [], ["loc", [null, [9, 78], [9, 110]]]], "required", "required"], ["loc", [null, [9, 6], [9, 132]]]], ["inline", "t", ["form-link-title"], [], ["loc", [null, [12, 13], [12, 36]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.editingRecord.title", ["loc", [null, [13, 20], [13, 45]]]]], [], []], "class", "form-control", "placeholder", ["subexpr", "t", ["form-placeholder-link-title"], [], ["loc", [null, [13, 79], [13, 112]]]]], ["loc", [null, [13, 6], [13, 114]]]], ["inline", "t", ["form-link-class"], [], ["loc", [null, [16, 13], [16, 36]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.editingRecord.class", ["loc", [null, [17, 20], [17, 45]]]]], [], []], "class", "form-control", "placeholder", ["subexpr", "t", ["form-placeholder-link-class"], [], ["loc", [null, [17, 79], [17, 112]]]]], ["loc", [null, [17, 6], [17, 114]]]], ["inline", "t", ["form-link-target"], [], ["loc", [null, [20, 13], [20, 37]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.editingRecord.target", ["loc", [null, [21, 20], [21, 46]]]]], [], []], "class", "form-control", "placeholder", ["subexpr", "t", ["form-placeholder-link-href"], [], ["loc", [null, [21, 80], [21, 112]]]]], ["loc", [null, [21, 6], [21, 114]]]], ["inline", "t", ["form-link-rel"], [], ["loc", [null, [24, 13], [24, 34]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.editingRecord.rel", ["loc", [null, [25, 20], [25, 43]]]]], [], []], "class", "form-control", "placeholder", ["subexpr", "t", ["form-placeholder-link-rel"], [], ["loc", [null, [25, 77], [25, 108]]]]], ["loc", [null, [25, 6], [25, 110]]]], ["inline", "t", ["form-link-key"], [], ["loc", [null, [28, 13], [28, 34]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.editingRecord.key", ["loc", [null, [29, 20], [29, 43]]]]], [], []], "class", "form-control", "placeholder", ["subexpr", "t", ["form-placeholder-link-key"], [], ["loc", [null, [29, 77], [29, 108]]]]], ["loc", [null, [29, 6], [29, 110]]]]],
       locals: [],
       templates: []
     };
@@ -11141,8 +12541,6 @@ define("we-admin-blog/templates/menus/form", ["exports"], function (exports) {
           var el0 = dom.createDocumentFragment();
           var el1 = dom.createElement("h1");
           dom.setAttribute(el1, "class", "page-header");
-          var el2 = dom.createTextNode("Editar menu #");
-          dom.appendChild(el1, el2);
           var el2 = dom.createComment("");
           dom.appendChild(el1, el2);
           dom.appendChild(el0, el1);
@@ -11152,10 +12550,10 @@ define("we-admin-blog/templates/menus/form", ["exports"], function (exports) {
         },
         buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
           var morphs = new Array(1);
-          morphs[0] = dom.createMorphAt(dom.childAt(fragment, [0]), 1, 1);
+          morphs[0] = dom.createMorphAt(dom.childAt(fragment, [0]), 0, 0);
           return morphs;
         },
-        statements: [["content", "model.record.id", ["loc", [null, [2, 37], [2, 56]]]]],
+        statements: [["inline", "t", ["menu.edit"], ["name", ["subexpr", "@mut", [["get", "model.record.name", ["loc", [null, [2, 45], [2, 62]]]]], [], []]], ["loc", [null, [2, 24], [2, 64]]]]],
         locals: [],
         templates: []
       };
@@ -11186,17 +12584,19 @@ define("we-admin-blog/templates/menus/form", ["exports"], function (exports) {
           var el0 = dom.createDocumentFragment();
           var el1 = dom.createElement("h1");
           dom.setAttribute(el1, "class", "page-header");
-          var el2 = dom.createTextNode("Criar");
+          var el2 = dom.createComment("");
           dom.appendChild(el1, el2);
           dom.appendChild(el0, el1);
           var el1 = dom.createTextNode("\n");
           dom.appendChild(el0, el1);
           return el0;
         },
-        buildRenderNodes: function buildRenderNodes() {
-          return [];
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var morphs = new Array(1);
+          morphs[0] = dom.createMorphAt(dom.childAt(fragment, [0]), 0, 0);
+          return morphs;
         },
-        statements: [],
+        statements: [["inline", "t", ["menu.create"], [], ["loc", [null, [4, 24], [4, 43]]]]],
         locals: [],
         templates: []
       };
@@ -11242,7 +12642,9 @@ define("we-admin-blog/templates/menus/form", ["exports"], function (exports) {
         var el4 = dom.createTextNode("\n      ");
         dom.appendChild(el3, el4);
         var el4 = dom.createElement("label");
-        var el5 = dom.createTextNode("Nome*");
+        var el5 = dom.createComment("");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("*:");
         dom.appendChild(el4, el5);
         dom.appendChild(el3, el4);
         var el4 = dom.createTextNode("\n      ");
@@ -11259,7 +12661,9 @@ define("we-admin-blog/templates/menus/form", ["exports"], function (exports) {
         var el4 = dom.createTextNode("\n      ");
         dom.appendChild(el3, el4);
         var el4 = dom.createElement("label");
-        var el5 = dom.createTextNode("Class:");
+        var el5 = dom.createComment("");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode(":");
         dom.appendChild(el4, el5);
         dom.appendChild(el3, el4);
         var el4 = dom.createTextNode("\n      ");
@@ -11284,7 +12688,11 @@ define("we-admin-blog/templates/menus/form", ["exports"], function (exports) {
         var el4 = dom.createElement("i");
         dom.setAttribute(el4, "class", "fa fa-save");
         dom.appendChild(el3, el4);
-        var el4 = dom.createTextNode("\n      Salvar\n    ");
+        var el4 = dom.createTextNode("\n      ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createComment("");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n    ");
         dom.appendChild(el3, el4);
         dom.appendChild(el2, el3);
         var el3 = dom.createTextNode("\n    ");
@@ -11297,7 +12705,11 @@ define("we-admin-blog/templates/menus/form", ["exports"], function (exports) {
         var el4 = dom.createElement("i");
         dom.setAttribute(el4, "class", "fa fa-step-backward");
         dom.appendChild(el3, el4);
-        var el4 = dom.createTextNode("\n      Menus\n    ");
+        var el4 = dom.createTextNode("\n      ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createComment("");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n    ");
         dom.appendChild(el3, el4);
         dom.appendChild(el2, el3);
         var el3 = dom.createTextNode("\n  ");
@@ -11311,17 +12723,24 @@ define("we-admin-blog/templates/menus/form", ["exports"], function (exports) {
       buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
         var element0 = dom.childAt(fragment, [2]);
         var element1 = dom.childAt(element0, [1]);
-        var element2 = dom.childAt(element0, [3, 3]);
-        var morphs = new Array(5);
+        var element2 = dom.childAt(element1, [1]);
+        var element3 = dom.childAt(element1, [3]);
+        var element4 = dom.childAt(element0, [3]);
+        var element5 = dom.childAt(element4, [3]);
+        var morphs = new Array(9);
         morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
         morphs[1] = dom.createElementMorph(element0);
-        morphs[2] = dom.createMorphAt(dom.childAt(element1, [1]), 3, 3);
-        morphs[3] = dom.createMorphAt(dom.childAt(element1, [3]), 3, 3);
-        morphs[4] = dom.createElementMorph(element2);
+        morphs[2] = dom.createMorphAt(dom.childAt(element2, [1]), 0, 0);
+        morphs[3] = dom.createMorphAt(element2, 3, 3);
+        morphs[4] = dom.createMorphAt(dom.childAt(element3, [1]), 0, 0);
+        morphs[5] = dom.createMorphAt(element3, 3, 3);
+        morphs[6] = dom.createMorphAt(dom.childAt(element4, [1]), 3, 3);
+        morphs[7] = dom.createElementMorph(element5);
+        morphs[8] = dom.createMorphAt(element5, 3, 3);
         dom.insertBoundary(fragment, 0);
         return morphs;
       },
-      statements: [["block", "if", [["get", "model.record.id", ["loc", [null, [1, 6], [1, 21]]]]], [], 0, 1, ["loc", [null, [1, 0], [5, 7]]]], ["element", "action", ["save", ["get", "model.record", ["loc", [null, [7, 22], [7, 34]]]]], ["on", "submit"], ["loc", [null, [7, 6], [7, 48]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.record.name", ["loc", [null, [11, 20], [11, 37]]]]], [], []], "class", "form-control", "placeholder", "Nome do menu", "required", "required"], ["loc", [null, [11, 6], [11, 107]]]], ["inline", "textarea", [], ["value", ["subexpr", "@mut", [["get", "model.record.class", ["loc", [null, [15, 23], [15, 41]]]]], [], []], "class", "form-control"], ["loc", [null, [15, 6], [15, 64]]]], ["element", "action", ["goTo", "menus.index"], [], ["loc", [null, [23, 12], [23, 43]]]]],
+      statements: [["block", "if", [["get", "model.record.id", ["loc", [null, [1, 6], [1, 21]]]]], [], 0, 1, ["loc", [null, [1, 0], [5, 7]]]], ["element", "action", ["save", ["get", "model.record", ["loc", [null, [7, 22], [7, 34]]]]], ["on", "submit"], ["loc", [null, [7, 6], [7, 48]]]], ["inline", "t", ["form-menu-name"], [], ["loc", [null, [10, 13], [10, 35]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.record.name", ["loc", [null, [11, 20], [11, 37]]]]], [], []], "class", "form-control", "placeholder", ["subexpr", "t", ["form-placeholder-menu-name"], [], ["loc", [null, [11, 71], [11, 103]]]], "required", "required"], ["loc", [null, [11, 6], [11, 125]]]], ["inline", "t", ["form-menu-class"], [], ["loc", [null, [14, 13], [14, 36]]]], ["inline", "textarea", [], ["value", ["subexpr", "@mut", [["get", "model.record.class", ["loc", [null, [15, 23], [15, 41]]]]], [], []], "class", "form-control"], ["loc", [null, [15, 6], [15, 64]]]], ["inline", "t", ["Save"], [], ["loc", [null, [21, 6], [21, 18]]]], ["element", "action", ["goTo", "menus.index"], [], ["loc", [null, [23, 12], [23, 43]]]], ["inline", "t", ["menu.find"], [], ["loc", [null, [25, 6], [25, 23]]]]],
       locals: [],
       templates: [child0, child1]
     };
@@ -11358,14 +12777,20 @@ define("we-admin-blog/templates/menus/index", ["exports"], function (exports) {
           var el1 = dom.createElement("i");
           dom.setAttribute(el1, "class", "glyphicon glyphicon-plus");
           dom.appendChild(el0, el1);
-          var el1 = dom.createTextNode(" Criar\n");
+          var el1 = dom.createTextNode(" ");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n");
           dom.appendChild(el0, el1);
           return el0;
         },
-        buildRenderNodes: function buildRenderNodes() {
-          return [];
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var morphs = new Array(1);
+          morphs[0] = dom.createMorphAt(fragment, 3, 3, contextualElement);
+          return morphs;
         },
-        statements: [],
+        statements: [["inline", "t", ["menu.create"], [], ["loc", [null, [5, 45], [5, 64]]]]],
         locals: [],
         templates: []
       };
@@ -11398,7 +12823,7 @@ define("we-admin-blog/templates/menus/index", ["exports"], function (exports) {
         var el0 = dom.createDocumentFragment();
         var el1 = dom.createElement("h1");
         dom.setAttribute(el1, "class", "page-header");
-        var el2 = dom.createTextNode("Menus");
+        var el2 = dom.createComment("");
         dom.appendChild(el1, el2);
         dom.appendChild(el0, el1);
         var el1 = dom.createTextNode("\n\n");
@@ -11421,13 +12846,14 @@ define("we-admin-blog/templates/menus/index", ["exports"], function (exports) {
         return el0;
       },
       buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-        var morphs = new Array(2);
-        morphs[0] = dom.createMorphAt(dom.childAt(fragment, [2]), 1, 1);
-        morphs[1] = dom.createMorphAt(fragment, 6, 6, contextualElement);
+        var morphs = new Array(3);
+        morphs[0] = dom.createMorphAt(dom.childAt(fragment, [0]), 0, 0);
+        morphs[1] = dom.createMorphAt(dom.childAt(fragment, [2]), 1, 1);
+        morphs[2] = dom.createMorphAt(fragment, 6, 6, contextualElement);
         dom.insertBoundary(fragment, null);
         return morphs;
       },
-      statements: [["block", "link-to", ["menus.create"], ["class", "btn btn-default"], 0, null, ["loc", [null, [4, 2], [6, 14]]]], ["inline", "conteudos-table", [], ["data", ["subexpr", "@mut", [["get", "model.records", ["loc", [null, [10, 23], [10, 36]]]]], [], []], "columns", ["subexpr", "@mut", [["get", "model.columns", ["loc", [null, [10, 45], [10, 58]]]]], [], []], "pageSize", 25, "useFilteringByColumns", false, "deleteRecord", "deleteRecord"], ["loc", [null, [10, 0], [10, 128]]]]],
+      statements: [["inline", "t", ["menu.find"], [], ["loc", [null, [1, 24], [1, 41]]]], ["block", "link-to", ["menus.create"], ["class", "btn btn-default"], 0, null, ["loc", [null, [4, 2], [6, 14]]]], ["inline", "conteudos-table", [], ["data", ["subexpr", "@mut", [["get", "model.records", ["loc", [null, [10, 23], [10, 36]]]]], [], []], "columns", ["subexpr", "@mut", [["get", "model.columns", ["loc", [null, [10, 45], [10, 58]]]]], [], []], "pageSize", 25, "useFilteringByColumns", false, "deleteRecord", "deleteRecord"], ["loc", [null, [10, 0], [10, 128]]]]],
       locals: [],
       templates: [child0]
     };
@@ -11544,7 +12970,11 @@ define("we-admin-blog/templates/menus/item", ["exports"], function (exports) {
                 var el2 = dom.createElement("i");
                 dom.setAttribute(el2, "class", "glyphicon glyphicon-pencil");
                 dom.appendChild(el1, el2);
-                var el2 = dom.createTextNode(" Ediar\n            ");
+                var el2 = dom.createTextNode(" ");
+                dom.appendChild(el1, el2);
+                var el2 = dom.createComment("");
+                dom.appendChild(el1, el2);
+                var el2 = dom.createTextNode("\n            ");
                 dom.appendChild(el1, el2);
                 dom.appendChild(el0, el1);
                 var el1 = dom.createTextNode("\n");
@@ -11553,13 +12983,14 @@ define("we-admin-blog/templates/menus/item", ["exports"], function (exports) {
               },
               buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
                 var element0 = dom.childAt(fragment, [7]);
-                var morphs = new Array(3);
+                var morphs = new Array(4);
                 morphs[0] = dom.createMorphAt(fragment, 3, 3, contextualElement);
                 morphs[1] = dom.createMorphAt(dom.childAt(fragment, [5]), 0, 0);
                 morphs[2] = dom.createElementMorph(element0);
+                morphs[3] = dom.createMorphAt(element0, 3, 3);
                 return morphs;
               },
-              statements: [["content", "item.text", ["loc", [null, [20, 12], [20, 25]]]], ["content", "item.href", ["loc", [null, [20, 62], [20, 75]]]], ["element", "action", ["openLinkForm", ["get", "item", ["loc", [null, [22, 75], [22, 79]]]]], [], ["loc", [null, [22, 51], [22, 81]]]]],
+              statements: [["content", "item.text", ["loc", [null, [20, 12], [20, 25]]]], ["content", "item.href", ["loc", [null, [20, 62], [20, 75]]]], ["element", "action", ["openLinkForm", ["get", "item", ["loc", [null, [22, 75], [22, 79]]]]], [], ["loc", [null, [22, 51], [22, 81]]]], ["inline", "t", ["Edit"], [], ["loc", [null, [23, 57], [23, 69]]]]],
               locals: [],
               templates: []
             };
@@ -11716,11 +13147,11 @@ define("we-admin-blog/templates/menus/item", ["exports"], function (exports) {
               var el2 = dom.createElement("i");
               dom.setAttribute(el2, "class", "glyphicon glyphicon-link");
               dom.appendChild(el1, el2);
-              var el2 = dom.createTextNode("\n            Editar link \"");
+              var el2 = dom.createTextNode("\n            ");
               dom.appendChild(el1, el2);
               var el2 = dom.createComment("");
               dom.appendChild(el1, el2);
-              var el2 = dom.createTextNode("\"\n          ");
+              var el2 = dom.createTextNode("\n          ");
               dom.appendChild(el1, el2);
               dom.appendChild(el0, el1);
               var el1 = dom.createTextNode("\n");
@@ -11732,7 +13163,7 @@ define("we-admin-blog/templates/menus/item", ["exports"], function (exports) {
               morphs[0] = dom.createMorphAt(dom.childAt(fragment, [1]), 3, 3);
               return morphs;
             },
-            statements: [["content", "model.editingRecord.text", ["loc", [null, [39, 25], [39, 53]]]]],
+            statements: [["inline", "t", ["Edit"], [], ["loc", [null, [39, 12], [39, 24]]]]],
             locals: [],
             templates: []
           };
@@ -11770,17 +13201,23 @@ define("we-admin-blog/templates/menus/item", ["exports"], function (exports) {
               var el2 = dom.createElement("i");
               dom.setAttribute(el2, "class", "glyphicon glyphicon-link");
               dom.appendChild(el1, el2);
-              var el2 = dom.createTextNode("\n            Criar link\n          ");
+              var el2 = dom.createTextNode("\n            ");
+              dom.appendChild(el1, el2);
+              var el2 = dom.createComment("");
+              dom.appendChild(el1, el2);
+              var el2 = dom.createTextNode("\n          ");
               dom.appendChild(el1, el2);
               dom.appendChild(el0, el1);
               var el1 = dom.createTextNode("\n");
               dom.appendChild(el0, el1);
               return el0;
             },
-            buildRenderNodes: function buildRenderNodes() {
-              return [];
+            buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+              var morphs = new Array(1);
+              morphs[0] = dom.createMorphAt(dom.childAt(fragment, [1]), 3, 3);
+              return morphs;
             },
-            statements: [],
+            statements: [["inline", "t", ["link.create"], [], ["loc", [null, [44, 12], [44, 31]]]]],
             locals: [],
             templates: []
           };
@@ -11879,8 +13316,8 @@ define("we-admin-blog/templates/menus/item", ["exports"], function (exports) {
                   "column": 8
                 },
                 "end": {
-                  "line": 52,
-                  "column": 74
+                  "line": 54,
+                  "column": 8
                 }
               },
               "moduleName": "we-admin-blog/templates/menus/item.hbs"
@@ -11891,14 +13328,20 @@ define("we-admin-blog/templates/menus/item", ["exports"], function (exports) {
             hasRendered: false,
             buildFragment: function buildFragment(dom) {
               var el0 = dom.createDocumentFragment();
-              var el1 = dom.createTextNode("Cancelar");
+              var el1 = dom.createTextNode("          ");
+              dom.appendChild(el0, el1);
+              var el1 = dom.createComment("");
+              dom.appendChild(el0, el1);
+              var el1 = dom.createTextNode("\n");
               dom.appendChild(el0, el1);
               return el0;
             },
-            buildRenderNodes: function buildRenderNodes() {
-              return [];
+            buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+              var morphs = new Array(1);
+              morphs[0] = dom.createMorphAt(fragment, 1, 1, contextualElement);
+              return morphs;
             },
-            statements: [],
+            statements: [["inline", "t", ["Cancel"], [], ["loc", [null, [53, 10], [53, 24]]]]],
             locals: [],
             templates: []
           };
@@ -11911,12 +13354,12 @@ define("we-admin-blog/templates/menus/item", ["exports"], function (exports) {
               "loc": {
                 "source": null,
                 "start": {
-                  "line": 53,
+                  "line": 55,
                   "column": 8
                 },
                 "end": {
-                  "line": 53,
-                  "column": 73
+                  "line": 57,
+                  "column": 8
                 }
               },
               "moduleName": "we-admin-blog/templates/menus/item.hbs"
@@ -11927,14 +13370,20 @@ define("we-admin-blog/templates/menus/item", ["exports"], function (exports) {
             hasRendered: false,
             buildFragment: function buildFragment(dom) {
               var el0 = dom.createDocumentFragment();
-              var el1 = dom.createTextNode("Salvar");
+              var el1 = dom.createTextNode("          ");
+              dom.appendChild(el0, el1);
+              var el1 = dom.createComment("");
+              dom.appendChild(el0, el1);
+              var el1 = dom.createTextNode("\n");
               dom.appendChild(el0, el1);
               return el0;
             },
-            buildRenderNodes: function buildRenderNodes() {
-              return [];
+            buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+              var morphs = new Array(1);
+              morphs[0] = dom.createMorphAt(fragment, 1, 1, contextualElement);
+              return morphs;
             },
-            statements: [],
+            statements: [["inline", "t", ["Save"], [], ["loc", [null, [56, 10], [56, 22]]]]],
             locals: [],
             templates: []
           };
@@ -11950,7 +13399,7 @@ define("we-admin-blog/templates/menus/item", ["exports"], function (exports) {
                 "column": 6
               },
               "end": {
-                "line": 54,
+                "line": 58,
                 "column": 6
               }
             },
@@ -11962,25 +13411,21 @@ define("we-admin-blog/templates/menus/item", ["exports"], function (exports) {
           hasRendered: false,
           buildFragment: function buildFragment(dom) {
             var el0 = dom.createDocumentFragment();
-            var el1 = dom.createTextNode("        ");
-            dom.appendChild(el0, el1);
             var el1 = dom.createComment("");
             dom.appendChild(el0, el1);
-            var el1 = dom.createTextNode("\n        ");
-            dom.appendChild(el0, el1);
             var el1 = dom.createComment("");
-            dom.appendChild(el0, el1);
-            var el1 = dom.createTextNode("\n");
             dom.appendChild(el0, el1);
             return el0;
           },
           buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
             var morphs = new Array(2);
-            morphs[0] = dom.createMorphAt(fragment, 1, 1, contextualElement);
-            morphs[1] = dom.createMorphAt(fragment, 3, 3, contextualElement);
+            morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+            morphs[1] = dom.createMorphAt(fragment, 1, 1, contextualElement);
+            dom.insertBoundary(fragment, 0);
+            dom.insertBoundary(fragment, null);
             return morphs;
           },
-          statements: [["block", "bs-button", [], ["onClick", ["subexpr", "action", [["get", "modal.close", ["loc", [null, [52, 37], [52, 48]]]]], [], ["loc", [null, [52, 29], [52, 49]]]], "type", "default"], 0, null, ["loc", [null, [52, 8], [52, 88]]]], ["block", "bs-button", [], ["onClick", ["subexpr", "action", [["get", "modal.submit", ["loc", [null, [53, 37], [53, 49]]]]], [], ["loc", [null, [53, 29], [53, 50]]]], "type", "primary"], 1, null, ["loc", [null, [53, 8], [53, 87]]]]],
+          statements: [["block", "bs-button", [], ["onClick", ["subexpr", "action", [["get", "modal.close", ["loc", [null, [52, 37], [52, 48]]]]], [], ["loc", [null, [52, 29], [52, 49]]]], "type", "default"], 0, null, ["loc", [null, [52, 8], [54, 22]]]], ["block", "bs-button", [], ["onClick", ["subexpr", "action", [["get", "modal.submit", ["loc", [null, [55, 37], [55, 49]]]]], [], ["loc", [null, [55, 29], [55, 50]]]], "type", "primary"], 1, null, ["loc", [null, [55, 8], [57, 22]]]]],
           locals: ["footer"],
           templates: [child0, child1]
         };
@@ -11996,7 +13441,7 @@ define("we-admin-blog/templates/menus/item", ["exports"], function (exports) {
               "column": 4
             },
             "end": {
-              "line": 55,
+              "line": 59,
               "column": 4
             }
           },
@@ -12025,7 +13470,7 @@ define("we-admin-blog/templates/menus/item", ["exports"], function (exports) {
           dom.insertBoundary(fragment, null);
           return morphs;
         },
-        statements: [["block", "modal.header", [], [], 0, null, ["loc", [null, [35, 6], [47, 23]]]], ["block", "modal.body", [], [], 1, null, ["loc", [null, [48, 6], [50, 21]]]], ["block", "modal.footer", [], [], 2, null, ["loc", [null, [51, 6], [54, 23]]]]],
+        statements: [["block", "modal.header", [], [], 0, null, ["loc", [null, [35, 6], [47, 23]]]], ["block", "modal.body", [], [], 1, null, ["loc", [null, [48, 6], [50, 21]]]], ["block", "modal.footer", [], [], 2, null, ["loc", [null, [51, 6], [58, 23]]]]],
         locals: ["modal"],
         templates: [child0, child1, child2]
       };
@@ -12044,7 +13489,7 @@ define("we-admin-blog/templates/menus/item", ["exports"], function (exports) {
             "column": 0
           },
           "end": {
-            "line": 57,
+            "line": 61,
             "column": 6
           }
         },
@@ -12084,7 +13529,11 @@ define("we-admin-blog/templates/menus/item", ["exports"], function (exports) {
         var el4 = dom.createElement("i");
         dom.setAttribute(el4, "class", "glyphicon glyphicon-plus");
         dom.appendChild(el3, el4);
-        var el4 = dom.createTextNode(" Add link\n    ");
+        var el4 = dom.createTextNode(" ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createComment("");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n    ");
         dom.appendChild(el3, el4);
         dom.appendChild(el2, el3);
         var el3 = dom.createTextNode("\n");
@@ -12124,15 +13573,16 @@ define("we-admin-blog/templates/menus/item", ["exports"], function (exports) {
         var element2 = dom.childAt(fragment, [2]);
         var element3 = dom.childAt(element2, [3]);
         var element4 = dom.childAt(element3, [1]);
-        var morphs = new Array(5);
+        var morphs = new Array(6);
         morphs[0] = dom.createMorphAt(dom.childAt(fragment, [0]), 0, 0);
         morphs[1] = dom.createElementMorph(element4);
-        morphs[2] = dom.createMorphAt(element3, 3, 3);
-        morphs[3] = dom.createMorphAt(dom.childAt(element2, [5]), 1, 1);
-        morphs[4] = dom.createMorphAt(dom.childAt(element2, [7]), 1, 1);
+        morphs[2] = dom.createMorphAt(element4, 3, 3);
+        morphs[3] = dom.createMorphAt(element3, 3, 3);
+        morphs[4] = dom.createMorphAt(dom.childAt(element2, [5]), 1, 1);
+        morphs[5] = dom.createMorphAt(dom.childAt(element2, [7]), 1, 1);
         return morphs;
       },
-      statements: [["inline", "partial", ["menus/form"], [], ["loc", [null, [1, 28], [1, 52]]]], ["element", "action", ["openLinkForm"], [], ["loc", [null, [5, 36], [5, 61]]]], ["block", "if", [["get", "model.record.sorted", ["loc", [null, [8, 10], [8, 29]]]]], [], 0, null, ["loc", [null, [8, 4], [10, 11]]]], ["block", "sortable-group", [], ["tagName", "ul", "class", "list-group", "onChange", "reorderItems"], 1, null, ["loc", [null, [13, 4], [28, 23]]]], ["block", "bs-modal", [], ["open", ["subexpr", "@mut", [["get", "model.editingRecord", ["loc", [null, [32, 11], [32, 30]]]]], [], []], "onHidden", ["subexpr", "action", ["onCloseLinkEditModal"], [], ["loc", [null, [33, 15], [33, 46]]]]], 2, null, ["loc", [null, [31, 4], [55, 17]]]]],
+      statements: [["inline", "partial", ["menus/form"], [], ["loc", [null, [1, 28], [1, 52]]]], ["element", "action", ["openLinkForm"], [], ["loc", [null, [5, 36], [5, 61]]]], ["inline", "t", ["link.create"], [], ["loc", [null, [6, 47], [6, 66]]]], ["block", "if", [["get", "model.record.sorted", ["loc", [null, [8, 10], [8, 29]]]]], [], 0, null, ["loc", [null, [8, 4], [10, 11]]]], ["block", "sortable-group", [], ["tagName", "ul", "class", "list-group", "onChange", "reorderItems"], 1, null, ["loc", [null, [13, 4], [28, 23]]]], ["block", "bs-modal", [], ["open", ["subexpr", "@mut", [["get", "model.editingRecord", ["loc", [null, [32, 11], [32, 30]]]]], [], []], "onHidden", ["subexpr", "action", ["onCloseLinkEditModal"], [], ["loc", [null, [33, 15], [33, 46]]]]], 2, null, ["loc", [null, [31, 4], [59, 17]]]]],
       locals: [],
       templates: [child0, child1, child2]
     };
@@ -12145,7 +13595,7 @@ define("we-admin-blog/templates/menus/list-item-actions", ["exports"], function 
         meta: {
           "fragmentReason": {
             "name": "missing-wrapper",
-            "problems": ["wrong-type"]
+            "problems": ["multiple-nodes", "wrong-type"]
           },
           "revision": "Ember@2.6.2",
           "loc": {
@@ -12155,8 +13605,8 @@ define("we-admin-blog/templates/menus/list-item-actions", ["exports"], function 
               "column": 0
             },
             "end": {
-              "line": 1,
-              "column": 76
+              "line": 4,
+              "column": 0
             }
           },
           "moduleName": "we-admin-blog/templates/menus/list-item-actions.hbs"
@@ -12167,14 +13617,25 @@ define("we-admin-blog/templates/menus/list-item-actions", ["exports"], function 
         hasRendered: false,
         buildFragment: function buildFragment(dom) {
           var el0 = dom.createDocumentFragment();
-          var el1 = dom.createTextNode("Ver/editar");
+          var el1 = dom.createTextNode("  ");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createElement("i");
+          dom.setAttribute(el1, "class", "glyphicon glyphicon-pencil text-success");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n  ");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n");
           dom.appendChild(el0, el1);
           return el0;
         },
-        buildRenderNodes: function buildRenderNodes() {
-          return [];
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var morphs = new Array(1);
+          morphs[0] = dom.createMorphAt(fragment, 3, 3, contextualElement);
+          return morphs;
         },
-        statements: [],
+        statements: [["inline", "t", ["Edit"], [], ["loc", [null, [3, 2], [3, 14]]]]],
         locals: [],
         templates: []
       };
@@ -12193,7 +13654,7 @@ define("we-admin-blog/templates/menus/list-item-actions", ["exports"], function 
             "column": 0
           },
           "end": {
-            "line": 4,
+            "line": 9,
             "column": 9
           }
         },
@@ -12212,20 +13673,30 @@ define("we-admin-blog/templates/menus/list-item-actions", ["exports"], function 
         var el1 = dom.createElement("button");
         dom.setAttribute(el1, "type", "button");
         dom.setAttribute(el1, "class", "btn btn-default btn-sm");
-        var el2 = dom.createTextNode("\n  Deletar\n");
+        var el2 = dom.createTextNode("\n  ");
+        dom.appendChild(el1, el2);
+        var el2 = dom.createElement("i");
+        dom.setAttribute(el2, "class", "glyphicon glyphicon-remove text-danger");
+        dom.appendChild(el1, el2);
+        var el2 = dom.createTextNode("\n  ");
+        dom.appendChild(el1, el2);
+        var el2 = dom.createComment("");
+        dom.appendChild(el1, el2);
+        var el2 = dom.createTextNode("\n");
         dom.appendChild(el1, el2);
         dom.appendChild(el0, el1);
         return el0;
       },
       buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
         var element0 = dom.childAt(fragment, [2]);
-        var morphs = new Array(2);
+        var morphs = new Array(3);
         morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
         morphs[1] = dom.createElementMorph(element0);
+        morphs[2] = dom.createMorphAt(element0, 3, 3);
         dom.insertBoundary(fragment, 0);
         return morphs;
       },
-      statements: [["block", "link-to", ["menus.item", ["get", "record.id", ["loc", [null, [1, 24], [1, 33]]]]], ["class", "btn btn-default btn-sm"], 0, null, ["loc", [null, [1, 0], [1, 88]]]], ["element", "action", ["deleteRecord", ["get", "record", ["loc", [null, [2, 32], [2, 38]]]]], [], ["loc", [null, [2, 8], [2, 40]]]]],
+      statements: [["block", "link-to", ["menus.item", ["get", "record.id", ["loc", [null, [1, 24], [1, 33]]]]], ["class", "btn btn-default btn-sm"], 0, null, ["loc", [null, [1, 0], [4, 12]]]], ["element", "action", ["deleteRecord", ["get", "record", ["loc", [null, [6, 32], [6, 38]]]]], [], ["loc", [null, [6, 8], [6, 40]]]], ["inline", "t", ["Delete"], [], ["loc", [null, [8, 2], [8, 16]]]]],
       locals: [],
       templates: [child0]
     };
@@ -12369,48 +13840,6 @@ define("we-admin-blog/templates/partials/header", ["exports"], function (exports
             "loc": {
               "source": null,
               "start": {
-                "line": 9,
-                "column": 2
-              },
-              "end": {
-                "line": 11,
-                "column": 2
-              }
-            },
-            "moduleName": "we-admin-blog/templates/partials/header.hbs"
-          },
-          isEmpty: false,
-          arity: 0,
-          cachedFragment: null,
-          hasRendered: false,
-          buildFragment: function buildFragment(dom) {
-            var el0 = dom.createDocumentFragment();
-            var el1 = dom.createTextNode("			");
-            dom.appendChild(el0, el1);
-            var el1 = dom.createComment("");
-            dom.appendChild(el0, el1);
-            var el1 = dom.createTextNode("\n");
-            dom.appendChild(el0, el1);
-            return el0;
-          },
-          buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-            var morphs = new Array(1);
-            morphs[0] = dom.createMorphAt(fragment, 1, 1, contextualElement);
-            return morphs;
-          },
-          statements: [["content", "appName", ["loc", [null, [10, 3], [10, 14]]]]],
-          locals: [],
-          templates: []
-        };
-      })();
-      var child2 = (function () {
-        return {
-          meta: {
-            "fragmentReason": false,
-            "revision": "Ember@2.6.2",
-            "loc": {
-              "source": null,
-              "start": {
                 "line": 13,
                 "column": 2
               },
@@ -12484,9 +13913,19 @@ define("we-admin-blog/templates/partials/header", ["exports"], function (exports
           dom.appendChild(el1, el2);
           var el2 = dom.createComment("");
           dom.appendChild(el1, el2);
-          var el2 = dom.createComment("");
+          var el2 = dom.createTextNode("    ");
           dom.appendChild(el1, el2);
-          var el2 = dom.createTextNode("	");
+          var el2 = dom.createElement("a");
+          dom.setAttribute(el2, "href", "/");
+          dom.setAttribute(el2, "class", "navbar-brand");
+          var el3 = dom.createTextNode("\n			");
+          dom.appendChild(el2, el3);
+          var el3 = dom.createComment("");
+          dom.appendChild(el2, el3);
+          var el3 = dom.createTextNode("\n    ");
+          dom.appendChild(el2, el3);
+          dom.appendChild(el1, el2);
+          var el2 = dom.createTextNode("\n	");
           dom.appendChild(el1, el2);
           dom.appendChild(el0, el1);
           var el1 = dom.createTextNode("\n");
@@ -12499,14 +13938,14 @@ define("we-admin-blog/templates/partials/header", ["exports"], function (exports
           var element0 = dom.childAt(fragment, [1]);
           var morphs = new Array(3);
           morphs[0] = dom.createMorphAt(element0, 1, 1);
-          morphs[1] = dom.createMorphAt(element0, 2, 2);
+          morphs[1] = dom.createMorphAt(dom.childAt(element0, [3]), 1, 1);
           morphs[2] = dom.createMorphAt(fragment, 3, 3, contextualElement);
           dom.insertBoundary(fragment, null);
           return morphs;
         },
-        statements: [["block", "navbar.toggle", [], [], 0, null, ["loc", [null, [3, 4], [8, 22]]]], ["block", "link-to", ["index"], ["class", "navbar-brand"], 1, null, ["loc", [null, [9, 2], [11, 14]]]], ["block", "navbar.content", [], [], 2, null, ["loc", [null, [13, 2], [16, 20]]]]],
+        statements: [["block", "navbar.toggle", [], [], 0, null, ["loc", [null, [3, 4], [8, 22]]]], ["content", "appName", ["loc", [null, [10, 3], [10, 14]]]], ["block", "navbar.content", [], [], 1, null, ["loc", [null, [13, 2], [16, 20]]]]],
         locals: ["navbar"],
-        templates: [child0, child1, child2]
+        templates: [child0, child1]
       };
     })();
     return {
@@ -13337,7 +14776,7 @@ define("we-admin-blog/templates/partials/sidebar-menu", ["exports"], function (e
             var el1 = dom.createTextNode("          ");
             dom.appendChild(el0, el1);
             var el1 = dom.createElement("i");
-            dom.setAttribute(el1, "class", "fa fa-file-text");
+            dom.setAttribute(el1, "class", "fa fa-bar-chart");
             dom.appendChild(el0, el1);
             var el1 = dom.createTextNode(" ");
             dom.appendChild(el0, el1);
@@ -13352,7 +14791,7 @@ define("we-admin-blog/templates/partials/sidebar-menu", ["exports"], function (e
             morphs[0] = dom.createMorphAt(fragment, 3, 3, contextualElement);
             return morphs;
           },
-          statements: [["inline", "t", ["article.find"], [], ["loc", [null, [6, 42], [6, 62]]]]],
+          statements: [["inline", "t", ["admin.Dashboard"], [], ["loc", [null, [6, 42], [6, 65]]]]],
           locals: [],
           templates: []
         };
@@ -13384,7 +14823,7 @@ define("we-admin-blog/templates/partials/sidebar-menu", ["exports"], function (e
             var el1 = dom.createTextNode("          ");
             dom.appendChild(el0, el1);
             var el1 = dom.createElement("i");
-            dom.setAttribute(el1, "class", "fa fa-bars");
+            dom.setAttribute(el1, "class", "fa fa-file-text");
             dom.appendChild(el0, el1);
             var el1 = dom.createTextNode(" ");
             dom.appendChild(el0, el1);
@@ -13399,7 +14838,7 @@ define("we-admin-blog/templates/partials/sidebar-menu", ["exports"], function (e
             morphs[0] = dom.createMorphAt(fragment, 3, 3, contextualElement);
             return morphs;
           },
-          statements: [["inline", "t", ["menu.find"], [], ["loc", [null, [11, 37], [11, 54]]]]],
+          statements: [["inline", "t", ["article.find"], [], ["loc", [null, [11, 42], [11, 62]]]]],
           locals: [],
           templates: []
         };
@@ -13431,7 +14870,7 @@ define("we-admin-blog/templates/partials/sidebar-menu", ["exports"], function (e
             var el1 = dom.createTextNode("          ");
             dom.appendChild(el0, el1);
             var el1 = dom.createElement("i");
-            dom.setAttribute(el1, "class", "fa fa-tags");
+            dom.setAttribute(el1, "class", "fa fa-bars");
             dom.appendChild(el0, el1);
             var el1 = dom.createTextNode(" ");
             dom.appendChild(el0, el1);
@@ -13446,7 +14885,7 @@ define("we-admin-blog/templates/partials/sidebar-menu", ["exports"], function (e
             morphs[0] = dom.createMorphAt(fragment, 3, 3, contextualElement);
             return morphs;
           },
-          statements: [["inline", "t", ["vocabulary.find"], [], ["loc", [null, [16, 37], [16, 60]]]]],
+          statements: [["inline", "t", ["menu.find"], [], ["loc", [null, [16, 37], [16, 54]]]]],
           locals: [],
           templates: []
         };
@@ -13478,7 +14917,7 @@ define("we-admin-blog/templates/partials/sidebar-menu", ["exports"], function (e
             var el1 = dom.createTextNode("          ");
             dom.appendChild(el0, el1);
             var el1 = dom.createElement("i");
-            dom.setAttribute(el1, "class", "fa fa-random");
+            dom.setAttribute(el1, "class", "fa fa-tags");
             dom.appendChild(el0, el1);
             var el1 = dom.createTextNode(" ");
             dom.appendChild(el0, el1);
@@ -13493,7 +14932,7 @@ define("we-admin-blog/templates/partials/sidebar-menu", ["exports"], function (e
             morphs[0] = dom.createMorphAt(fragment, 3, 3, contextualElement);
             return morphs;
           },
-          statements: [["inline", "t", ["urlAlias.find"], [], ["loc", [null, [21, 39], [21, 60]]]]],
+          statements: [["inline", "t", ["vocabulary.find"], [], ["loc", [null, [21, 37], [21, 60]]]]],
           locals: [],
           templates: []
         };
@@ -13525,7 +14964,7 @@ define("we-admin-blog/templates/partials/sidebar-menu", ["exports"], function (e
             var el1 = dom.createTextNode("          ");
             dom.appendChild(el0, el1);
             var el1 = dom.createElement("i");
-            dom.setAttribute(el1, "class", "fa fa-users");
+            dom.setAttribute(el1, "class", "fa fa-random");
             dom.appendChild(el0, el1);
             var el1 = dom.createTextNode(" ");
             dom.appendChild(el0, el1);
@@ -13540,7 +14979,7 @@ define("we-admin-blog/templates/partials/sidebar-menu", ["exports"], function (e
             morphs[0] = dom.createMorphAt(fragment, 3, 3, contextualElement);
             return morphs;
           },
-          statements: [["inline", "t", ["user.find"], [], ["loc", [null, [26, 38], [26, 55]]]]],
+          statements: [["inline", "t", ["urlAlias.find"], [], ["loc", [null, [26, 39], [26, 60]]]]],
           locals: [],
           templates: []
         };
@@ -13572,8 +15011,7 @@ define("we-admin-blog/templates/partials/sidebar-menu", ["exports"], function (e
             var el1 = dom.createTextNode("          ");
             dom.appendChild(el0, el1);
             var el1 = dom.createElement("i");
-            dom.setAttribute(el1, "class", "fa fa-credit-card");
-            dom.setAttribute(el1, "aria-hidden", "true");
+            dom.setAttribute(el1, "class", "fa fa-users");
             dom.appendChild(el0, el1);
             var el1 = dom.createTextNode(" ");
             dom.appendChild(el0, el1);
@@ -13588,7 +15026,7 @@ define("we-admin-blog/templates/partials/sidebar-menu", ["exports"], function (e
             morphs[0] = dom.createMorphAt(fragment, 3, 3, contextualElement);
             return morphs;
           },
-          statements: [["inline", "t", ["roles.link"], [], ["loc", [null, [31, 63], [31, 81]]]]],
+          statements: [["inline", "t", ["user.find"], [], ["loc", [null, [31, 38], [31, 55]]]]],
           locals: [],
           templates: []
         };
@@ -13620,6 +15058,54 @@ define("we-admin-blog/templates/partials/sidebar-menu", ["exports"], function (e
             var el1 = dom.createTextNode("          ");
             dom.appendChild(el0, el1);
             var el1 = dom.createElement("i");
+            dom.setAttribute(el1, "class", "fa fa-credit-card");
+            dom.setAttribute(el1, "aria-hidden", "true");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createTextNode(" ");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createComment("");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createTextNode("\n");
+            dom.appendChild(el0, el1);
+            return el0;
+          },
+          buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+            var morphs = new Array(1);
+            morphs[0] = dom.createMorphAt(fragment, 3, 3, contextualElement);
+            return morphs;
+          },
+          statements: [["inline", "t", ["roles.link"], [], ["loc", [null, [36, 63], [36, 81]]]]],
+          locals: [],
+          templates: []
+        };
+      })();
+      var child7 = (function () {
+        return {
+          meta: {
+            "fragmentReason": false,
+            "revision": "Ember@2.6.2",
+            "loc": {
+              "source": null,
+              "start": {
+                "line": 40,
+                "column": 8
+              },
+              "end": {
+                "line": 42,
+                "column": 8
+              }
+            },
+            "moduleName": "we-admin-blog/templates/partials/sidebar-menu.hbs"
+          },
+          isEmpty: false,
+          arity: 0,
+          cachedFragment: null,
+          hasRendered: false,
+          buildFragment: function buildFragment(dom) {
+            var el0 = dom.createDocumentFragment();
+            var el1 = dom.createTextNode("          ");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createElement("i");
             dom.setAttribute(el1, "class", "fa fa-unlock-alt");
             dom.appendChild(el0, el1);
             var el1 = dom.createTextNode(" ");
@@ -13635,7 +15121,7 @@ define("we-admin-blog/templates/partials/sidebar-menu", ["exports"], function (e
             morphs[0] = dom.createMorphAt(fragment, 3, 3, contextualElement);
             return morphs;
           },
-          statements: [["inline", "t", ["permission.link"], [], ["loc", [null, [36, 43], [36, 66]]]]],
+          statements: [["inline", "t", ["permission.link"], [], ["loc", [null, [41, 43], [41, 66]]]]],
           locals: [],
           templates: []
         };
@@ -13651,7 +15137,7 @@ define("we-admin-blog/templates/partials/sidebar-menu", ["exports"], function (e
               "column": 4
             },
             "end": {
-              "line": 39,
+              "line": 44,
               "column": 4
             }
           },
@@ -13670,7 +15156,17 @@ define("we-admin-blog/templates/partials/sidebar-menu", ["exports"], function (e
           dom.appendChild(el1, el2);
           var el2 = dom.createComment("");
           dom.appendChild(el1, el2);
-          var el2 = dom.createTextNode("       ");
+          var el2 = dom.createTextNode("      ");
+          dom.appendChild(el1, el2);
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n      ");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createElement("li");
+          var el2 = dom.createTextNode("\n");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createComment("");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createTextNode("      ");
           dom.appendChild(el1, el2);
           dom.appendChild(el0, el1);
           var el1 = dom.createTextNode("\n      ");
@@ -13738,7 +15234,7 @@ define("we-admin-blog/templates/partials/sidebar-menu", ["exports"], function (e
           return el0;
         },
         buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-          var morphs = new Array(7);
+          var morphs = new Array(8);
           morphs[0] = dom.createMorphAt(dom.childAt(fragment, [1]), 1, 1);
           morphs[1] = dom.createMorphAt(dom.childAt(fragment, [3]), 1, 1);
           morphs[2] = dom.createMorphAt(dom.childAt(fragment, [5]), 1, 1);
@@ -13746,11 +15242,12 @@ define("we-admin-blog/templates/partials/sidebar-menu", ["exports"], function (e
           morphs[4] = dom.createMorphAt(dom.childAt(fragment, [9]), 1, 1);
           morphs[5] = dom.createMorphAt(dom.childAt(fragment, [11]), 1, 1);
           morphs[6] = dom.createMorphAt(dom.childAt(fragment, [13]), 1, 1);
+          morphs[7] = dom.createMorphAt(dom.childAt(fragment, [15]), 1, 1);
           return morphs;
         },
-        statements: [["block", "link-to", ["articles.index"], [], 0, null, ["loc", [null, [5, 8], [7, 20]]]], ["block", "link-to", ["menus.index"], [], 1, null, ["loc", [null, [10, 8], [12, 20]]]], ["block", "link-to", ["vocabulary"], [], 2, null, ["loc", [null, [15, 8], [17, 20]]]], ["block", "link-to", ["url-alia.index"], [], 3, null, ["loc", [null, [20, 8], [22, 20]]]], ["block", "link-to", ["users.index"], [], 4, null, ["loc", [null, [25, 8], [27, 20]]]], ["block", "link-to", ["roles"], [], 5, null, ["loc", [null, [30, 8], [32, 20]]]], ["block", "link-to", ["permissions"], [], 6, null, ["loc", [null, [35, 8], [37, 20]]]]],
+        statements: [["block", "link-to", ["index"], [], 0, null, ["loc", [null, [5, 8], [7, 20]]]], ["block", "link-to", ["articles.index"], [], 1, null, ["loc", [null, [10, 8], [12, 20]]]], ["block", "link-to", ["menus.index"], [], 2, null, ["loc", [null, [15, 8], [17, 20]]]], ["block", "link-to", ["vocabulary"], [], 3, null, ["loc", [null, [20, 8], [22, 20]]]], ["block", "link-to", ["url-alia.index"], [], 4, null, ["loc", [null, [25, 8], [27, 20]]]], ["block", "link-to", ["users.index"], [], 5, null, ["loc", [null, [30, 8], [32, 20]]]], ["block", "link-to", ["roles"], [], 6, null, ["loc", [null, [35, 8], [37, 20]]]], ["block", "link-to", ["permissions"], [], 7, null, ["loc", [null, [40, 8], [42, 20]]]]],
         locals: [],
-        templates: [child0, child1, child2, child3, child4, child5, child6]
+        templates: [child0, child1, child2, child3, child4, child5, child6, child7]
       };
     })();
     return {
@@ -13766,7 +15263,7 @@ define("we-admin-blog/templates/partials/sidebar-menu", ["exports"], function (e
             "column": 0
           },
           "end": {
-            "line": 41,
+            "line": 46,
             "column": 6
           }
         },
@@ -13802,7 +15299,7 @@ define("we-admin-blog/templates/partials/sidebar-menu", ["exports"], function (e
         morphs[0] = dom.createMorphAt(dom.childAt(fragment, [0, 1]), 1, 1);
         return morphs;
       },
-      statements: [["block", "ember-metismenu", [], ["classNames", "nav"], 0, null, ["loc", [null, [3, 4], [39, 24]]]]],
+      statements: [["block", "ember-metismenu", [], ["classNames", "nav"], 0, null, ["loc", [null, [3, 4], [44, 24]]]]],
       locals: [],
       templates: [child0]
     };
@@ -13990,7 +15487,7 @@ define("we-admin-blog/templates/permissions", ["exports"], function (exports) {
         var el3 = dom.createTextNode("\n\n");
         dom.appendChild(el2, el3);
         var el3 = dom.createElement("h1");
-        var el4 = dom.createTextNode("Permissões");
+        var el4 = dom.createComment("");
         dom.appendChild(el3, el4);
         dom.appendChild(el2, el3);
         var el3 = dom.createTextNode("\n\n");
@@ -14039,13 +15536,15 @@ define("we-admin-blog/templates/permissions", ["exports"], function (exports) {
         return el0;
       },
       buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-        var element1 = dom.childAt(fragment, [0, 0, 3]);
-        var morphs = new Array(2);
-        morphs[0] = dom.createMorphAt(dom.childAt(element1, [1, 1]), 3, 3);
-        morphs[1] = dom.createMorphAt(dom.childAt(element1, [3]), 1, 1);
+        var element1 = dom.childAt(fragment, [0, 0]);
+        var element2 = dom.childAt(element1, [3]);
+        var morphs = new Array(3);
+        morphs[0] = dom.createMorphAt(dom.childAt(element1, [1]), 0, 0);
+        morphs[1] = dom.createMorphAt(dom.childAt(element2, [1, 1]), 3, 3);
+        morphs[2] = dom.createMorphAt(dom.childAt(element2, [3]), 1, 1);
         return morphs;
       },
-      statements: [["block", "each", [["get", "model.roleNames", ["loc", [null, [9, 14], [9, 29]]]]], [], 0, null, ["loc", [null, [9, 6], [11, 15]]]], ["block", "each", [["get", "model.permissionNames", ["loc", [null, [15, 12], [15, 33]]]]], [], 1, null, ["loc", [null, [15, 4], [31, 13]]]]],
+      statements: [["inline", "t", ["permission.link"], [], ["loc", [null, [3, 4], [3, 27]]]], ["block", "each", [["get", "model.roleNames", ["loc", [null, [9, 14], [9, 29]]]]], [], 0, null, ["loc", [null, [9, 6], [11, 15]]]], ["block", "each", [["get", "model.permissionNames", ["loc", [null, [15, 12], [15, 33]]]]], [], 1, null, ["loc", [null, [15, 4], [31, 13]]]]],
       locals: [],
       templates: [child0, child1]
     };
@@ -14135,7 +15634,7 @@ define("we-admin-blog/templates/profile/change-password", ["exports"], function 
         var el3 = dom.createTextNode("\n    ");
         dom.appendChild(el2, el3);
         var el3 = dom.createElement("h1");
-        var el4 = dom.createTextNode("Mudar senha");
+        var el4 = dom.createComment("");
         dom.appendChild(el3, el4);
         dom.appendChild(el2, el3);
         var el3 = dom.createTextNode("\n  ");
@@ -14158,7 +15657,7 @@ define("we-admin-blog/templates/profile/change-password", ["exports"], function 
         var el6 = dom.createTextNode("\n        ");
         dom.appendChild(el5, el6);
         var el6 = dom.createElement("label");
-        var el7 = dom.createTextNode("Senha atual");
+        var el7 = dom.createComment("");
         dom.appendChild(el6, el7);
         dom.appendChild(el5, el6);
         var el6 = dom.createTextNode("\n        ");
@@ -14175,7 +15674,7 @@ define("we-admin-blog/templates/profile/change-password", ["exports"], function 
         var el6 = dom.createTextNode("\n        ");
         dom.appendChild(el5, el6);
         var el6 = dom.createElement("label");
-        var el7 = dom.createTextNode("Nova senha");
+        var el7 = dom.createComment("");
         dom.appendChild(el6, el7);
         dom.appendChild(el5, el6);
         var el6 = dom.createTextNode("\n        ");
@@ -14192,7 +15691,7 @@ define("we-admin-blog/templates/profile/change-password", ["exports"], function 
         var el6 = dom.createTextNode("\n        ");
         dom.appendChild(el5, el6);
         var el6 = dom.createElement("label");
-        var el7 = dom.createTextNode("Repetir a nova senha");
+        var el7 = dom.createComment("");
         dom.appendChild(el6, el7);
         dom.appendChild(el5, el6);
         var el6 = dom.createTextNode("\n        ");
@@ -14218,7 +15717,11 @@ define("we-admin-blog/templates/profile/change-password", ["exports"], function 
         var el6 = dom.createElement("i");
         dom.setAttribute(el6, "class", "glyphicon glyphicon-floppy-save");
         dom.appendChild(el5, el6);
-        var el6 = dom.createTextNode("\n        Mudar senha\n      ");
+        var el6 = dom.createTextNode("\n        ");
+        dom.appendChild(el5, el6);
+        var el6 = dom.createComment("");
+        dom.appendChild(el5, el6);
+        var el6 = dom.createTextNode("\n      ");
         dom.appendChild(el5, el6);
         dom.appendChild(el4, el5);
         var el5 = dom.createTextNode("\n    ");
@@ -14236,16 +15739,25 @@ define("we-admin-blog/templates/profile/change-password", ["exports"], function 
         return el0;
       },
       buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-        var element0 = dom.childAt(fragment, [0, 3, 1]);
-        var element1 = dom.childAt(element0, [1]);
-        var morphs = new Array(4);
-        morphs[0] = dom.createElementMorph(element0);
-        morphs[1] = dom.createMorphAt(dom.childAt(element1, [1]), 3, 3);
-        morphs[2] = dom.createMorphAt(dom.childAt(element1, [3]), 3, 3);
-        morphs[3] = dom.createMorphAt(dom.childAt(element1, [5]), 3, 3);
+        var element0 = dom.childAt(fragment, [0]);
+        var element1 = dom.childAt(element0, [3, 1]);
+        var element2 = dom.childAt(element1, [1]);
+        var element3 = dom.childAt(element2, [1]);
+        var element4 = dom.childAt(element2, [3]);
+        var element5 = dom.childAt(element2, [5]);
+        var morphs = new Array(9);
+        morphs[0] = dom.createMorphAt(dom.childAt(element0, [1, 1]), 0, 0);
+        morphs[1] = dom.createElementMorph(element1);
+        morphs[2] = dom.createMorphAt(dom.childAt(element3, [1]), 0, 0);
+        morphs[3] = dom.createMorphAt(element3, 3, 3);
+        morphs[4] = dom.createMorphAt(dom.childAt(element4, [1]), 0, 0);
+        morphs[5] = dom.createMorphAt(element4, 3, 3);
+        morphs[6] = dom.createMorphAt(dom.childAt(element5, [1]), 0, 0);
+        morphs[7] = dom.createMorphAt(element5, 3, 3);
+        morphs[8] = dom.createMorphAt(dom.childAt(element1, [3, 1]), 3, 3);
         return morphs;
       },
-      statements: [["element", "action", ["changePassword", ["get", "model", ["loc", [null, [6, 36], [6, 41]]]]], ["on", "submit"], ["loc", [null, [6, 10], [6, 55]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.oldPassword", ["loc", [null, [10, 22], [10, 39]]]]], [], []], "class", "form-control", "placeholder", "Digite a senha atual aqui", "required", "required", "type", "password"], ["loc", [null, [10, 8], [10, 138]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.newPassword", ["loc", [null, [14, 22], [14, 39]]]]], [], []], "class", "form-control", "placeholder", "Digite a nova senha aqui", "required", "required", "type", "password"], ["loc", [null, [14, 8], [14, 137]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.rNewPassword", ["loc", [null, [18, 22], [18, 40]]]]], [], []], "class", "form-control", "placeholder", "Repita a senha aqui", "required", "required", "type", "password"], ["loc", [null, [18, 8], [18, 133]]]]],
+      statements: [["inline", "t", ["auth.change-password"], [], ["loc", [null, [3, 8], [3, 36]]]], ["element", "action", ["changePassword", ["get", "model", ["loc", [null, [6, 36], [6, 41]]]]], ["on", "submit"], ["loc", [null, [6, 10], [6, 55]]]], ["inline", "t", ["form-change-password-password"], [], ["loc", [null, [9, 15], [9, 52]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.oldPassword", ["loc", [null, [10, 22], [10, 39]]]]], [], []], "class", "form-control", "placeholder", ["subexpr", "t", ["form-placeholder-change-password-password"], [], ["loc", [null, [10, 73], [10, 120]]]], "required", "required", "type", "password"], ["loc", [null, [10, 8], [10, 158]]]], ["inline", "t", ["form-change-password-newPassword"], [], ["loc", [null, [13, 15], [13, 55]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.newPassword", ["loc", [null, [14, 22], [14, 39]]]]], [], []], "class", "form-control", "placeholder", ["subexpr", "t", ["form-placeholder-change-password-newPassword"], [], ["loc", [null, [14, 73], [14, 123]]]], "required", "required", "type", "password"], ["loc", [null, [14, 8], [14, 161]]]], ["inline", "t", ["form-change-password-rNewPassword"], [], ["loc", [null, [17, 15], [17, 56]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.rNewPassword", ["loc", [null, [18, 22], [18, 40]]]]], [], []], "class", "form-control", "placeholder", ["subexpr", "t", ["form-placeholder-change-password-rNewPassword"], [], ["loc", [null, [18, 74], [18, 125]]]], "required", "required", "type", "password"], ["loc", [null, [18, 8], [18, 163]]]], ["inline", "t", ["form-change-password-submit"], [], ["loc", [null, [24, 8], [24, 43]]]]],
       locals: [],
       templates: []
     };
@@ -14253,6 +15765,48 @@ define("we-admin-blog/templates/profile/change-password", ["exports"], function 
 });
 define("we-admin-blog/templates/profile/index", ["exports"], function (exports) {
   exports["default"] = Ember.HTMLBars.template((function () {
+    var child0 = (function () {
+      return {
+        meta: {
+          "fragmentReason": false,
+          "revision": "Ember@2.6.2",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 26,
+              "column": 10
+            },
+            "end": {
+              "line": 34,
+              "column": 10
+            }
+          },
+          "moduleName": "we-admin-blog/templates/profile/index.hbs"
+        },
+        isEmpty: false,
+        arity: 1,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createTextNode("            ");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var morphs = new Array(1);
+          morphs[0] = dom.createMorphAt(fragment, 1, 1, contextualElement);
+          return morphs;
+        },
+        statements: [["content", "locale", ["loc", [null, [33, 12], [33, 22]]]]],
+        locals: ["locale"],
+        templates: []
+      };
+    })();
     return {
       meta: {
         "fragmentReason": {
@@ -14266,7 +15820,7 @@ define("we-admin-blog/templates/profile/index", ["exports"], function (exports) 
             "column": 0
           },
           "end": {
-            "line": 33,
+            "line": 45,
             "column": 6
           }
         },
@@ -14287,7 +15841,7 @@ define("we-admin-blog/templates/profile/index", ["exports"], function (exports) 
         var el3 = dom.createTextNode("\n    ");
         dom.appendChild(el2, el3);
         var el3 = dom.createElement("h1");
-        var el4 = dom.createTextNode("Meus dados");
+        var el4 = dom.createComment("");
         dom.appendChild(el3, el4);
         dom.appendChild(el2, el3);
         var el3 = dom.createTextNode("\n  ");
@@ -14310,7 +15864,7 @@ define("we-admin-blog/templates/profile/index", ["exports"], function (exports) 
         var el6 = dom.createTextNode("\n          ");
         dom.appendChild(el5, el6);
         var el6 = dom.createElement("label");
-        var el7 = dom.createTextNode("Username");
+        var el7 = dom.createComment("");
         dom.appendChild(el6, el7);
         dom.appendChild(el5, el6);
         var el6 = dom.createTextNode("\n          ");
@@ -14327,7 +15881,7 @@ define("we-admin-blog/templates/profile/index", ["exports"], function (exports) 
         var el6 = dom.createTextNode("\n          ");
         dom.appendChild(el5, el6);
         var el6 = dom.createElement("label");
-        var el7 = dom.createTextNode("DisplayName");
+        var el7 = dom.createComment("");
         dom.appendChild(el6, el7);
         dom.appendChild(el5, el6);
         var el6 = dom.createTextNode("\n          ");
@@ -14344,7 +15898,7 @@ define("we-admin-blog/templates/profile/index", ["exports"], function (exports) 
         var el6 = dom.createTextNode("\n          ");
         dom.appendChild(el5, el6);
         var el6 = dom.createElement("label");
-        var el7 = dom.createTextNode("Email");
+        var el7 = dom.createComment("");
         dom.appendChild(el6, el7);
         dom.appendChild(el5, el6);
         var el6 = dom.createTextNode("\n          ");
@@ -14361,7 +15915,7 @@ define("we-admin-blog/templates/profile/index", ["exports"], function (exports) 
         var el6 = dom.createTextNode("\n          ");
         dom.appendChild(el5, el6);
         var el6 = dom.createElement("label");
-        var el7 = dom.createTextNode("Biografia / sobre");
+        var el7 = dom.createComment("");
         dom.appendChild(el6, el7);
         dom.appendChild(el5, el6);
         var el6 = dom.createTextNode("\n          ");
@@ -14369,6 +15923,23 @@ define("we-admin-blog/templates/profile/index", ["exports"], function (exports) 
         var el6 = dom.createComment("");
         dom.appendChild(el5, el6);
         var el6 = dom.createTextNode("\n        ");
+        dom.appendChild(el5, el6);
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("\n        ");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createElement("div");
+        dom.setAttribute(el5, "class", "form-group");
+        var el6 = dom.createTextNode("\n          ");
+        dom.appendChild(el5, el6);
+        var el6 = dom.createElement("label");
+        var el7 = dom.createComment("");
+        dom.appendChild(el6, el7);
+        dom.appendChild(el5, el6);
+        var el6 = dom.createTextNode("\n");
+        dom.appendChild(el5, el6);
+        var el6 = dom.createComment("");
+        dom.appendChild(el5, el6);
+        var el6 = dom.createTextNode("        ");
         dom.appendChild(el5, el6);
         dom.appendChild(el4, el5);
         var el5 = dom.createTextNode("\n      ");
@@ -14404,19 +15975,32 @@ define("we-admin-blog/templates/profile/index", ["exports"], function (exports) 
         return el0;
       },
       buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-        var element0 = dom.childAt(fragment, [0, 3, 1]);
-        var element1 = dom.childAt(element0, [1]);
-        var morphs = new Array(5);
-        morphs[0] = dom.createElementMorph(element0);
-        morphs[1] = dom.createMorphAt(dom.childAt(element1, [1]), 3, 3);
-        morphs[2] = dom.createMorphAt(dom.childAt(element1, [3]), 3, 3);
-        morphs[3] = dom.createMorphAt(dom.childAt(element1, [5]), 3, 3);
-        morphs[4] = dom.createMorphAt(dom.childAt(element1, [7]), 3, 3);
+        var element0 = dom.childAt(fragment, [0]);
+        var element1 = dom.childAt(element0, [3, 1]);
+        var element2 = dom.childAt(element1, [1]);
+        var element3 = dom.childAt(element2, [1]);
+        var element4 = dom.childAt(element2, [3]);
+        var element5 = dom.childAt(element2, [5]);
+        var element6 = dom.childAt(element2, [7]);
+        var element7 = dom.childAt(element2, [9]);
+        var morphs = new Array(12);
+        morphs[0] = dom.createMorphAt(dom.childAt(element0, [1, 1]), 0, 0);
+        morphs[1] = dom.createElementMorph(element1);
+        morphs[2] = dom.createMorphAt(dom.childAt(element3, [1]), 0, 0);
+        morphs[3] = dom.createMorphAt(element3, 3, 3);
+        morphs[4] = dom.createMorphAt(dom.childAt(element4, [1]), 0, 0);
+        morphs[5] = dom.createMorphAt(element4, 3, 3);
+        morphs[6] = dom.createMorphAt(dom.childAt(element5, [1]), 0, 0);
+        morphs[7] = dom.createMorphAt(element5, 3, 3);
+        morphs[8] = dom.createMorphAt(dom.childAt(element6, [1]), 0, 0);
+        morphs[9] = dom.createMorphAt(element6, 3, 3);
+        morphs[10] = dom.createMorphAt(dom.childAt(element7, [1]), 0, 0);
+        morphs[11] = dom.createMorphAt(element7, 3, 3);
         return morphs;
       },
-      statements: [["element", "action", ["save", ["get", "model.user", ["loc", [null, [6, 26], [6, 36]]]]], ["on", "submit"], ["loc", [null, [6, 10], [6, 50]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.user.username", ["loc", [null, [10, 24], [10, 43]]]]], [], []], "class", "form-control", "placeholder", "Nome do usuário", "required", "required"], ["loc", [null, [10, 10], [10, 116]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.user.displayName", ["loc", [null, [14, 24], [14, 46]]]]], [], []], "class", "form-control", "placeholder", "Nome de exibição", "required", "required"], ["loc", [null, [14, 10], [14, 120]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.user.email", ["loc", [null, [18, 24], [18, 40]]]]], [], []], "class", "form-control", "placeholder", "Email", "disabled", ["subexpr", "@mut", [["get", "settings.notIsAdmin", ["loc", [null, [18, 91], [18, 110]]]]], [], []]], ["loc", [null, [18, 10], [18, 112]]]], ["inline", "textarea", [], ["value", ["subexpr", "@mut", [["get", "model.user.biography", ["loc", [null, [22, 27], [22, 47]]]]], [], []], "class", "form-control", "rows", "4"], ["loc", [null, [22, 10], [22, 79]]]]],
+      statements: [["inline", "t", ["Profile"], [], ["loc", [null, [3, 8], [3, 23]]]], ["element", "action", ["save", ["get", "model.user", ["loc", [null, [6, 26], [6, 36]]]]], ["on", "submit"], ["loc", [null, [6, 10], [6, 50]]]], ["inline", "t", ["form-user-username"], [], ["loc", [null, [9, 17], [9, 43]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.user.username", ["loc", [null, [10, 24], [10, 43]]]]], [], []], "class", "form-control", "placeholder", ["subexpr", "t", ["form-placeholder-user-username"], [], ["loc", [null, [10, 77], [10, 113]]]], "required", "required"], ["loc", [null, [10, 10], [10, 135]]]], ["inline", "t", ["form-user-displayName"], [], ["loc", [null, [13, 17], [13, 46]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.user.displayName", ["loc", [null, [14, 24], [14, 46]]]]], [], []], "class", "form-control", "placeholder", ["subexpr", "t", ["form-placeholder-user-displayName"], [], ["loc", [null, [14, 80], [14, 119]]]], "required", "required"], ["loc", [null, [14, 10], [14, 141]]]], ["inline", "t", ["form-user-email"], [], ["loc", [null, [17, 17], [17, 40]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.user.email", ["loc", [null, [18, 24], [18, 40]]]]], [], []], "class", "form-control", "placeholder", ["subexpr", "t", ["form-placeholder-user-email"], [], ["loc", [null, [18, 74], [18, 107]]]], "disabled", ["subexpr", "@mut", [["get", "settings.notIsAdmin", ["loc", [null, [18, 117], [18, 136]]]]], [], []]], ["loc", [null, [18, 10], [18, 138]]]], ["inline", "t", ["form-user-biography"], [], ["loc", [null, [21, 17], [21, 44]]]], ["inline", "textarea", [], ["value", ["subexpr", "@mut", [["get", "model.user.biography", ["loc", [null, [22, 27], [22, 47]]]]], [], []], "class", "form-control", "rows", "4"], ["loc", [null, [22, 10], [22, 79]]]], ["inline", "t", ["form-user-language"], [], ["loc", [null, [25, 17], [25, 43]]]], ["block", "power-select", [], ["options", ["subexpr", "@mut", [["get", "settings.data.locales", ["loc", [null, [27, 20], [27, 41]]]]], [], []], "selected", ["subexpr", "@mut", [["get", "model.user.language", ["loc", [null, [28, 21], [28, 40]]]]], [], []], "searchEnabled", false, "onchange", ["subexpr", "action", [["subexpr", "mut", [["get", "model.user.language", ["loc", [null, [30, 34], [30, 53]]]]], [], ["loc", [null, [30, 29], [30, 54]]]]], [], ["loc", [null, [30, 21], [30, 56]]]]], 0, null, ["loc", [null, [26, 10], [34, 27]]]]],
       locals: [],
-      templates: []
+      templates: [child0]
     };
   })());
 });
@@ -14560,7 +16144,7 @@ define("we-admin-blog/templates/roles", ["exports"], function (exports) {
         var el3 = dom.createTextNode("\n  ");
         dom.appendChild(el2, el3);
         var el3 = dom.createElement("h1");
-        var el4 = dom.createTextNode("Papéis de usuários");
+        var el4 = dom.createComment("");
         dom.appendChild(el3, el4);
         dom.appendChild(el2, el3);
         var el3 = dom.createTextNode("\n  ");
@@ -14590,7 +16174,9 @@ define("we-admin-blog/templates/roles", ["exports"], function (exports) {
         dom.appendChild(el7, el8);
         var el8 = dom.createElement("label");
         dom.setAttribute(el8, "class", "sr-only");
-        var el9 = dom.createTextNode("Name*");
+        var el9 = dom.createComment("");
+        dom.appendChild(el8, el9);
+        var el9 = dom.createTextNode("*:");
         dom.appendChild(el8, el9);
         dom.appendChild(el7, el8);
         var el8 = dom.createTextNode("\n            ");
@@ -14635,15 +16221,19 @@ define("we-admin-blog/templates/roles", ["exports"], function (exports) {
         return el0;
       },
       buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-        var element2 = dom.childAt(fragment, [0, 0, 3]);
-        var element3 = dom.childAt(element2, [3, 1]);
-        var morphs = new Array(3);
-        morphs[0] = dom.createMorphAt(element2, 1, 1);
-        morphs[1] = dom.createElementMorph(element3);
-        morphs[2] = dom.createMorphAt(dom.childAt(element3, [1, 1]), 3, 3);
+        var element2 = dom.childAt(fragment, [0, 0]);
+        var element3 = dom.childAt(element2, [3]);
+        var element4 = dom.childAt(element3, [3, 1]);
+        var element5 = dom.childAt(element4, [1, 1]);
+        var morphs = new Array(5);
+        morphs[0] = dom.createMorphAt(dom.childAt(element2, [1]), 0, 0);
+        morphs[1] = dom.createMorphAt(element3, 1, 1);
+        morphs[2] = dom.createElementMorph(element4);
+        morphs[3] = dom.createMorphAt(dom.childAt(element5, [1]), 0, 0);
+        morphs[4] = dom.createMorphAt(element5, 3, 3);
         return morphs;
       },
-      statements: [["block", "each", [["get", "model.roles", ["loc", [null, [4, 12], [4, 23]]]]], [], 0, null, ["loc", [null, [4, 4], [13, 13]]]], ["element", "action", ["createRole", ["get", "model.newRole", ["loc", [null, [15, 34], [15, 47]]]]], ["on", "submit"], ["loc", [null, [15, 12], [15, 61]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.newRole.name", ["loc", [null, [19, 26], [19, 44]]]]], [], []], "class", "form-control", "placeholder", "Criar papel de usuário", "required", "required"], ["loc", [null, [19, 12], [19, 124]]]]],
+      statements: [["inline", "t", ["roles.link"], [], ["loc", [null, [2, 6], [2, 24]]]], ["block", "each", [["get", "model.roles", ["loc", [null, [4, 12], [4, 23]]]]], [], 0, null, ["loc", [null, [4, 4], [13, 13]]]], ["element", "action", ["createRole", ["get", "model.newRole", ["loc", [null, [15, 34], [15, 47]]]]], ["on", "submit"], ["loc", [null, [15, 12], [15, 61]]]], ["inline", "t", ["form-role-name"], [], ["loc", [null, [18, 35], [18, 57]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.newRole.name", ["loc", [null, [19, 26], [19, 44]]]]], [], []], "class", "form-control", "placeholder", ["subexpr", "t", ["form-placeholder-role-name"], [], ["loc", [null, [19, 78], [19, 110]]]], "required", "required"], ["loc", [null, [19, 12], [19, 132]]]]],
       locals: [],
       templates: [child0]
     };
@@ -14806,51 +16396,6 @@ define("we-admin-blog/templates/url-alia/form", ["exports"], function (exports) 
               "column": 0
             },
             "end": {
-              "line": 3,
-              "column": 0
-            }
-          },
-          "moduleName": "we-admin-blog/templates/url-alia/form.hbs"
-        },
-        isEmpty: false,
-        arity: 0,
-        cachedFragment: null,
-        hasRendered: false,
-        buildFragment: function buildFragment(dom) {
-          var el0 = dom.createDocumentFragment();
-          var el1 = dom.createElement("h1");
-          dom.setAttribute(el1, "class", "page-header");
-          var el2 = dom.createTextNode("Editar url alternativa #");
-          dom.appendChild(el1, el2);
-          var el2 = dom.createComment("");
-          dom.appendChild(el1, el2);
-          dom.appendChild(el0, el1);
-          var el1 = dom.createTextNode("\n");
-          dom.appendChild(el0, el1);
-          return el0;
-        },
-        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-          var morphs = new Array(1);
-          morphs[0] = dom.createMorphAt(dom.childAt(fragment, [0]), 1, 1);
-          return morphs;
-        },
-        statements: [["content", "model.record.id", ["loc", [null, [2, 48], [2, 67]]]]],
-        locals: [],
-        templates: []
-      };
-    })();
-    var child1 = (function () {
-      return {
-        meta: {
-          "fragmentReason": false,
-          "revision": "Ember@2.6.2",
-          "loc": {
-            "source": null,
-            "start": {
-              "line": 3,
-              "column": 0
-            },
-            "end": {
               "line": 5,
               "column": 0
             }
@@ -14865,17 +16410,66 @@ define("we-admin-blog/templates/url-alia/form", ["exports"], function (exports) 
           var el0 = dom.createDocumentFragment();
           var el1 = dom.createElement("h1");
           dom.setAttribute(el1, "class", "page-header");
-          var el2 = dom.createTextNode("Criar url alternativa");
+          var el2 = dom.createTextNode("\n  ");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createComment("");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createTextNode("\n");
           dom.appendChild(el1, el2);
           dom.appendChild(el0, el1);
           var el1 = dom.createTextNode("\n");
           dom.appendChild(el0, el1);
           return el0;
         },
-        buildRenderNodes: function buildRenderNodes() {
-          return [];
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var morphs = new Array(1);
+          morphs[0] = dom.createMorphAt(dom.childAt(fragment, [0]), 1, 1);
+          return morphs;
         },
-        statements: [],
+        statements: [["inline", "t", ["urlAlias.create"], ["target", ["subexpr", "@mut", [["get", "model.record.target", ["loc", [null, [3, 31], [3, 50]]]]], [], []]], ["loc", [null, [3, 2], [3, 52]]]]],
+        locals: [],
+        templates: []
+      };
+    })();
+    var child1 = (function () {
+      return {
+        meta: {
+          "fragmentReason": false,
+          "revision": "Ember@2.6.2",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 5,
+              "column": 0
+            },
+            "end": {
+              "line": 7,
+              "column": 0
+            }
+          },
+          "moduleName": "we-admin-blog/templates/url-alia/form.hbs"
+        },
+        isEmpty: false,
+        arity: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createElement("h1");
+          dom.setAttribute(el1, "class", "page-header");
+          var el2 = dom.createComment("");
+          dom.appendChild(el1, el2);
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var morphs = new Array(1);
+          morphs[0] = dom.createMorphAt(dom.childAt(fragment, [0]), 0, 0);
+          return morphs;
+        },
+        statements: [["inline", "t", ["urlAlias.create"], [], ["loc", [null, [6, 24], [6, 47]]]]],
         locals: [],
         templates: []
       };
@@ -14894,7 +16488,7 @@ define("we-admin-blog/templates/url-alia/form", ["exports"], function (exports) 
             "column": 0
           },
           "end": {
-            "line": 32,
+            "line": 30,
             "column": 7
           }
         },
@@ -14921,7 +16515,9 @@ define("we-admin-blog/templates/url-alia/form", ["exports"], function (exports) 
         var el4 = dom.createTextNode("\n      ");
         dom.appendChild(el3, el4);
         var el4 = dom.createElement("label");
-        var el5 = dom.createTextNode("Alias*");
+        var el5 = dom.createComment("");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("*:");
         dom.appendChild(el4, el5);
         dom.appendChild(el3, el4);
         var el4 = dom.createTextNode("\n      ");
@@ -14938,24 +16534,9 @@ define("we-admin-blog/templates/url-alia/form", ["exports"], function (exports) 
         var el4 = dom.createTextNode("\n      ");
         dom.appendChild(el3, el4);
         var el4 = dom.createElement("label");
-        var el5 = dom.createTextNode("Target*");
+        var el5 = dom.createComment("");
         dom.appendChild(el4, el5);
-        dom.appendChild(el3, el4);
-        var el4 = dom.createTextNode("\n      ");
-        dom.appendChild(el3, el4);
-        var el4 = dom.createComment("");
-        dom.appendChild(el3, el4);
-        var el4 = dom.createTextNode("\n    ");
-        dom.appendChild(el3, el4);
-        dom.appendChild(el2, el3);
-        var el3 = dom.createTextNode("\n    ");
-        dom.appendChild(el2, el3);
-        var el3 = dom.createElement("div");
-        dom.setAttribute(el3, "class", "form-group");
-        var el4 = dom.createTextNode("\n      ");
-        dom.appendChild(el3, el4);
-        var el4 = dom.createElement("label");
-        var el5 = dom.createTextNode("Locale");
+        var el5 = dom.createTextNode("*:");
         dom.appendChild(el4, el5);
         dom.appendChild(el3, el4);
         var el4 = dom.createTextNode("\n      ");
@@ -14980,7 +16561,11 @@ define("we-admin-blog/templates/url-alia/form", ["exports"], function (exports) 
         var el4 = dom.createElement("i");
         dom.setAttribute(el4, "class", "fa fa-save");
         dom.appendChild(el3, el4);
-        var el4 = dom.createTextNode("\n      Salvar\n    ");
+        var el4 = dom.createTextNode("\n      ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createComment("");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n    ");
         dom.appendChild(el3, el4);
         dom.appendChild(el2, el3);
         var el3 = dom.createTextNode("\n    ");
@@ -14993,7 +16578,11 @@ define("we-admin-blog/templates/url-alia/form", ["exports"], function (exports) 
         var el4 = dom.createElement("i");
         dom.setAttribute(el4, "class", "fa fa-step-backward");
         dom.appendChild(el3, el4);
-        var el4 = dom.createTextNode("\n      Url alias\n    ");
+        var el4 = dom.createTextNode("\n      ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createComment("");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n    ");
         dom.appendChild(el3, el4);
         dom.appendChild(el2, el3);
         var el3 = dom.createTextNode("\n  ");
@@ -15007,18 +16596,24 @@ define("we-admin-blog/templates/url-alia/form", ["exports"], function (exports) 
       buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
         var element0 = dom.childAt(fragment, [2]);
         var element1 = dom.childAt(element0, [1]);
-        var element2 = dom.childAt(element0, [3, 3]);
-        var morphs = new Array(6);
+        var element2 = dom.childAt(element1, [1]);
+        var element3 = dom.childAt(element1, [3]);
+        var element4 = dom.childAt(element0, [3]);
+        var element5 = dom.childAt(element4, [3]);
+        var morphs = new Array(9);
         morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
         morphs[1] = dom.createElementMorph(element0);
-        morphs[2] = dom.createMorphAt(dom.childAt(element1, [1]), 3, 3);
-        morphs[3] = dom.createMorphAt(dom.childAt(element1, [3]), 3, 3);
-        morphs[4] = dom.createMorphAt(dom.childAt(element1, [5]), 3, 3);
-        morphs[5] = dom.createElementMorph(element2);
+        morphs[2] = dom.createMorphAt(dom.childAt(element2, [1]), 0, 0);
+        morphs[3] = dom.createMorphAt(element2, 3, 3);
+        morphs[4] = dom.createMorphAt(dom.childAt(element3, [1]), 0, 0);
+        morphs[5] = dom.createMorphAt(element3, 3, 3);
+        morphs[6] = dom.createMorphAt(dom.childAt(element4, [1]), 3, 3);
+        morphs[7] = dom.createElementMorph(element5);
+        morphs[8] = dom.createMorphAt(element5, 3, 3);
         dom.insertBoundary(fragment, 0);
         return morphs;
       },
-      statements: [["block", "if", [["get", "model.record.id", ["loc", [null, [1, 6], [1, 21]]]]], [], 0, 1, ["loc", [null, [1, 0], [5, 7]]]], ["element", "action", ["save", ["get", "model.record", ["loc", [null, [7, 22], [7, 34]]]]], ["on", "submit"], ["loc", [null, [7, 6], [7, 48]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.record.alias", ["loc", [null, [11, 20], [11, 38]]]]], [], []], "class", "form-control", "placeholder", "Url alternativa", "required", "required"], ["loc", [null, [11, 6], [11, 111]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.record.target", ["loc", [null, [15, 20], [15, 39]]]]], [], []], "class", "form-control", "placeholder", "Url original", "required", "required"], ["loc", [null, [15, 6], [15, 109]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.record.locale", ["loc", [null, [19, 20], [19, 39]]]]], [], []], "class", "form-control", "placeholder", "Locale"], ["loc", [null, [19, 6], [19, 83]]]], ["element", "action", ["goTo", "url-alia.index"], [], ["loc", [null, [27, 12], [27, 46]]]]],
+      statements: [["block", "if", [["get", "model.record.id", ["loc", [null, [1, 6], [1, 21]]]]], [], 0, 1, ["loc", [null, [1, 0], [7, 7]]]], ["element", "action", ["save", ["get", "model.record", ["loc", [null, [9, 22], [9, 34]]]]], ["on", "submit"], ["loc", [null, [9, 6], [9, 48]]]], ["inline", "t", ["form-urlAlias-alias"], [], ["loc", [null, [12, 13], [12, 40]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.record.alias", ["loc", [null, [13, 20], [13, 38]]]]], [], []], "class", "form-control", "placeholder", ["subexpr", "t", ["form-placeholder-urlAlias-alias"], [], ["loc", [null, [13, 72], [13, 109]]]], "required", "required"], ["loc", [null, [13, 6], [13, 131]]]], ["inline", "t", ["form-urlAlias-target"], [], ["loc", [null, [16, 13], [16, 41]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.record.target", ["loc", [null, [17, 20], [17, 39]]]]], [], []], "class", "form-control", "placeholder", ["subexpr", "t", ["form-placeholder-urlAlias-target"], [], ["loc", [null, [17, 73], [17, 111]]]], "required", "required"], ["loc", [null, [17, 6], [17, 133]]]], ["inline", "t", ["Save"], [], ["loc", [null, [23, 6], [23, 18]]]], ["element", "action", ["goTo", "url-alia.index"], [], ["loc", [null, [25, 12], [25, 46]]]], ["inline", "t", ["urlAlias.find"], [], ["loc", [null, [27, 6], [27, 27]]]]],
       locals: [],
       templates: [child0, child1]
     };
@@ -15055,14 +16650,20 @@ define("we-admin-blog/templates/url-alia/index", ["exports"], function (exports)
           var el1 = dom.createElement("i");
           dom.setAttribute(el1, "class", "glyphicon glyphicon-plus");
           dom.appendChild(el0, el1);
-          var el1 = dom.createTextNode(" Criar\n");
+          var el1 = dom.createTextNode(" ");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n");
           dom.appendChild(el0, el1);
           return el0;
         },
-        buildRenderNodes: function buildRenderNodes() {
-          return [];
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var morphs = new Array(1);
+          morphs[0] = dom.createMorphAt(fragment, 3, 3, contextualElement);
+          return morphs;
         },
-        statements: [],
+        statements: [["inline", "t", ["urlAlias.create"], [], ["loc", [null, [5, 45], [5, 68]]]]],
         locals: [],
         templates: []
       };
@@ -15081,8 +16682,8 @@ define("we-admin-blog/templates/url-alia/index", ["exports"], function (exports)
             "column": 0
           },
           "end": {
-            "line": 11,
-            "column": 0
+            "line": 10,
+            "column": 128
           }
         },
         "moduleName": "we-admin-blog/templates/url-alia/index.hbs"
@@ -15095,7 +16696,7 @@ define("we-admin-blog/templates/url-alia/index", ["exports"], function (exports)
         var el0 = dom.createDocumentFragment();
         var el1 = dom.createElement("h1");
         dom.setAttribute(el1, "class", "page-header");
-        var el2 = dom.createTextNode("Url alias");
+        var el2 = dom.createComment("");
         dom.appendChild(el1, el2);
         dom.appendChild(el0, el1);
         var el1 = dom.createTextNode("\n\n");
@@ -15115,17 +16716,17 @@ define("we-admin-blog/templates/url-alia/index", ["exports"], function (exports)
         dom.appendChild(el0, el1);
         var el1 = dom.createComment("");
         dom.appendChild(el0, el1);
-        var el1 = dom.createTextNode("\n");
-        dom.appendChild(el0, el1);
         return el0;
       },
       buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-        var morphs = new Array(2);
-        morphs[0] = dom.createMorphAt(dom.childAt(fragment, [2]), 1, 1);
-        morphs[1] = dom.createMorphAt(fragment, 6, 6, contextualElement);
+        var morphs = new Array(3);
+        morphs[0] = dom.createMorphAt(dom.childAt(fragment, [0]), 0, 0);
+        morphs[1] = dom.createMorphAt(dom.childAt(fragment, [2]), 1, 1);
+        morphs[2] = dom.createMorphAt(fragment, 6, 6, contextualElement);
+        dom.insertBoundary(fragment, null);
         return morphs;
       },
-      statements: [["block", "link-to", ["url-alia.create"], ["class", "btn btn-default"], 0, null, ["loc", [null, [4, 2], [6, 14]]]], ["inline", "conteudos-table", [], ["data", ["subexpr", "@mut", [["get", "model.records", ["loc", [null, [10, 23], [10, 36]]]]], [], []], "columns", ["subexpr", "@mut", [["get", "model.columns", ["loc", [null, [10, 45], [10, 58]]]]], [], []], "pageSize", 25, "useFilteringByColumns", false, "deleteRecord", "deleteRecord"], ["loc", [null, [10, 0], [10, 128]]]]],
+      statements: [["inline", "t", ["urlAlias.find"], [], ["loc", [null, [1, 24], [1, 45]]]], ["block", "link-to", ["url-alia.create"], ["class", "btn btn-default"], 0, null, ["loc", [null, [4, 2], [6, 14]]]], ["inline", "conteudos-table", [], ["data", ["subexpr", "@mut", [["get", "model.records", ["loc", [null, [10, 23], [10, 36]]]]], [], []], "columns", ["subexpr", "@mut", [["get", "model.columns", ["loc", [null, [10, 45], [10, 58]]]]], [], []], "pageSize", 25, "useFilteringByColumns", false, "deleteRecord", "deleteRecord"], ["loc", [null, [10, 0], [10, 128]]]]],
       locals: [],
       templates: [child0]
     };
@@ -15183,7 +16784,7 @@ define("we-admin-blog/templates/url-alia/list-item-actions", ["exports"], functi
         meta: {
           "fragmentReason": {
             "name": "missing-wrapper",
-            "problems": ["wrong-type"]
+            "problems": ["multiple-nodes", "wrong-type"]
           },
           "revision": "Ember@2.6.2",
           "loc": {
@@ -15193,8 +16794,8 @@ define("we-admin-blog/templates/url-alia/list-item-actions", ["exports"], functi
               "column": 0
             },
             "end": {
-              "line": 1,
-              "column": 79
+              "line": 4,
+              "column": 0
             }
           },
           "moduleName": "we-admin-blog/templates/url-alia/list-item-actions.hbs"
@@ -15205,14 +16806,25 @@ define("we-admin-blog/templates/url-alia/list-item-actions", ["exports"], functi
         hasRendered: false,
         buildFragment: function buildFragment(dom) {
           var el0 = dom.createDocumentFragment();
-          var el1 = dom.createTextNode("Ver/editar");
+          var el1 = dom.createTextNode("  ");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createElement("i");
+          dom.setAttribute(el1, "class", "glyphicon glyphicon-pencil text-success");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n  ");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n");
           dom.appendChild(el0, el1);
           return el0;
         },
-        buildRenderNodes: function buildRenderNodes() {
-          return [];
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var morphs = new Array(1);
+          morphs[0] = dom.createMorphAt(fragment, 3, 3, contextualElement);
+          return morphs;
         },
-        statements: [],
+        statements: [["inline", "t", ["Edit"], [], ["loc", [null, [3, 2], [3, 14]]]]],
         locals: [],
         templates: []
       };
@@ -15231,7 +16843,7 @@ define("we-admin-blog/templates/url-alia/list-item-actions", ["exports"], functi
             "column": 0
           },
           "end": {
-            "line": 4,
+            "line": 9,
             "column": 9
           }
         },
@@ -15250,20 +16862,30 @@ define("we-admin-blog/templates/url-alia/list-item-actions", ["exports"], functi
         var el1 = dom.createElement("button");
         dom.setAttribute(el1, "type", "button");
         dom.setAttribute(el1, "class", "btn btn-default btn-sm");
-        var el2 = dom.createTextNode("\n  Deletar\n");
+        var el2 = dom.createTextNode("\n  ");
+        dom.appendChild(el1, el2);
+        var el2 = dom.createElement("i");
+        dom.setAttribute(el2, "class", "glyphicon glyphicon-remove text-danger");
+        dom.appendChild(el1, el2);
+        var el2 = dom.createTextNode("\n  ");
+        dom.appendChild(el1, el2);
+        var el2 = dom.createComment("");
+        dom.appendChild(el1, el2);
+        var el2 = dom.createTextNode("\n");
         dom.appendChild(el1, el2);
         dom.appendChild(el0, el1);
         return el0;
       },
       buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
         var element0 = dom.childAt(fragment, [2]);
-        var morphs = new Array(2);
+        var morphs = new Array(3);
         morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
         morphs[1] = dom.createElementMorph(element0);
+        morphs[2] = dom.createMorphAt(element0, 3, 3);
         dom.insertBoundary(fragment, 0);
         return morphs;
       },
-      statements: [["block", "link-to", ["url-alia.item", ["get", "record.id", ["loc", [null, [1, 27], [1, 36]]]]], ["class", "btn btn-default btn-sm"], 0, null, ["loc", [null, [1, 0], [1, 91]]]], ["element", "action", ["deleteRecord", ["get", "record", ["loc", [null, [2, 32], [2, 38]]]]], [], ["loc", [null, [2, 8], [2, 40]]]]],
+      statements: [["block", "link-to", ["url-alia.item", ["get", "record.id", ["loc", [null, [1, 27], [1, 36]]]]], ["class", "btn btn-default btn-sm"], 0, null, ["loc", [null, [1, 0], [4, 12]]]], ["element", "action", ["deleteRecord", ["get", "record", ["loc", [null, [6, 32], [6, 38]]]]], [], ["loc", [null, [6, 8], [6, 40]]]], ["inline", "t", ["Delete"], [], ["loc", [null, [8, 2], [8, 16]]]]],
       locals: [],
       templates: [child0]
     };
@@ -15319,6 +16941,48 @@ define("we-admin-blog/templates/users", ["exports"], function (exports) {
 });
 define("we-admin-blog/templates/users/create", ["exports"], function (exports) {
   exports["default"] = Ember.HTMLBars.template((function () {
+    var child0 = (function () {
+      return {
+        meta: {
+          "fragmentReason": false,
+          "revision": "Ember@2.6.2",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 26,
+              "column": 10
+            },
+            "end": {
+              "line": 34,
+              "column": 10
+            }
+          },
+          "moduleName": "we-admin-blog/templates/users/create.hbs"
+        },
+        isEmpty: false,
+        arity: 1,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createTextNode("            ");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var morphs = new Array(1);
+          morphs[0] = dom.createMorphAt(fragment, 1, 1, contextualElement);
+          return morphs;
+        },
+        statements: [["content", "locale", ["loc", [null, [33, 12], [33, 22]]]]],
+        locals: ["locale"],
+        templates: []
+      };
+    })();
     return {
       meta: {
         "fragmentReason": {
@@ -15332,7 +16996,7 @@ define("we-admin-blog/templates/users/create", ["exports"], function (exports) {
             "column": 0
           },
           "end": {
-            "line": 36,
+            "line": 48,
             "column": 6
           }
         },
@@ -15354,7 +17018,7 @@ define("we-admin-blog/templates/users/create", ["exports"], function (exports) {
         dom.appendChild(el2, el3);
         var el3 = dom.createElement("h1");
         dom.setAttribute(el3, "class", "page-header");
-        var el4 = dom.createTextNode("Registrar do usuário");
+        var el4 = dom.createComment("");
         dom.appendChild(el3, el4);
         dom.appendChild(el2, el3);
         var el3 = dom.createTextNode("\n  ");
@@ -15377,7 +17041,9 @@ define("we-admin-blog/templates/users/create", ["exports"], function (exports) {
         var el6 = dom.createTextNode("\n          ");
         dom.appendChild(el5, el6);
         var el6 = dom.createElement("label");
-        var el7 = dom.createTextNode("Username*");
+        var el7 = dom.createComment("");
+        dom.appendChild(el6, el7);
+        var el7 = dom.createTextNode(":");
         dom.appendChild(el6, el7);
         dom.appendChild(el5, el6);
         var el6 = dom.createTextNode("\n          ");
@@ -15394,7 +17060,9 @@ define("we-admin-blog/templates/users/create", ["exports"], function (exports) {
         var el6 = dom.createTextNode("\n          ");
         dom.appendChild(el5, el6);
         var el6 = dom.createElement("label");
-        var el7 = dom.createTextNode("DisplayName*");
+        var el7 = dom.createComment("");
+        dom.appendChild(el6, el7);
+        var el7 = dom.createTextNode("*:");
         dom.appendChild(el6, el7);
         dom.appendChild(el5, el6);
         var el6 = dom.createTextNode("\n          ");
@@ -15411,7 +17079,9 @@ define("we-admin-blog/templates/users/create", ["exports"], function (exports) {
         var el6 = dom.createTextNode("\n          ");
         dom.appendChild(el5, el6);
         var el6 = dom.createElement("label");
-        var el7 = dom.createTextNode("Email*");
+        var el7 = dom.createComment("");
+        dom.appendChild(el6, el7);
+        var el7 = dom.createTextNode(":");
         dom.appendChild(el6, el7);
         dom.appendChild(el5, el6);
         var el6 = dom.createTextNode("\n          ");
@@ -15428,7 +17098,9 @@ define("we-admin-blog/templates/users/create", ["exports"], function (exports) {
         var el6 = dom.createTextNode("\n          ");
         dom.appendChild(el5, el6);
         var el6 = dom.createElement("label");
-        var el7 = dom.createTextNode("Biografia / sobre");
+        var el7 = dom.createComment("");
+        dom.appendChild(el6, el7);
+        var el7 = dom.createTextNode(":");
         dom.appendChild(el6, el7);
         dom.appendChild(el5, el6);
         var el6 = dom.createTextNode("\n          ");
@@ -15436,6 +17108,25 @@ define("we-admin-blog/templates/users/create", ["exports"], function (exports) {
         var el6 = dom.createComment("");
         dom.appendChild(el5, el6);
         var el6 = dom.createTextNode("\n        ");
+        dom.appendChild(el5, el6);
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("\n        ");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createElement("div");
+        dom.setAttribute(el5, "class", "form-group");
+        var el6 = dom.createTextNode("\n          ");
+        dom.appendChild(el5, el6);
+        var el6 = dom.createElement("label");
+        var el7 = dom.createComment("");
+        dom.appendChild(el6, el7);
+        var el7 = dom.createTextNode(":");
+        dom.appendChild(el6, el7);
+        dom.appendChild(el5, el6);
+        var el6 = dom.createTextNode("\n");
+        dom.appendChild(el5, el6);
+        var el6 = dom.createComment("");
+        dom.appendChild(el5, el6);
+        var el6 = dom.createTextNode("        ");
         dom.appendChild(el5, el6);
         dom.appendChild(el4, el5);
         var el5 = dom.createTextNode("\n\n        ");
@@ -15457,7 +17148,11 @@ define("we-admin-blog/templates/users/create", ["exports"], function (exports) {
         var el6 = dom.createElement("i");
         dom.setAttribute(el6, "class", "fa fa-save");
         dom.appendChild(el5, el6);
-        var el6 = dom.createTextNode("\n          Salvar\n        ");
+        var el6 = dom.createTextNode("\n          ");
+        dom.appendChild(el5, el6);
+        var el6 = dom.createComment("");
+        dom.appendChild(el5, el6);
+        var el6 = dom.createTextNode("\n        ");
         dom.appendChild(el5, el6);
         dom.appendChild(el4, el5);
         var el5 = dom.createTextNode("\n      ");
@@ -15475,20 +17170,34 @@ define("we-admin-blog/templates/users/create", ["exports"], function (exports) {
         return el0;
       },
       buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-        var element0 = dom.childAt(fragment, [0, 3, 1]);
-        var element1 = dom.childAt(element0, [1]);
-        var morphs = new Array(6);
-        morphs[0] = dom.createElementMorph(element0);
-        morphs[1] = dom.createMorphAt(dom.childAt(element1, [1]), 3, 3);
-        morphs[2] = dom.createMorphAt(dom.childAt(element1, [3]), 3, 3);
-        morphs[3] = dom.createMorphAt(dom.childAt(element1, [5]), 3, 3);
-        morphs[4] = dom.createMorphAt(dom.childAt(element1, [7]), 3, 3);
-        morphs[5] = dom.createMorphAt(element1, 9, 9);
+        var element0 = dom.childAt(fragment, [0]);
+        var element1 = dom.childAt(element0, [3, 1]);
+        var element2 = dom.childAt(element1, [1]);
+        var element3 = dom.childAt(element2, [1]);
+        var element4 = dom.childAt(element2, [3]);
+        var element5 = dom.childAt(element2, [5]);
+        var element6 = dom.childAt(element2, [7]);
+        var element7 = dom.childAt(element2, [9]);
+        var morphs = new Array(14);
+        morphs[0] = dom.createMorphAt(dom.childAt(element0, [1, 1]), 0, 0);
+        morphs[1] = dom.createElementMorph(element1);
+        morphs[2] = dom.createMorphAt(dom.childAt(element3, [1]), 0, 0);
+        morphs[3] = dom.createMorphAt(element3, 3, 3);
+        morphs[4] = dom.createMorphAt(dom.childAt(element4, [1]), 0, 0);
+        morphs[5] = dom.createMorphAt(element4, 3, 3);
+        morphs[6] = dom.createMorphAt(dom.childAt(element5, [1]), 0, 0);
+        morphs[7] = dom.createMorphAt(element5, 3, 3);
+        morphs[8] = dom.createMorphAt(dom.childAt(element6, [1]), 0, 0);
+        morphs[9] = dom.createMorphAt(element6, 3, 3);
+        morphs[10] = dom.createMorphAt(dom.childAt(element7, [1]), 0, 0);
+        morphs[11] = dom.createMorphAt(element7, 3, 3);
+        morphs[12] = dom.createMorphAt(element2, 11, 11);
+        morphs[13] = dom.createMorphAt(dom.childAt(element1, [3, 1]), 3, 3);
         return morphs;
       },
-      statements: [["element", "action", ["registrarUsuario", ["get", "model.user", ["loc", [null, [6, 38], [6, 48]]]]], ["on", "submit"], ["loc", [null, [6, 10], [6, 62]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.user.username", ["loc", [null, [10, 24], [10, 43]]]]], [], []], "class", "form-control", "placeholder", "Nome do usuário", "required", "required"], ["loc", [null, [10, 10], [10, 116]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.user.displayName", ["loc", [null, [14, 24], [14, 46]]]]], [], []], "class", "form-control", "placeholder", "Nome de exibição", "required", "required"], ["loc", [null, [14, 10], [14, 120]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.user.email", ["loc", [null, [18, 24], [18, 40]]]]], [], []], "class", "form-control", "placeholder", "Email", "required", "required"], ["loc", [null, [18, 10], [18, 103]]]], ["inline", "textarea", [], ["value", ["subexpr", "@mut", [["get", "model.user.biography", ["loc", [null, [22, 27], [22, 47]]]]], [], []], "class", "form-control", "rows", "4"], ["loc", [null, [22, 10], [22, 79]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.user.active", ["loc", [null, [25, 22], [25, 39]]]]], [], []], "type", "hidden", "value", true], ["loc", [null, [25, 8], [25, 66]]]]],
+      statements: [["inline", "t", ["user.create"], [], ["loc", [null, [3, 28], [3, 47]]]], ["element", "action", ["registrarUsuario", ["get", "model.user", ["loc", [null, [6, 38], [6, 48]]]]], ["on", "submit"], ["loc", [null, [6, 10], [6, 62]]]], ["inline", "t", ["form-user-username"], [], ["loc", [null, [9, 17], [9, 43]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.user.username", ["loc", [null, [10, 24], [10, 43]]]]], [], []], "class", "form-control", "placeholder", ["subexpr", "t", ["form-placeholder-user-username"], [], ["loc", [null, [10, 77], [10, 113]]]], "required", "required"], ["loc", [null, [10, 10], [10, 135]]]], ["inline", "t", ["form-user-displayName"], [], ["loc", [null, [13, 17], [13, 46]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.user.displayName", ["loc", [null, [14, 24], [14, 46]]]]], [], []], "class", "form-control", "placeholder", ["subexpr", "t", ["form-placeholder-user-displayName"], [], ["loc", [null, [14, 80], [14, 119]]]], "required", "required"], ["loc", [null, [14, 10], [14, 141]]]], ["inline", "t", ["form-user-email"], [], ["loc", [null, [17, 17], [17, 40]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.user.email", ["loc", [null, [18, 24], [18, 40]]]]], [], []], "class", "form-control", "placeholder", ["subexpr", "t", ["form-placeholder-user-email"], [], ["loc", [null, [18, 74], [18, 107]]]], "required", "required"], ["loc", [null, [18, 10], [18, 129]]]], ["inline", "t", ["form-user-biography"], [], ["loc", [null, [21, 17], [21, 44]]]], ["inline", "textarea", [], ["value", ["subexpr", "@mut", [["get", "model.user.biography", ["loc", [null, [22, 27], [22, 47]]]]], [], []], "class", "form-control", "rows", "4"], ["loc", [null, [22, 10], [22, 79]]]], ["inline", "t", ["form-user-language"], [], ["loc", [null, [25, 17], [25, 43]]]], ["block", "power-select", [], ["options", ["subexpr", "@mut", [["get", "settings.data.locales", ["loc", [null, [27, 20], [27, 41]]]]], [], []], "selected", ["subexpr", "@mut", [["get", "model.user.language", ["loc", [null, [28, 21], [28, 40]]]]], [], []], "searchEnabled", false, "onchange", ["subexpr", "action", [["subexpr", "mut", [["get", "model.user.language", ["loc", [null, [30, 34], [30, 53]]]]], [], ["loc", [null, [30, 29], [30, 54]]]]], [], ["loc", [null, [30, 21], [30, 56]]]]], 0, null, ["loc", [null, [26, 10], [34, 27]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.user.active", ["loc", [null, [37, 22], [37, 39]]]]], [], []], "type", "hidden", "value", true], ["loc", [null, [37, 8], [37, 66]]]], ["inline", "t", ["Save"], [], ["loc", [null, [43, 10], [43, 22]]]]],
       locals: [],
-      templates: []
+      templates: [child0]
     };
   })());
 });
@@ -15523,14 +17232,20 @@ define("we-admin-blog/templates/users/index", ["exports"], function (exports) {
           var el1 = dom.createElement("i");
           dom.setAttribute(el1, "class", "glyphicon glyphicon-plus");
           dom.appendChild(el0, el1);
-          var el1 = dom.createTextNode(" Registrar\n");
+          var el1 = dom.createTextNode(" ");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n");
           dom.appendChild(el0, el1);
           return el0;
         },
-        buildRenderNodes: function buildRenderNodes() {
-          return [];
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var morphs = new Array(1);
+          morphs[0] = dom.createMorphAt(fragment, 3, 3, contextualElement);
+          return morphs;
         },
-        statements: [],
+        statements: [["inline", "t", ["Register"], [], ["loc", [null, [5, 45], [5, 61]]]]],
         locals: [],
         templates: []
       };
@@ -15549,8 +17264,8 @@ define("we-admin-blog/templates/users/index", ["exports"], function (exports) {
             "column": 0
           },
           "end": {
-            "line": 11,
-            "column": 0
+            "line": 10,
+            "column": 98
           }
         },
         "moduleName": "we-admin-blog/templates/users/index.hbs"
@@ -15563,7 +17278,7 @@ define("we-admin-blog/templates/users/index", ["exports"], function (exports) {
         var el0 = dom.createDocumentFragment();
         var el1 = dom.createElement("h1");
         dom.setAttribute(el1, "class", "page-header");
-        var el2 = dom.createTextNode("Usuários");
+        var el2 = dom.createComment("");
         dom.appendChild(el1, el2);
         dom.appendChild(el0, el1);
         var el1 = dom.createTextNode("\n\n");
@@ -15583,17 +17298,17 @@ define("we-admin-blog/templates/users/index", ["exports"], function (exports) {
         dom.appendChild(el0, el1);
         var el1 = dom.createComment("");
         dom.appendChild(el0, el1);
-        var el1 = dom.createTextNode("\n");
-        dom.appendChild(el0, el1);
         return el0;
       },
       buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-        var morphs = new Array(2);
-        morphs[0] = dom.createMorphAt(dom.childAt(fragment, [2]), 1, 1);
-        morphs[1] = dom.createMorphAt(fragment, 6, 6, contextualElement);
+        var morphs = new Array(3);
+        morphs[0] = dom.createMorphAt(dom.childAt(fragment, [0]), 0, 0);
+        morphs[1] = dom.createMorphAt(dom.childAt(fragment, [2]), 1, 1);
+        morphs[2] = dom.createMorphAt(fragment, 6, 6, contextualElement);
+        dom.insertBoundary(fragment, null);
         return morphs;
       },
-      statements: [["block", "link-to", ["users.create"], ["class", "btn btn-default"], 0, null, ["loc", [null, [4, 2], [6, 14]]]], ["inline", "conteudos-table", [], ["data", ["subexpr", "@mut", [["get", "model.users", ["loc", [null, [10, 23], [10, 34]]]]], [], []], "columns", ["subexpr", "@mut", [["get", "model.columns", ["loc", [null, [10, 43], [10, 56]]]]], [], []], "pageSize", 25, "useFilteringByColumns", false], ["loc", [null, [10, 0], [10, 98]]]]],
+      statements: [["inline", "t", ["user.find"], [], ["loc", [null, [1, 24], [1, 41]]]], ["block", "link-to", ["users.create"], ["class", "btn btn-default"], 0, null, ["loc", [null, [4, 2], [6, 14]]]], ["inline", "conteudos-table", [], ["data", ["subexpr", "@mut", [["get", "model.users", ["loc", [null, [10, 23], [10, 34]]]]], [], []], "columns", ["subexpr", "@mut", [["get", "model.columns", ["loc", [null, [10, 43], [10, 56]]]]], [], []], "pageSize", 25, "useFilteringByColumns", false], ["loc", [null, [10, 0], [10, 98]]]]],
       locals: [],
       templates: [child0]
     };
@@ -15611,11 +17326,53 @@ define("we-admin-blog/templates/users/item", ["exports"], function (exports) {
               "loc": {
                 "source": null,
                 "start": {
-                  "line": 31,
+                  "line": 25,
                   "column": 10
                 },
                 "end": {
-                  "line": 35,
+                  "line": 33,
+                  "column": 10
+                }
+              },
+              "moduleName": "we-admin-blog/templates/users/item.hbs"
+            },
+            isEmpty: false,
+            arity: 1,
+            cachedFragment: null,
+            hasRendered: false,
+            buildFragment: function buildFragment(dom) {
+              var el0 = dom.createDocumentFragment();
+              var el1 = dom.createTextNode("            ");
+              dom.appendChild(el0, el1);
+              var el1 = dom.createComment("");
+              dom.appendChild(el0, el1);
+              var el1 = dom.createTextNode("\n");
+              dom.appendChild(el0, el1);
+              return el0;
+            },
+            buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+              var morphs = new Array(1);
+              morphs[0] = dom.createMorphAt(fragment, 1, 1, contextualElement);
+              return morphs;
+            },
+            statements: [["content", "locale", ["loc", [null, [32, 12], [32, 22]]]]],
+            locals: ["locale"],
+            templates: []
+          };
+        })();
+        var child1 = (function () {
+          return {
+            meta: {
+              "fragmentReason": false,
+              "revision": "Ember@2.6.2",
+              "loc": {
+                "source": null,
+                "start": {
+                  "line": 43,
+                  "column": 10
+                },
+                "end": {
+                  "line": 47,
                   "column": 10
                 }
               },
@@ -15632,7 +17389,11 @@ define("we-admin-blog/templates/users/item", ["exports"], function (exports) {
               var el1 = dom.createElement("button");
               dom.setAttribute(el1, "type", "button");
               dom.setAttribute(el1, "class", "btn btn-warning");
-              var el2 = dom.createTextNode("\n              Desativar\n            ");
+              var el2 = dom.createTextNode("\n              ");
+              dom.appendChild(el1, el2);
+              var el2 = dom.createComment("");
+              dom.appendChild(el1, el2);
+              var el2 = dom.createTextNode("\n            ");
               dom.appendChild(el1, el2);
               dom.appendChild(el0, el1);
               var el1 = dom.createTextNode("\n");
@@ -15640,17 +17401,18 @@ define("we-admin-blog/templates/users/item", ["exports"], function (exports) {
               return el0;
             },
             buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-              var element4 = dom.childAt(fragment, [1]);
-              var morphs = new Array(1);
-              morphs[0] = dom.createElementMorph(element4);
+              var element6 = dom.childAt(fragment, [1]);
+              var morphs = new Array(2);
+              morphs[0] = dom.createElementMorph(element6);
+              morphs[1] = dom.createMorphAt(element6, 1, 1);
               return morphs;
             },
-            statements: [["element", "action", ["changeActiveStatus", ["get", "model.user", ["loc", [null, [32, 50], [32, 60]]]], false], [], ["loc", [null, [32, 20], [32, 68]]]]],
+            statements: [["element", "action", ["changeActiveStatus", ["get", "model.user", ["loc", [null, [44, 50], [44, 60]]]], false], [], ["loc", [null, [44, 20], [44, 68]]]], ["inline", "t", ["Disable"], [], ["loc", [null, [45, 14], [45, 29]]]]],
             locals: [],
             templates: []
           };
         })();
-        var child1 = (function () {
+        var child2 = (function () {
           return {
             meta: {
               "fragmentReason": false,
@@ -15658,11 +17420,11 @@ define("we-admin-blog/templates/users/item", ["exports"], function (exports) {
               "loc": {
                 "source": null,
                 "start": {
-                  "line": 35,
+                  "line": 47,
                   "column": 10
                 },
                 "end": {
-                  "line": 39,
+                  "line": 51,
                   "column": 10
                 }
               },
@@ -15679,7 +17441,11 @@ define("we-admin-blog/templates/users/item", ["exports"], function (exports) {
               var el1 = dom.createElement("button");
               dom.setAttribute(el1, "type", "button");
               dom.setAttribute(el1, "class", "btn btn-success");
-              var el2 = dom.createTextNode("\n              Ativar\n            ");
+              var el2 = dom.createTextNode("\n              ");
+              dom.appendChild(el1, el2);
+              var el2 = dom.createComment("");
+              dom.appendChild(el1, el2);
+              var el2 = dom.createTextNode("\n            ");
               dom.appendChild(el1, el2);
               dom.appendChild(el0, el1);
               var el1 = dom.createTextNode("\n");
@@ -15687,12 +17453,13 @@ define("we-admin-blog/templates/users/item", ["exports"], function (exports) {
               return el0;
             },
             buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-              var element3 = dom.childAt(fragment, [1]);
-              var morphs = new Array(1);
-              morphs[0] = dom.createElementMorph(element3);
+              var element5 = dom.childAt(fragment, [1]);
+              var morphs = new Array(2);
+              morphs[0] = dom.createElementMorph(element5);
+              morphs[1] = dom.createMorphAt(element5, 1, 1);
               return morphs;
             },
-            statements: [["element", "action", ["changeActiveStatus", ["get", "model.user", ["loc", [null, [36, 50], [36, 60]]]], true], [], ["loc", [null, [36, 20], [36, 67]]]]],
+            statements: [["element", "action", ["changeActiveStatus", ["get", "model.user", ["loc", [null, [48, 50], [48, 60]]]], true], [], ["loc", [null, [48, 20], [48, 67]]]], ["inline", "t", ["Enable"], [], ["loc", [null, [49, 14], [49, 28]]]]],
             locals: [],
             templates: []
           };
@@ -15708,7 +17475,7 @@ define("we-admin-blog/templates/users/item", ["exports"], function (exports) {
                 "column": 2
               },
               "end": {
-                "line": 43,
+                "line": 55,
                 "column": 2
               }
             },
@@ -15733,7 +17500,9 @@ define("we-admin-blog/templates/users/item", ["exports"], function (exports) {
             var el4 = dom.createTextNode("\n          ");
             dom.appendChild(el3, el4);
             var el4 = dom.createElement("label");
-            var el5 = dom.createTextNode("Username");
+            var el5 = dom.createComment("");
+            dom.appendChild(el4, el5);
+            var el5 = dom.createTextNode(":");
             dom.appendChild(el4, el5);
             dom.appendChild(el3, el4);
             var el4 = dom.createTextNode("\n          ");
@@ -15750,7 +17519,9 @@ define("we-admin-blog/templates/users/item", ["exports"], function (exports) {
             var el4 = dom.createTextNode("\n          ");
             dom.appendChild(el3, el4);
             var el4 = dom.createElement("label");
-            var el5 = dom.createTextNode("DisplayName");
+            var el5 = dom.createComment("");
+            dom.appendChild(el4, el5);
+            var el5 = dom.createTextNode("*:");
             dom.appendChild(el4, el5);
             dom.appendChild(el3, el4);
             var el4 = dom.createTextNode("\n          ");
@@ -15767,7 +17538,9 @@ define("we-admin-blog/templates/users/item", ["exports"], function (exports) {
             var el4 = dom.createTextNode("\n          ");
             dom.appendChild(el3, el4);
             var el4 = dom.createElement("label");
-            var el5 = dom.createTextNode("Email");
+            var el5 = dom.createComment("");
+            dom.appendChild(el4, el5);
+            var el5 = dom.createTextNode(":");
             dom.appendChild(el4, el5);
             dom.appendChild(el3, el4);
             var el4 = dom.createTextNode("\n          ");
@@ -15784,7 +17557,9 @@ define("we-admin-blog/templates/users/item", ["exports"], function (exports) {
             var el4 = dom.createTextNode("\n          ");
             dom.appendChild(el3, el4);
             var el4 = dom.createElement("label");
-            var el5 = dom.createTextNode("Biografia / sobre");
+            var el5 = dom.createComment("");
+            dom.appendChild(el4, el5);
+            var el5 = dom.createTextNode(":");
             dom.appendChild(el4, el5);
             dom.appendChild(el3, el4);
             var el4 = dom.createTextNode("\n          ");
@@ -15792,6 +17567,25 @@ define("we-admin-blog/templates/users/item", ["exports"], function (exports) {
             var el4 = dom.createComment("");
             dom.appendChild(el3, el4);
             var el4 = dom.createTextNode("\n        ");
+            dom.appendChild(el3, el4);
+            dom.appendChild(el2, el3);
+            var el3 = dom.createTextNode("\n        ");
+            dom.appendChild(el2, el3);
+            var el3 = dom.createElement("div");
+            dom.setAttribute(el3, "class", "form-group");
+            var el4 = dom.createTextNode("\n          ");
+            dom.appendChild(el3, el4);
+            var el4 = dom.createElement("label");
+            var el5 = dom.createComment("");
+            dom.appendChild(el4, el5);
+            var el5 = dom.createTextNode(":");
+            dom.appendChild(el4, el5);
+            dom.appendChild(el3, el4);
+            var el4 = dom.createTextNode("\n");
+            dom.appendChild(el3, el4);
+            var el4 = dom.createComment("");
+            dom.appendChild(el3, el4);
+            var el4 = dom.createTextNode("        ");
             dom.appendChild(el3, el4);
             dom.appendChild(el2, el3);
             var el3 = dom.createTextNode("\n      ");
@@ -15809,7 +17603,11 @@ define("we-admin-blog/templates/users/item", ["exports"], function (exports) {
             var el4 = dom.createElement("i");
             dom.setAttribute(el4, "class", "fa fa-save");
             dom.appendChild(el3, el4);
-            var el4 = dom.createTextNode("\n          Salvar\n        ");
+            var el4 = dom.createTextNode("\n          ");
+            dom.appendChild(el3, el4);
+            var el4 = dom.createComment("");
+            dom.appendChild(el3, el4);
+            var el4 = dom.createTextNode("\n        ");
             dom.appendChild(el3, el4);
             dom.appendChild(el2, el3);
             var el3 = dom.createTextNode("\n\n        ");
@@ -15834,20 +17632,33 @@ define("we-admin-blog/templates/users/item", ["exports"], function (exports) {
             return el0;
           },
           buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-            var element5 = dom.childAt(fragment, [1]);
-            var element6 = dom.childAt(element5, [1]);
-            var morphs = new Array(6);
-            morphs[0] = dom.createElementMorph(element5);
-            morphs[1] = dom.createMorphAt(dom.childAt(element6, [1]), 3, 3);
-            morphs[2] = dom.createMorphAt(dom.childAt(element6, [3]), 3, 3);
-            morphs[3] = dom.createMorphAt(dom.childAt(element6, [5]), 3, 3);
-            morphs[4] = dom.createMorphAt(dom.childAt(element6, [7]), 3, 3);
-            morphs[5] = dom.createMorphAt(dom.childAt(element5, [3, 3]), 1, 1);
+            var element7 = dom.childAt(fragment, [1]);
+            var element8 = dom.childAt(element7, [1]);
+            var element9 = dom.childAt(element8, [1]);
+            var element10 = dom.childAt(element8, [3]);
+            var element11 = dom.childAt(element8, [5]);
+            var element12 = dom.childAt(element8, [7]);
+            var element13 = dom.childAt(element8, [9]);
+            var element14 = dom.childAt(element7, [3]);
+            var morphs = new Array(13);
+            morphs[0] = dom.createElementMorph(element7);
+            morphs[1] = dom.createMorphAt(dom.childAt(element9, [1]), 0, 0);
+            morphs[2] = dom.createMorphAt(element9, 3, 3);
+            morphs[3] = dom.createMorphAt(dom.childAt(element10, [1]), 0, 0);
+            morphs[4] = dom.createMorphAt(element10, 3, 3);
+            morphs[5] = dom.createMorphAt(dom.childAt(element11, [1]), 0, 0);
+            morphs[6] = dom.createMorphAt(element11, 3, 3);
+            morphs[7] = dom.createMorphAt(dom.childAt(element12, [1]), 0, 0);
+            morphs[8] = dom.createMorphAt(element12, 3, 3);
+            morphs[9] = dom.createMorphAt(dom.childAt(element13, [1]), 0, 0);
+            morphs[10] = dom.createMorphAt(element13, 3, 3);
+            morphs[11] = dom.createMorphAt(dom.childAt(element14, [1]), 3, 3);
+            morphs[12] = dom.createMorphAt(dom.childAt(element14, [3]), 1, 1);
             return morphs;
           },
-          statements: [["element", "action", ["save", ["get", "model.user", ["loc", [null, [5, 26], [5, 36]]]]], ["on", "submit"], ["loc", [null, [5, 10], [5, 50]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.user.username", ["loc", [null, [9, 24], [9, 43]]]]], [], []], "class", "form-control", "placeholder", "Nome do usuário", "required", "required"], ["loc", [null, [9, 10], [9, 116]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.user.displayName", ["loc", [null, [13, 24], [13, 46]]]]], [], []], "class", "form-control", "placeholder", "Nome de exibição", "required", "required"], ["loc", [null, [13, 10], [13, 120]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.user.email", ["loc", [null, [17, 24], [17, 40]]]]], [], []], "class", "form-control", "placeholder", "Email", "required", "required"], ["loc", [null, [17, 10], [17, 103]]]], ["inline", "textarea", [], ["value", ["subexpr", "@mut", [["get", "model.user.biography", ["loc", [null, [21, 27], [21, 47]]]]], [], []], "class", "form-control", "rows", "4"], ["loc", [null, [21, 10], [21, 79]]]], ["block", "if", [["get", "model.user.active", ["loc", [null, [31, 16], [31, 33]]]]], [], 0, 1, ["loc", [null, [31, 10], [39, 17]]]]],
+          statements: [["element", "action", ["save", ["get", "model.user", ["loc", [null, [5, 26], [5, 36]]]]], ["on", "submit"], ["loc", [null, [5, 10], [5, 50]]]], ["inline", "t", ["form-user-username"], [], ["loc", [null, [8, 17], [8, 43]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.user.username", ["loc", [null, [9, 24], [9, 43]]]]], [], []], "class", "form-control", "placeholder", ["subexpr", "t", ["form-placeholder-user-username"], [], ["loc", [null, [9, 77], [9, 113]]]], "required", "required"], ["loc", [null, [9, 10], [9, 135]]]], ["inline", "t", ["form-user-displayName"], [], ["loc", [null, [12, 17], [12, 46]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.user.displayName", ["loc", [null, [13, 24], [13, 46]]]]], [], []], "class", "form-control", "placeholder", ["subexpr", "t", ["form-placeholder-user-displayName"], [], ["loc", [null, [13, 80], [13, 119]]]], "required", "required"], ["loc", [null, [13, 10], [13, 141]]]], ["inline", "t", ["form-user-email"], [], ["loc", [null, [16, 17], [16, 40]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.user.email", ["loc", [null, [17, 24], [17, 40]]]]], [], []], "class", "form-control", "placeholder", ["subexpr", "t", ["form-placeholder-user-email"], [], ["loc", [null, [17, 74], [17, 107]]]], "required", "required"], ["loc", [null, [17, 10], [17, 129]]]], ["inline", "t", ["form-user-biography"], [], ["loc", [null, [20, 17], [20, 44]]]], ["inline", "textarea", [], ["value", ["subexpr", "@mut", [["get", "model.user.biography", ["loc", [null, [21, 27], [21, 47]]]]], [], []], "class", "form-control", "rows", "4"], ["loc", [null, [21, 10], [21, 79]]]], ["inline", "t", ["form-user-language"], [], ["loc", [null, [24, 17], [24, 43]]]], ["block", "power-select", [], ["options", ["subexpr", "@mut", [["get", "settings.data.locales", ["loc", [null, [26, 20], [26, 41]]]]], [], []], "selected", ["subexpr", "@mut", [["get", "model.user.language", ["loc", [null, [27, 21], [27, 40]]]]], [], []], "searchEnabled", false, "onchange", ["subexpr", "action", [["subexpr", "mut", [["get", "model.user.language", ["loc", [null, [29, 34], [29, 53]]]]], [], ["loc", [null, [29, 29], [29, 54]]]]], [], ["loc", [null, [29, 21], [29, 56]]]]], 0, null, ["loc", [null, [25, 10], [33, 27]]]], ["inline", "t", ["Save"], [], ["loc", [null, [39, 10], [39, 22]]]], ["block", "if", [["get", "model.user.active", ["loc", [null, [43, 16], [43, 33]]]]], [], 1, 2, ["loc", [null, [43, 10], [51, 17]]]]],
           locals: [],
-          templates: [child0, child1]
+          templates: [child0, child1, child2]
         };
       })();
       var child1 = (function () {
@@ -15858,11 +17669,11 @@ define("we-admin-blog/templates/users/item", ["exports"], function (exports) {
             "loc": {
               "source": null,
               "start": {
-                "line": 44,
+                "line": 56,
                 "column": 2
               },
               "end": {
-                "line": 64,
+                "line": 76,
                 "column": 2
               }
             },
@@ -15877,7 +17688,7 @@ define("we-admin-blog/templates/users/item", ["exports"], function (exports) {
             var el1 = dom.createTextNode("    ");
             dom.appendChild(el0, el1);
             var el1 = dom.createElement("h4");
-            var el2 = dom.createTextNode("Mudar senha");
+            var el2 = dom.createComment("");
             dom.appendChild(el1, el2);
             dom.appendChild(el0, el1);
             var el1 = dom.createTextNode("\n    ");
@@ -15893,7 +17704,7 @@ define("we-admin-blog/templates/users/item", ["exports"], function (exports) {
             var el4 = dom.createTextNode("\n          ");
             dom.appendChild(el3, el4);
             var el4 = dom.createElement("label");
-            var el5 = dom.createTextNode("Nova senha");
+            var el5 = dom.createComment("");
             dom.appendChild(el4, el5);
             dom.appendChild(el3, el4);
             var el4 = dom.createTextNode("\n          ");
@@ -15910,7 +17721,7 @@ define("we-admin-blog/templates/users/item", ["exports"], function (exports) {
             var el4 = dom.createTextNode("\n          ");
             dom.appendChild(el3, el4);
             var el4 = dom.createElement("label");
-            var el5 = dom.createTextNode("Repetir a nova senha");
+            var el5 = dom.createComment("");
             dom.appendChild(el4, el5);
             dom.appendChild(el3, el4);
             var el4 = dom.createTextNode("\n          ");
@@ -15936,7 +17747,11 @@ define("we-admin-blog/templates/users/item", ["exports"], function (exports) {
             var el4 = dom.createElement("i");
             dom.setAttribute(el4, "class", "fa fa-save");
             dom.appendChild(el3, el4);
-            var el4 = dom.createTextNode("\n          Mudar senha\n        ");
+            var el4 = dom.createTextNode("\n          ");
+            dom.appendChild(el3, el4);
+            var el4 = dom.createComment("");
+            dom.appendChild(el3, el4);
+            var el4 = dom.createTextNode("\n        ");
             dom.appendChild(el3, el4);
             dom.appendChild(el2, el3);
             var el3 = dom.createTextNode("\n      ");
@@ -15952,13 +17767,19 @@ define("we-admin-blog/templates/users/item", ["exports"], function (exports) {
           buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
             var element1 = dom.childAt(fragment, [3]);
             var element2 = dom.childAt(element1, [1]);
-            var morphs = new Array(3);
-            morphs[0] = dom.createElementMorph(element1);
-            morphs[1] = dom.createMorphAt(dom.childAt(element2, [1]), 3, 3);
-            morphs[2] = dom.createMorphAt(dom.childAt(element2, [3]), 3, 3);
+            var element3 = dom.childAt(element2, [1]);
+            var element4 = dom.childAt(element2, [3]);
+            var morphs = new Array(7);
+            morphs[0] = dom.createMorphAt(dom.childAt(fragment, [1]), 0, 0);
+            morphs[1] = dom.createElementMorph(element1);
+            morphs[2] = dom.createMorphAt(dom.childAt(element3, [1]), 0, 0);
+            morphs[3] = dom.createMorphAt(element3, 3, 3);
+            morphs[4] = dom.createMorphAt(dom.childAt(element4, [1]), 0, 0);
+            morphs[5] = dom.createMorphAt(element4, 3, 3);
+            morphs[6] = dom.createMorphAt(dom.childAt(element1, [3, 1]), 3, 3);
             return morphs;
           },
-          statements: [["element", "action", ["changePassword", ["get", "model", ["loc", [null, [46, 36], [46, 41]]]]], ["on", "submit"], ["loc", [null, [46, 10], [46, 55]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.newPassword", ["loc", [null, [50, 24], [50, 41]]]]], [], []], "class", "form-control", "placeholder", "Digite a nova senha aqui", "required", "required", "type", "password"], ["loc", [null, [50, 10], [50, 139]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.rNewPassword", ["loc", [null, [54, 24], [54, 42]]]]], [], []], "class", "form-control", "placeholder", "Repita a senha aqui", "required", "required", "type", "password"], ["loc", [null, [54, 10], [54, 135]]]]],
+          statements: [["inline", "t", ["auth.change-password"], [], ["loc", [null, [57, 8], [57, 36]]]], ["element", "action", ["changePassword", ["get", "model", ["loc", [null, [58, 36], [58, 41]]]]], ["on", "submit"], ["loc", [null, [58, 10], [58, 55]]]], ["inline", "t", ["form-change-password-newPassword"], [], ["loc", [null, [61, 17], [61, 57]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.newPassword", ["loc", [null, [62, 24], [62, 41]]]]], [], []], "class", "form-control", "placeholder", ["subexpr", "t", ["form-placeholder-change-password-newPassword"], [], ["loc", [null, [62, 75], [62, 125]]]], "required", "required", "type", "password"], ["loc", [null, [62, 10], [62, 163]]]], ["inline", "t", ["form-change-password-rNewPassword"], [], ["loc", [null, [65, 17], [65, 58]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.rNewPassword", ["loc", [null, [66, 24], [66, 42]]]]], [], []], "class", "form-control", "placeholder", ["subexpr", "t", ["form-placeholder-change-password-rNewPassword"], [], ["loc", [null, [66, 76], [66, 127]]]], "required", "required", "type", "password"], ["loc", [null, [66, 10], [66, 165]]]], ["inline", "t", ["Send"], [], ["loc", [null, [72, 10], [72, 22]]]]],
           locals: [],
           templates: []
         };
@@ -15972,11 +17793,11 @@ define("we-admin-blog/templates/users/item", ["exports"], function (exports) {
               "loc": {
                 "source": null,
                 "start": {
-                  "line": 67,
+                  "line": 79,
                   "column": 6
                 },
                 "end": {
-                  "line": 78,
+                  "line": 90,
                   "column": 6
                 }
               },
@@ -16014,7 +17835,7 @@ define("we-admin-blog/templates/users/item", ["exports"], function (exports) {
               morphs[1] = dom.createMorphAt(element0, 3, 3);
               return morphs;
             },
-            statements: [["inline", "user-role-checkbox", [], ["user", ["subexpr", "@mut", [["get", "model.user", ["loc", [null, [70, 17], [70, 27]]]]], [], []], "roleName", ["subexpr", "@mut", [["get", "role.name", ["loc", [null, [71, 21], [71, 30]]]]], [], []], "class", "btn btn-default", "addUserRole", "addUserRole", "removeUserRole", "removeUserRole"], ["loc", [null, [69, 10], [75, 12]]]], ["content", "role.name", ["loc", [null, [76, 10], [76, 23]]]]],
+            statements: [["inline", "user-role-checkbox", [], ["user", ["subexpr", "@mut", [["get", "model.user", ["loc", [null, [82, 17], [82, 27]]]]], [], []], "roleName", ["subexpr", "@mut", [["get", "role.name", ["loc", [null, [83, 21], [83, 30]]]]], [], []], "class", "btn btn-default", "addUserRole", "addUserRole", "removeUserRole", "removeUserRole"], ["loc", [null, [81, 10], [87, 12]]]], ["content", "role.name", ["loc", [null, [88, 10], [88, 23]]]]],
             locals: ["role"],
             templates: []
           };
@@ -16026,11 +17847,11 @@ define("we-admin-blog/templates/users/item", ["exports"], function (exports) {
             "loc": {
               "source": null,
               "start": {
-                "line": 65,
+                "line": 77,
                 "column": 2
               },
               "end": {
-                "line": 80,
+                "line": 92,
                 "column": 2
               }
             },
@@ -16062,7 +17883,7 @@ define("we-admin-blog/templates/users/item", ["exports"], function (exports) {
             morphs[0] = dom.createMorphAt(dom.childAt(fragment, [1]), 1, 1);
             return morphs;
           },
-          statements: [["block", "each", [["get", "model.roles", ["loc", [null, [67, 14], [67, 25]]]]], [], 0, null, ["loc", [null, [67, 6], [78, 15]]]]],
+          statements: [["block", "each", [["get", "model.roles", ["loc", [null, [79, 14], [79, 25]]]]], [], 0, null, ["loc", [null, [79, 6], [90, 15]]]]],
           locals: [],
           templates: [child0]
         };
@@ -16078,7 +17899,7 @@ define("we-admin-blog/templates/users/item", ["exports"], function (exports) {
               "column": 0
             },
             "end": {
-              "line": 81,
+              "line": 93,
               "column": 0
             }
           },
@@ -16107,7 +17928,7 @@ define("we-admin-blog/templates/users/item", ["exports"], function (exports) {
           dom.insertBoundary(fragment, null);
           return morphs;
         },
-        statements: [["block", "tab.pane", [], ["title", "Dados de perfil"], 0, null, ["loc", [null, [4, 2], [43, 15]]]], ["block", "tab.pane", [], ["title", "Senha e login"], 1, null, ["loc", [null, [44, 2], [64, 15]]]], ["block", "tab.pane", [], ["title", "Papéis"], 2, null, ["loc", [null, [65, 2], [80, 15]]]]],
+        statements: [["block", "tab.pane", [], ["title", ["subexpr", "t", ["user.Data"], [], ["loc", [null, [4, 20], [4, 35]]]]], 0, null, ["loc", [null, [4, 2], [55, 15]]]], ["block", "tab.pane", [], ["title", ["subexpr", "t", ["auth.Password-and-login"], [], ["loc", [null, [56, 20], [56, 49]]]]], 1, null, ["loc", [null, [56, 2], [76, 15]]]], ["block", "tab.pane", [], ["title", ["subexpr", "t", ["roles.link"], [], ["loc", [null, [77, 20], [77, 36]]]]], 2, null, ["loc", [null, [77, 2], [92, 15]]]]],
         locals: ["tab"],
         templates: [child0, child1, child2]
       };
@@ -16126,7 +17947,7 @@ define("we-admin-blog/templates/users/item", ["exports"], function (exports) {
             "column": 0
           },
           "end": {
-            "line": 81,
+            "line": 93,
             "column": 11
           }
         },
@@ -16140,11 +17961,7 @@ define("we-admin-blog/templates/users/item", ["exports"], function (exports) {
         var el0 = dom.createDocumentFragment();
         var el1 = dom.createElement("h1");
         dom.setAttribute(el1, "class", "page-header");
-        var el2 = dom.createTextNode("Usuário \"");
-        dom.appendChild(el1, el2);
         var el2 = dom.createComment("");
-        dom.appendChild(el1, el2);
-        var el2 = dom.createTextNode("\"");
         dom.appendChild(el1, el2);
         dom.appendChild(el0, el1);
         var el1 = dom.createTextNode("\n\n");
@@ -16155,12 +17972,12 @@ define("we-admin-blog/templates/users/item", ["exports"], function (exports) {
       },
       buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
         var morphs = new Array(2);
-        morphs[0] = dom.createMorphAt(dom.childAt(fragment, [0]), 1, 1);
+        morphs[0] = dom.createMorphAt(dom.childAt(fragment, [0]), 0, 0);
         morphs[1] = dom.createMorphAt(fragment, 2, 2, contextualElement);
         dom.insertBoundary(fragment, null);
         return morphs;
       },
-      statements: [["content", "model.user.username", ["loc", [null, [1, 33], [1, 56]]]], ["block", "bs-tab", [], [], 0, null, ["loc", [null, [3, 0], [81, 11]]]]],
+      statements: [["inline", "t", ["user.edit"], ["username", ["subexpr", "@mut", [["get", "model.user.username", ["loc", [null, [1, 49], [1, 68]]]]], [], []]], ["loc", [null, [1, 24], [1, 70]]]], ["block", "bs-tab", [], [], 0, null, ["loc", [null, [3, 0], [93, 11]]]]],
       locals: [],
       templates: [child0]
     };
@@ -16173,7 +17990,7 @@ define("we-admin-blog/templates/users/list-item-actions", ["exports"], function 
         meta: {
           "fragmentReason": {
             "name": "missing-wrapper",
-            "problems": ["wrong-type"]
+            "problems": ["multiple-nodes", "wrong-type"]
           },
           "revision": "Ember@2.6.2",
           "loc": {
@@ -16183,8 +18000,8 @@ define("we-admin-blog/templates/users/list-item-actions", ["exports"], function 
               "column": 0
             },
             "end": {
-              "line": 1,
-              "column": 69
+              "line": 4,
+              "column": 0
             }
           },
           "moduleName": "we-admin-blog/templates/users/list-item-actions.hbs"
@@ -16195,14 +18012,25 @@ define("we-admin-blog/templates/users/list-item-actions", ["exports"], function 
         hasRendered: false,
         buildFragment: function buildFragment(dom) {
           var el0 = dom.createDocumentFragment();
-          var el1 = dom.createTextNode("Ver/editar");
+          var el1 = dom.createTextNode("  ");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createElement("i");
+          dom.setAttribute(el1, "class", "glyphicon glyphicon-pencil text-success");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n  ");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n");
           dom.appendChild(el0, el1);
           return el0;
         },
-        buildRenderNodes: function buildRenderNodes() {
-          return [];
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var morphs = new Array(1);
+          morphs[0] = dom.createMorphAt(fragment, 3, 3, contextualElement);
+          return morphs;
         },
-        statements: [],
+        statements: [["inline", "t", ["Edit"], [], ["loc", [null, [3, 2], [3, 14]]]]],
         locals: [],
         templates: []
       };
@@ -16221,8 +18049,8 @@ define("we-admin-blog/templates/users/list-item-actions", ["exports"], function 
             "column": 0
           },
           "end": {
-            "line": 1,
-            "column": 81
+            "line": 4,
+            "column": 12
           }
         },
         "moduleName": "we-admin-blog/templates/users/list-item-actions.hbs"
@@ -16244,7 +18072,7 @@ define("we-admin-blog/templates/users/list-item-actions", ["exports"], function 
         dom.insertBoundary(fragment, null);
         return morphs;
       },
-      statements: [["block", "link-to", ["users.item", ["get", "record.id", ["loc", [null, [1, 24], [1, 33]]]]], ["class", "btn btn-default"], 0, null, ["loc", [null, [1, 0], [1, 81]]]]],
+      statements: [["block", "link-to", ["users.item", ["get", "record.id", ["loc", [null, [1, 24], [1, 33]]]]], ["class", "btn btn-default"], 0, null, ["loc", [null, [1, 0], [4, 12]]]]],
       locals: [],
       templates: [child0]
     };
@@ -16359,51 +18187,6 @@ define("we-admin-blog/templates/vocabulary/form", ["exports"], function (exports
               "column": 0
             },
             "end": {
-              "line": 3,
-              "column": 0
-            }
-          },
-          "moduleName": "we-admin-blog/templates/vocabulary/form.hbs"
-        },
-        isEmpty: false,
-        arity: 0,
-        cachedFragment: null,
-        hasRendered: false,
-        buildFragment: function buildFragment(dom) {
-          var el0 = dom.createDocumentFragment();
-          var el1 = dom.createElement("h1");
-          dom.setAttribute(el1, "class", "page-header");
-          var el2 = dom.createTextNode("Editar vocabulário #");
-          dom.appendChild(el1, el2);
-          var el2 = dom.createComment("");
-          dom.appendChild(el1, el2);
-          dom.appendChild(el0, el1);
-          var el1 = dom.createTextNode("\n");
-          dom.appendChild(el0, el1);
-          return el0;
-        },
-        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-          var morphs = new Array(1);
-          morphs[0] = dom.createMorphAt(dom.childAt(fragment, [0]), 1, 1);
-          return morphs;
-        },
-        statements: [["content", "model.record.id", ["loc", [null, [2, 44], [2, 63]]]]],
-        locals: [],
-        templates: []
-      };
-    })();
-    var child1 = (function () {
-      return {
-        meta: {
-          "fragmentReason": false,
-          "revision": "Ember@2.6.2",
-          "loc": {
-            "source": null,
-            "start": {
-              "line": 3,
-              "column": 0
-            },
-            "end": {
               "line": 5,
               "column": 0
             }
@@ -16418,17 +18201,66 @@ define("we-admin-blog/templates/vocabulary/form", ["exports"], function (exports
           var el0 = dom.createDocumentFragment();
           var el1 = dom.createElement("h1");
           dom.setAttribute(el1, "class", "page-header");
-          var el2 = dom.createTextNode("Criar vocabulário");
+          var el2 = dom.createTextNode("\n  ");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createComment("");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createTextNode("\n");
           dom.appendChild(el1, el2);
           dom.appendChild(el0, el1);
           var el1 = dom.createTextNode("\n");
           dom.appendChild(el0, el1);
           return el0;
         },
-        buildRenderNodes: function buildRenderNodes() {
-          return [];
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var morphs = new Array(1);
+          morphs[0] = dom.createMorphAt(dom.childAt(fragment, [0]), 1, 1);
+          return morphs;
         },
-        statements: [],
+        statements: [["inline", "t", ["vocabulary.edit"], ["name", ["subexpr", "@mut", [["get", "model.record.name", ["loc", [null, [3, 29], [3, 46]]]]], [], []]], ["loc", [null, [3, 2], [3, 48]]]]],
+        locals: [],
+        templates: []
+      };
+    })();
+    var child1 = (function () {
+      return {
+        meta: {
+          "fragmentReason": false,
+          "revision": "Ember@2.6.2",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 5,
+              "column": 0
+            },
+            "end": {
+              "line": 7,
+              "column": 0
+            }
+          },
+          "moduleName": "we-admin-blog/templates/vocabulary/form.hbs"
+        },
+        isEmpty: false,
+        arity: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createElement("h1");
+          dom.setAttribute(el1, "class", "page-header");
+          var el2 = dom.createComment("");
+          dom.appendChild(el1, el2);
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var morphs = new Array(1);
+          morphs[0] = dom.createMorphAt(dom.childAt(fragment, [0]), 0, 0);
+          return morphs;
+        },
+        statements: [["inline", "t", ["vocabulary.create"], [], ["loc", [null, [6, 24], [6, 49]]]]],
         locals: [],
         templates: []
       };
@@ -16447,7 +18279,7 @@ define("we-admin-blog/templates/vocabulary/form", ["exports"], function (exports
             "column": 0
           },
           "end": {
-            "line": 28,
+            "line": 30,
             "column": 7
           }
         },
@@ -16474,7 +18306,9 @@ define("we-admin-blog/templates/vocabulary/form", ["exports"], function (exports
         var el4 = dom.createTextNode("\n      ");
         dom.appendChild(el3, el4);
         var el4 = dom.createElement("label");
-        var el5 = dom.createTextNode("Nome*");
+        var el5 = dom.createComment("");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("*:");
         dom.appendChild(el4, el5);
         dom.appendChild(el3, el4);
         var el4 = dom.createTextNode("\n      ");
@@ -16491,7 +18325,9 @@ define("we-admin-blog/templates/vocabulary/form", ["exports"], function (exports
         var el4 = dom.createTextNode("\n      ");
         dom.appendChild(el3, el4);
         var el4 = dom.createElement("label");
-        var el5 = dom.createTextNode("Description*");
+        var el5 = dom.createComment("");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode(":");
         dom.appendChild(el4, el5);
         dom.appendChild(el3, el4);
         var el4 = dom.createTextNode("\n      ");
@@ -16516,7 +18352,11 @@ define("we-admin-blog/templates/vocabulary/form", ["exports"], function (exports
         var el4 = dom.createElement("i");
         dom.setAttribute(el4, "class", "fa fa-save");
         dom.appendChild(el3, el4);
-        var el4 = dom.createTextNode("\n      Salvar\n    ");
+        var el4 = dom.createTextNode("\n      ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createComment("");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n    ");
         dom.appendChild(el3, el4);
         dom.appendChild(el2, el3);
         var el3 = dom.createTextNode("\n    ");
@@ -16529,7 +18369,11 @@ define("we-admin-blog/templates/vocabulary/form", ["exports"], function (exports
         var el4 = dom.createElement("i");
         dom.setAttribute(el4, "class", "fa fa-step-backward");
         dom.appendChild(el3, el4);
-        var el4 = dom.createTextNode("\n      Vocabulários\n    ");
+        var el4 = dom.createTextNode("\n      ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createComment("");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n    ");
         dom.appendChild(el3, el4);
         dom.appendChild(el2, el3);
         var el3 = dom.createTextNode("\n  ");
@@ -16543,17 +18387,24 @@ define("we-admin-blog/templates/vocabulary/form", ["exports"], function (exports
       buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
         var element0 = dom.childAt(fragment, [2]);
         var element1 = dom.childAt(element0, [1]);
-        var element2 = dom.childAt(element0, [3, 3]);
-        var morphs = new Array(5);
+        var element2 = dom.childAt(element1, [1]);
+        var element3 = dom.childAt(element1, [3]);
+        var element4 = dom.childAt(element0, [3]);
+        var element5 = dom.childAt(element4, [3]);
+        var morphs = new Array(9);
         morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
         morphs[1] = dom.createElementMorph(element0);
-        morphs[2] = dom.createMorphAt(dom.childAt(element1, [1]), 3, 3);
-        morphs[3] = dom.createMorphAt(dom.childAt(element1, [3]), 3, 3);
-        morphs[4] = dom.createElementMorph(element2);
+        morphs[2] = dom.createMorphAt(dom.childAt(element2, [1]), 0, 0);
+        morphs[3] = dom.createMorphAt(element2, 3, 3);
+        morphs[4] = dom.createMorphAt(dom.childAt(element3, [1]), 0, 0);
+        morphs[5] = dom.createMorphAt(element3, 3, 3);
+        morphs[6] = dom.createMorphAt(dom.childAt(element4, [1]), 3, 3);
+        morphs[7] = dom.createElementMorph(element5);
+        morphs[8] = dom.createMorphAt(element5, 3, 3);
         dom.insertBoundary(fragment, 0);
         return morphs;
       },
-      statements: [["block", "if", [["get", "model.record.id", ["loc", [null, [1, 6], [1, 21]]]]], [], 0, 1, ["loc", [null, [1, 0], [5, 7]]]], ["element", "action", ["save", ["get", "model.record", ["loc", [null, [7, 22], [7, 34]]]]], ["on", "submit"], ["loc", [null, [7, 6], [7, 48]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.record.name", ["loc", [null, [11, 20], [11, 37]]]]], [], []], "class", "form-control", "placeholder", "Nome do vocabulário", "required", "required"], ["loc", [null, [11, 6], [11, 114]]]], ["inline", "textarea", [], ["value", ["subexpr", "@mut", [["get", "model.record.description", ["loc", [null, [15, 23], [15, 47]]]]], [], []], "class", "form-control", "placeholder", "Descrição do vocabulário"], ["loc", [null, [15, 6], [15, 109]]]], ["element", "action", ["goTo", "vocabulary.index"], [], ["loc", [null, [23, 12], [23, 48]]]]],
+      statements: [["block", "if", [["get", "model.record.id", ["loc", [null, [1, 6], [1, 21]]]]], [], 0, 1, ["loc", [null, [1, 0], [7, 7]]]], ["element", "action", ["save", ["get", "model.record", ["loc", [null, [9, 22], [9, 34]]]]], ["on", "submit"], ["loc", [null, [9, 6], [9, 48]]]], ["inline", "t", ["form-vocabulary-name"], [], ["loc", [null, [12, 13], [12, 41]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.record.name", ["loc", [null, [13, 20], [13, 37]]]]], [], []], "class", "form-control", "placeholder", ["subexpr", "t", ["form-placeholder-vocabulary-name"], [], ["loc", [null, [13, 71], [13, 109]]]], "required", "required"], ["loc", [null, [13, 6], [13, 131]]]], ["inline", "t", ["form-vocabulary-description"], [], ["loc", [null, [16, 13], [16, 48]]]], ["inline", "textarea", [], ["value", ["subexpr", "@mut", [["get", "model.record.description", ["loc", [null, [17, 23], [17, 47]]]]], [], []], "class", "form-control", "placeholder", ["subexpr", "t", ["form-placeholder-vocabulary-description"], [], ["loc", [null, [17, 81], [17, 126]]]]], ["loc", [null, [17, 6], [17, 128]]]], ["inline", "t", ["Save"], [], ["loc", [null, [23, 6], [23, 18]]]], ["element", "action", ["goTo", "vocabulary.index"], [], ["loc", [null, [25, 12], [25, 48]]]], ["inline", "t", ["vocabulary.find"], [], ["loc", [null, [27, 6], [27, 29]]]]],
       locals: [],
       templates: [child0, child1]
     };
@@ -16590,14 +18441,20 @@ define("we-admin-blog/templates/vocabulary/index", ["exports"], function (export
           var el1 = dom.createElement("i");
           dom.setAttribute(el1, "class", "glyphicon glyphicon-plus");
           dom.appendChild(el0, el1);
-          var el1 = dom.createTextNode(" Criar\n");
+          var el1 = dom.createTextNode(" ");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n");
           dom.appendChild(el0, el1);
           return el0;
         },
-        buildRenderNodes: function buildRenderNodes() {
-          return [];
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var morphs = new Array(1);
+          morphs[0] = dom.createMorphAt(fragment, 3, 3, contextualElement);
+          return morphs;
         },
-        statements: [],
+        statements: [["inline", "t", ["vocabulary.create"], [], ["loc", [null, [5, 45], [5, 70]]]]],
         locals: [],
         templates: []
       };
@@ -16616,8 +18473,8 @@ define("we-admin-blog/templates/vocabulary/index", ["exports"], function (export
             "column": 0
           },
           "end": {
-            "line": 11,
-            "column": 0
+            "line": 10,
+            "column": 128
           }
         },
         "moduleName": "we-admin-blog/templates/vocabulary/index.hbs"
@@ -16630,7 +18487,7 @@ define("we-admin-blog/templates/vocabulary/index", ["exports"], function (export
         var el0 = dom.createDocumentFragment();
         var el1 = dom.createElement("h1");
         dom.setAttribute(el1, "class", "page-header");
-        var el2 = dom.createTextNode("Vocabulários");
+        var el2 = dom.createComment("");
         dom.appendChild(el1, el2);
         dom.appendChild(el0, el1);
         var el1 = dom.createTextNode("\n\n");
@@ -16650,17 +18507,17 @@ define("we-admin-blog/templates/vocabulary/index", ["exports"], function (export
         dom.appendChild(el0, el1);
         var el1 = dom.createComment("");
         dom.appendChild(el0, el1);
-        var el1 = dom.createTextNode("\n");
-        dom.appendChild(el0, el1);
         return el0;
       },
       buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-        var morphs = new Array(2);
-        morphs[0] = dom.createMorphAt(dom.childAt(fragment, [2]), 1, 1);
-        morphs[1] = dom.createMorphAt(fragment, 6, 6, contextualElement);
+        var morphs = new Array(3);
+        morphs[0] = dom.createMorphAt(dom.childAt(fragment, [0]), 0, 0);
+        morphs[1] = dom.createMorphAt(dom.childAt(fragment, [2]), 1, 1);
+        morphs[2] = dom.createMorphAt(fragment, 6, 6, contextualElement);
+        dom.insertBoundary(fragment, null);
         return morphs;
       },
-      statements: [["block", "link-to", ["vocabulary.create"], ["class", "btn btn-default"], 0, null, ["loc", [null, [4, 2], [6, 14]]]], ["inline", "conteudos-table", [], ["data", ["subexpr", "@mut", [["get", "model.records", ["loc", [null, [10, 23], [10, 36]]]]], [], []], "columns", ["subexpr", "@mut", [["get", "model.columns", ["loc", [null, [10, 45], [10, 58]]]]], [], []], "pageSize", 25, "useFilteringByColumns", false, "deleteRecord", "deleteRecord"], ["loc", [null, [10, 0], [10, 128]]]]],
+      statements: [["inline", "t", ["vocabulary.find"], [], ["loc", [null, [1, 24], [1, 47]]]], ["block", "link-to", ["vocabulary.create"], ["class", "btn btn-default"], 0, null, ["loc", [null, [4, 2], [6, 14]]]], ["inline", "conteudos-table", [], ["data", ["subexpr", "@mut", [["get", "model.records", ["loc", [null, [10, 23], [10, 36]]]]], [], []], "columns", ["subexpr", "@mut", [["get", "model.columns", ["loc", [null, [10, 45], [10, 58]]]]], [], []], "pageSize", 25, "useFilteringByColumns", false, "deleteRecord", "deleteRecord"], ["loc", [null, [10, 0], [10, 128]]]]],
       locals: [],
       templates: [child0]
     };
@@ -16831,8 +18688,6 @@ define("we-admin-blog/templates/vocabulary/item/terms/form", ["exports"], functi
           var el0 = dom.createDocumentFragment();
           var el1 = dom.createElement("h1");
           dom.setAttribute(el1, "class", "page-header");
-          var el2 = dom.createTextNode("Editar termo #");
-          dom.appendChild(el1, el2);
           var el2 = dom.createComment("");
           dom.appendChild(el1, el2);
           dom.appendChild(el0, el1);
@@ -16842,10 +18697,10 @@ define("we-admin-blog/templates/vocabulary/item/terms/form", ["exports"], functi
         },
         buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
           var morphs = new Array(1);
-          morphs[0] = dom.createMorphAt(dom.childAt(fragment, [0]), 1, 1);
+          morphs[0] = dom.createMorphAt(dom.childAt(fragment, [0]), 0, 0);
           return morphs;
         },
-        statements: [["content", "model.record.id", ["loc", [null, [2, 38], [2, 57]]]]],
+        statements: [["inline", "t", ["term.edit"], ["text", ["subexpr", "@mut", [["get", "model.record.text", ["loc", [null, [2, 45], [2, 62]]]]], [], []]], ["loc", [null, [2, 24], [2, 64]]]]],
         locals: [],
         templates: []
       };
@@ -16876,17 +18731,19 @@ define("we-admin-blog/templates/vocabulary/item/terms/form", ["exports"], functi
           var el0 = dom.createDocumentFragment();
           var el1 = dom.createElement("h1");
           dom.setAttribute(el1, "class", "page-header");
-          var el2 = dom.createTextNode("Adicionar termo");
+          var el2 = dom.createComment("");
           dom.appendChild(el1, el2);
           dom.appendChild(el0, el1);
           var el1 = dom.createTextNode("\n");
           dom.appendChild(el0, el1);
           return el0;
         },
-        buildRenderNodes: function buildRenderNodes() {
-          return [];
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var morphs = new Array(1);
+          morphs[0] = dom.createMorphAt(dom.childAt(fragment, [0]), 0, 0);
+          return morphs;
         },
-        statements: [],
+        statements: [["inline", "t", ["term.create"], [], ["loc", [null, [4, 24], [4, 43]]]]],
         locals: [],
         templates: []
       };
@@ -16932,7 +18789,9 @@ define("we-admin-blog/templates/vocabulary/item/terms/form", ["exports"], functi
         var el4 = dom.createTextNode("\n      ");
         dom.appendChild(el3, el4);
         var el4 = dom.createElement("label");
-        var el5 = dom.createTextNode("Text*");
+        var el5 = dom.createComment("");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("*:");
         dom.appendChild(el4, el5);
         dom.appendChild(el3, el4);
         var el4 = dom.createTextNode("\n      ");
@@ -16949,7 +18808,9 @@ define("we-admin-blog/templates/vocabulary/item/terms/form", ["exports"], functi
         var el4 = dom.createTextNode("\n      ");
         dom.appendChild(el3, el4);
         var el4 = dom.createElement("label");
-        var el5 = dom.createTextNode("Description");
+        var el5 = dom.createComment("");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode(":");
         dom.appendChild(el4, el5);
         dom.appendChild(el3, el4);
         var el4 = dom.createTextNode("\n      ");
@@ -16974,7 +18835,11 @@ define("we-admin-blog/templates/vocabulary/item/terms/form", ["exports"], functi
         var el4 = dom.createElement("i");
         dom.setAttribute(el4, "class", "fa fa-save");
         dom.appendChild(el3, el4);
-        var el4 = dom.createTextNode("\n      Salvar\n    ");
+        var el4 = dom.createTextNode("\n      ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createComment("");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n    ");
         dom.appendChild(el3, el4);
         dom.appendChild(el2, el3);
         var el3 = dom.createTextNode("\n    ");
@@ -16987,7 +18852,11 @@ define("we-admin-blog/templates/vocabulary/item/terms/form", ["exports"], functi
         var el4 = dom.createElement("i");
         dom.setAttribute(el4, "class", "fa fa-step-backward");
         dom.appendChild(el3, el4);
-        var el4 = dom.createTextNode("\n      Termos\n    ");
+        var el4 = dom.createTextNode("\n      ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createComment("");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n    ");
         dom.appendChild(el3, el4);
         dom.appendChild(el2, el3);
         var el3 = dom.createTextNode("\n  ");
@@ -17001,17 +18870,24 @@ define("we-admin-blog/templates/vocabulary/item/terms/form", ["exports"], functi
       buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
         var element0 = dom.childAt(fragment, [2]);
         var element1 = dom.childAt(element0, [1]);
-        var element2 = dom.childAt(element0, [3, 3]);
-        var morphs = new Array(5);
+        var element2 = dom.childAt(element1, [1]);
+        var element3 = dom.childAt(element1, [3]);
+        var element4 = dom.childAt(element0, [3]);
+        var element5 = dom.childAt(element4, [3]);
+        var morphs = new Array(9);
         morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
         morphs[1] = dom.createElementMorph(element0);
-        morphs[2] = dom.createMorphAt(dom.childAt(element1, [1]), 3, 3);
-        morphs[3] = dom.createMorphAt(dom.childAt(element1, [3]), 3, 3);
-        morphs[4] = dom.createElementMorph(element2);
+        morphs[2] = dom.createMorphAt(dom.childAt(element2, [1]), 0, 0);
+        morphs[3] = dom.createMorphAt(element2, 3, 3);
+        morphs[4] = dom.createMorphAt(dom.childAt(element3, [1]), 0, 0);
+        morphs[5] = dom.createMorphAt(element3, 3, 3);
+        morphs[6] = dom.createMorphAt(dom.childAt(element4, [1]), 3, 3);
+        morphs[7] = dom.createElementMorph(element5);
+        morphs[8] = dom.createMorphAt(element5, 3, 3);
         dom.insertBoundary(fragment, 0);
         return morphs;
       },
-      statements: [["block", "if", [["get", "model.record.id", ["loc", [null, [1, 6], [1, 21]]]]], [], 0, 1, ["loc", [null, [1, 0], [5, 7]]]], ["element", "action", ["save", ["get", "model.record", ["loc", [null, [7, 22], [7, 34]]]]], ["on", "submit"], ["loc", [null, [7, 6], [7, 48]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.record.text", ["loc", [null, [11, 20], [11, 37]]]]], [], []], "class", "form-control", "placeholder", "Texto do termo", "required", "required"], ["loc", [null, [11, 6], [11, 109]]]], ["inline", "textarea", [], ["value", ["subexpr", "@mut", [["get", "model.record.description", ["loc", [null, [15, 23], [15, 47]]]]], [], []], "class", "form-control", "placeholder", "Descrição do termo"], ["loc", [null, [15, 6], [15, 103]]]], ["element", "action", ["goTo", "vocabulary.item.terms", ["get", "model.vocabulary.id", ["loc", [null, [23, 52], [23, 71]]]]], [], ["loc", [null, [23, 12], [23, 73]]]]],
+      statements: [["block", "if", [["get", "model.record.id", ["loc", [null, [1, 6], [1, 21]]]]], [], 0, 1, ["loc", [null, [1, 0], [5, 7]]]], ["element", "action", ["save", ["get", "model.record", ["loc", [null, [7, 22], [7, 34]]]]], ["on", "submit"], ["loc", [null, [7, 6], [7, 48]]]], ["inline", "t", ["form-term-text"], [], ["loc", [null, [10, 13], [10, 35]]]], ["inline", "input", [], ["value", ["subexpr", "@mut", [["get", "model.record.text", ["loc", [null, [11, 20], [11, 37]]]]], [], []], "class", "form-control", "placeholder", ["subexpr", "t", ["form-placeholder-term-text"], [], ["loc", [null, [11, 71], [11, 103]]]], "required", "required"], ["loc", [null, [11, 6], [11, 125]]]], ["inline", "t", ["form-term-description"], [], ["loc", [null, [14, 13], [14, 42]]]], ["inline", "textarea", [], ["value", ["subexpr", "@mut", [["get", "model.record.description", ["loc", [null, [15, 23], [15, 47]]]]], [], []], "class", "form-control", "placeholder", ["subexpr", "t", ["form-placeholder-term-description"], [], ["loc", [null, [15, 81], [15, 120]]]]], ["loc", [null, [15, 6], [15, 122]]]], ["inline", "t", ["Save"], [], ["loc", [null, [21, 6], [21, 18]]]], ["element", "action", ["goTo", "vocabulary.item.terms", ["get", "model.vocabulary.id", ["loc", [null, [23, 52], [23, 71]]]]], [], ["loc", [null, [23, 12], [23, 73]]]], ["inline", "t", ["term.find"], [], ["loc", [null, [25, 6], [25, 23]]]]],
       locals: [],
       templates: [child0, child1]
     };
@@ -17048,14 +18924,20 @@ define("we-admin-blog/templates/vocabulary/item/terms/index", ["exports"], funct
           var el1 = dom.createElement("i");
           dom.setAttribute(el1, "class", "glyphicon glyphicon-plus");
           dom.appendChild(el0, el1);
-          var el1 = dom.createTextNode(" Criar\n");
+          var el1 = dom.createTextNode(" ");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n");
           dom.appendChild(el0, el1);
           return el0;
         },
-        buildRenderNodes: function buildRenderNodes() {
-          return [];
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var morphs = new Array(1);
+          morphs[0] = dom.createMorphAt(fragment, 3, 3, contextualElement);
+          return morphs;
         },
-        statements: [],
+        statements: [["inline", "t", ["term.create"], [], ["loc", [null, [5, 45], [5, 64]]]]],
         locals: [],
         templates: []
       };
@@ -17088,7 +18970,7 @@ define("we-admin-blog/templates/vocabulary/item/terms/index", ["exports"], funct
         var el0 = dom.createDocumentFragment();
         var el1 = dom.createElement("h1");
         dom.setAttribute(el1, "class", "page-header");
-        var el2 = dom.createTextNode("Termos");
+        var el2 = dom.createComment("");
         dom.appendChild(el1, el2);
         dom.appendChild(el0, el1);
         var el1 = dom.createTextNode("\n\n");
@@ -17113,12 +18995,13 @@ define("we-admin-blog/templates/vocabulary/item/terms/index", ["exports"], funct
         return el0;
       },
       buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-        var morphs = new Array(2);
-        morphs[0] = dom.createMorphAt(dom.childAt(fragment, [2]), 1, 1);
-        morphs[1] = dom.createMorphAt(fragment, 6, 6, contextualElement);
+        var morphs = new Array(3);
+        morphs[0] = dom.createMorphAt(dom.childAt(fragment, [0]), 0, 0);
+        morphs[1] = dom.createMorphAt(dom.childAt(fragment, [2]), 1, 1);
+        morphs[2] = dom.createMorphAt(fragment, 6, 6, contextualElement);
         return morphs;
       },
-      statements: [["block", "link-to", ["vocabulary.item.terms.create", ["get", "model.vocabulary.id", ["loc", [null, [4, 44], [4, 63]]]]], ["class", "btn btn-default"], 0, null, ["loc", [null, [4, 2], [6, 14]]]], ["inline", "conteudos-table", [], ["data", ["subexpr", "@mut", [["get", "model.records", ["loc", [null, [10, 23], [10, 36]]]]], [], []], "columns", ["subexpr", "@mut", [["get", "model.columns", ["loc", [null, [10, 45], [10, 58]]]]], [], []], "pageSize", 25, "useFilteringByColumns", false, "deleteRecord", "deleteRecord"], ["loc", [null, [10, 0], [10, 128]]]]],
+      statements: [["inline", "t", ["term.find"], [], ["loc", [null, [1, 24], [1, 41]]]], ["block", "link-to", ["vocabulary.item.terms.create", ["get", "model.vocabulary.id", ["loc", [null, [4, 44], [4, 63]]]]], ["class", "btn btn-default"], 0, null, ["loc", [null, [4, 2], [6, 14]]]], ["inline", "conteudos-table", [], ["data", ["subexpr", "@mut", [["get", "model.records", ["loc", [null, [10, 23], [10, 36]]]]], [], []], "columns", ["subexpr", "@mut", [["get", "model.columns", ["loc", [null, [10, 45], [10, 58]]]]], [], []], "pageSize", 25, "useFilteringByColumns", false, "deleteRecord", "deleteRecord"], ["loc", [null, [10, 0], [10, 128]]]]],
       locals: [],
       templates: [child0]
     };
@@ -17200,18 +19083,23 @@ define("we-admin-blog/templates/vocabulary/item/terms/list-item-actions", ["expo
         var el1 = dom.createElement("button");
         dom.setAttribute(el1, "type", "button");
         dom.setAttribute(el1, "class", "btn btn-default btn-sm");
-        var el2 = dom.createTextNode("\n  Deletar\n");
+        var el2 = dom.createTextNode("\n  ");
+        dom.appendChild(el1, el2);
+        var el2 = dom.createComment("");
+        dom.appendChild(el1, el2);
+        var el2 = dom.createTextNode("\n");
         dom.appendChild(el1, el2);
         dom.appendChild(el0, el1);
         return el0;
       },
       buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
         var element0 = dom.childAt(fragment, [0]);
-        var morphs = new Array(1);
+        var morphs = new Array(2);
         morphs[0] = dom.createElementMorph(element0);
+        morphs[1] = dom.createMorphAt(element0, 1, 1);
         return morphs;
       },
-      statements: [["element", "action", ["deleteRecord", ["get", "record", ["loc", [null, [1, 32], [1, 38]]]]], [], ["loc", [null, [1, 8], [1, 40]]]]],
+      statements: [["element", "action", ["deleteRecord", ["get", "record", ["loc", [null, [1, 32], [1, 38]]]]], [], ["loc", [null, [1, 8], [1, 40]]]], ["inline", "t", ["Delete"], [], ["loc", [null, [2, 2], [2, 16]]]]],
       locals: [],
       templates: []
     };
@@ -17224,7 +19112,7 @@ define("we-admin-blog/templates/vocabulary/list-item-actions", ["exports"], func
         meta: {
           "fragmentReason": {
             "name": "missing-wrapper",
-            "problems": ["wrong-type"]
+            "problems": ["multiple-nodes", "wrong-type"]
           },
           "revision": "Ember@2.6.2",
           "loc": {
@@ -17234,8 +19122,8 @@ define("we-admin-blog/templates/vocabulary/list-item-actions", ["exports"], func
               "column": 0
             },
             "end": {
-              "line": 1,
-              "column": 81
+              "line": 4,
+              "column": 0
             }
           },
           "moduleName": "we-admin-blog/templates/vocabulary/list-item-actions.hbs"
@@ -17246,14 +19134,25 @@ define("we-admin-blog/templates/vocabulary/list-item-actions", ["exports"], func
         hasRendered: false,
         buildFragment: function buildFragment(dom) {
           var el0 = dom.createDocumentFragment();
-          var el1 = dom.createTextNode("Ver/editar");
+          var el1 = dom.createTextNode("  ");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createElement("i");
+          dom.setAttribute(el1, "class", "glyphicon glyphicon-pencil text-success");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n  ");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n");
           dom.appendChild(el0, el1);
           return el0;
         },
-        buildRenderNodes: function buildRenderNodes() {
-          return [];
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var morphs = new Array(1);
+          morphs[0] = dom.createMorphAt(fragment, 3, 3, contextualElement);
+          return morphs;
         },
-        statements: [],
+        statements: [["inline", "t", ["Edit"], [], ["loc", [null, [3, 2], [3, 14]]]]],
         locals: [],
         templates: []
       };
@@ -17266,12 +19165,12 @@ define("we-admin-blog/templates/vocabulary/list-item-actions", ["exports"], func
           "loc": {
             "source": null,
             "start": {
-              "line": 2,
+              "line": 6,
               "column": 0
             },
             "end": {
-              "line": 2,
-              "column": 83
+              "line": 8,
+              "column": 0
             }
           },
           "moduleName": "we-admin-blog/templates/vocabulary/list-item-actions.hbs"
@@ -17282,14 +19181,20 @@ define("we-admin-blog/templates/vocabulary/list-item-actions", ["exports"], func
         hasRendered: false,
         buildFragment: function buildFragment(dom) {
           var el0 = dom.createDocumentFragment();
-          var el1 = dom.createTextNode("Termos");
+          var el1 = dom.createTextNode("  ");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n");
           dom.appendChild(el0, el1);
           return el0;
         },
-        buildRenderNodes: function buildRenderNodes() {
-          return [];
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var morphs = new Array(1);
+          morphs[0] = dom.createMorphAt(fragment, 1, 1, contextualElement);
+          return morphs;
         },
-        statements: [],
+        statements: [["inline", "t", ["term.find"], [], ["loc", [null, [7, 2], [7, 19]]]]],
         locals: [],
         templates: []
       };
@@ -17308,7 +19213,7 @@ define("we-admin-blog/templates/vocabulary/list-item-actions", ["exports"], func
             "column": 0
           },
           "end": {
-            "line": 5,
+            "line": 13,
             "column": 9
           }
         },
@@ -17331,21 +19236,31 @@ define("we-admin-blog/templates/vocabulary/list-item-actions", ["exports"], func
         var el1 = dom.createElement("button");
         dom.setAttribute(el1, "type", "button");
         dom.setAttribute(el1, "class", "btn btn-default btn-sm");
-        var el2 = dom.createTextNode("\n  Deletar\n");
+        var el2 = dom.createTextNode("\n  ");
+        dom.appendChild(el1, el2);
+        var el2 = dom.createElement("i");
+        dom.setAttribute(el2, "class", "glyphicon glyphicon-remove text-danger");
+        dom.appendChild(el1, el2);
+        var el2 = dom.createTextNode("\n  ");
+        dom.appendChild(el1, el2);
+        var el2 = dom.createComment("");
+        dom.appendChild(el1, el2);
+        var el2 = dom.createTextNode("\n");
         dom.appendChild(el1, el2);
         dom.appendChild(el0, el1);
         return el0;
       },
       buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
         var element0 = dom.childAt(fragment, [4]);
-        var morphs = new Array(3);
+        var morphs = new Array(4);
         morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
         morphs[1] = dom.createMorphAt(fragment, 2, 2, contextualElement);
         morphs[2] = dom.createElementMorph(element0);
+        morphs[3] = dom.createMorphAt(element0, 3, 3);
         dom.insertBoundary(fragment, 0);
         return morphs;
       },
-      statements: [["block", "link-to", ["vocabulary.item", ["get", "record.id", ["loc", [null, [1, 29], [1, 38]]]]], ["class", "btn btn-default btn-sm"], 0, null, ["loc", [null, [1, 0], [1, 93]]]], ["block", "link-to", ["vocabulary.item.terms", ["get", "record.id", ["loc", [null, [2, 35], [2, 44]]]]], ["class", "btn btn-default btn-sm"], 1, null, ["loc", [null, [2, 0], [2, 95]]]], ["element", "action", ["deleteRecord", ["get", "record", ["loc", [null, [3, 32], [3, 38]]]]], [], ["loc", [null, [3, 8], [3, 40]]]]],
+      statements: [["block", "link-to", ["vocabulary.item", ["get", "record.id", ["loc", [null, [1, 29], [1, 38]]]]], ["class", "btn btn-default btn-sm"], 0, null, ["loc", [null, [1, 0], [4, 12]]]], ["block", "link-to", ["vocabulary.item.terms", ["get", "record.id", ["loc", [null, [6, 35], [6, 44]]]]], ["class", "btn btn-default btn-sm"], 1, null, ["loc", [null, [6, 0], [8, 12]]]], ["element", "action", ["deleteRecord", ["get", "record", ["loc", [null, [10, 32], [10, 38]]]]], [], ["loc", [null, [10, 8], [10, 40]]]], ["inline", "t", ["Delete"], [], ["loc", [null, [12, 2], [12, 16]]]]],
       locals: [],
       templates: [child0, child1]
     };
@@ -17427,7 +19342,7 @@ catch(err) {
 /* jshint ignore:start */
 
 if (!runningTests) {
-  require("we-admin-blog/app")["default"].create({"name":"we-admin-blog","version":"0.0.0+53629243"});
+  require("we-admin-blog/app")["default"].create({"name":"we-admin-blog","version":"0.0.0+42c25201"});
 }
 
 /* jshint ignore:end */

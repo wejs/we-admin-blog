@@ -3,6 +3,8 @@ import AuthenticatedRouteMixin from 'ember-simple-auth/mixins/authenticated-rout
 
 export default Ember.Route.extend(AuthenticatedRouteMixin, {
   model() {
+    const i18n = this.get('i18n');
+
     return  Ember.RSVP.hash({
       records: this.get('store').query('url-alia', {}),
       columns: [
@@ -13,29 +15,24 @@ export default Ember.Route.extend(AuthenticatedRouteMixin, {
         {
           propertyName: 'alias',
           filteredBy: 'alias',
-          title: 'Alias'
+          title: i18n.t('form-urlAlias-alias')
         },
         {
           propertyName: 'target',
           filteredBy: 'targer',
-          title: 'Target'
-        },
-        {
-          propertyName: 'locale',
-          filteredBy: 'locale',
-          title: 'Locale'
+          title: i18n.t('form-urlAlias-target')
         },
         {
           propertyName: 'createdAt',
           filteredBy: 'createdAt',
-          title: 'Criado em',
+          title: i18n.t('form-urlAlias-createdAt'),
           template: 'partials/list-item-created-at'
         },
         {
           propertyName: 'actions',
           disableSorting: true,
           disableFiltering: true,
-          title: 'Actions',
+          title: i18n.t('Actions'),
           template: 'url-alia/list-item-actions'
         }
       ]

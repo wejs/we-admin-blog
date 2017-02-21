@@ -1,29 +1,28 @@
 <div class="content-box-large">
   <div class="panel-heading">
-    <h1>Meus dados</h1>
+    <h1>{{t 'Profile'}}</h1>
   </div>
   <div class="panel-body">
     <form {{action "save" model.user on="submit"}}>
       <fieldset>
         <div class="form-group">
-          <label>Username</label>
-          {{input value=model.user.username class="form-control" placeholder="Nome do usuário" required="required"}}
+          <label>{{t 'form-user-username'}}</label>
+          {{input value=model.user.username class="form-control" placeholder=(t 'form-placeholder-user-username') required="required"}}
         </div>
         <div class="form-group">
-          <label>DisplayName</label>
-          {{input value=model.user.displayName class="form-control" placeholder="Nome de exibição" required="required"}}
+          <label>{{t 'form-user-displayName'}}</label>
+          {{input value=model.user.displayName class="form-control" placeholder=(t 'form-placeholder-user-displayName') required="required"}}
         </div>
         <div class="form-group">
-          <label>Email</label>
-          {{input value=model.user.email class="form-control" placeholder="Email" disabled=settings.notIsAdmin}}
+          <label>{{t 'form-user-email'}}</label>
+          {{input value=model.user.email class="form-control" placeholder=(t 'form-placeholder-user-email') disabled=settings.notIsAdmin}}
         </div>
         <div class="form-group">
-          <label>Biografia / sobre</label>
+          <label>{{t 'form-user-biography'}}</label>
           {{textarea value=model.user.biography class="form-control" rows="4"}}
         </div>
-
         <div class="form-group">
-          <label>Language</label>
+          <label>{{t 'form-user-language'}}</label>
           {{#power-select
             options=settings.data.locales
             selected=model.user.language

@@ -20,10 +20,10 @@
     "node": ">= 0.10.0"
   },
   "files": [
-    "dist",
+    "prod",
+    "public",
     "install.js",
-    "plugin.js",
-    "README.md"
+    "plugin.js"
   ],
   "license": "MIT",
   "repository": "wejs/we-admin-blog",

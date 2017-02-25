@@ -67,6 +67,7 @@ module.exports = function(environment) {
     serverTokenEndpoint: '/auth/grant-password/authenticate'
   };
   if (environment === 'development') {
+    console.log('rodo'); process.exit();
     // ENV.APP.LOG_RESOLVER = true;
     // ENV.APP.LOG_ACTIVE_GENERATION = true;
     // ENV.APP.LOG_TRANSITIONS = true;
@@ -86,7 +87,7 @@ module.exports = function(environment) {
   }
   if (environment === 'production') {
     ENV.baseURL = '/admin';
-    ENV.API_HOST = 'http://localhost:4000';
+    ENV.API_HOST = '';
     ENV['ember-simple-auth'].serverTokenEndpoint = ENV['API_HOST'] + ENV['ember-simple-auth'].serverTokenEndpoint;
   }
   return ENV;

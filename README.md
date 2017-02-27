@@ -1,11 +1,29 @@
-# We-admin-blog
+# We.js blog administrator (we-admin-blog)
 
-> IN DEVELOPMENT
+Blog administrator project that add one Ember.js SPA in We.js projects with one simple command.
 
-This README outlines the details of collaborating on this Ember application.
-A short introduction of this app could easily go here.
+This project adds the /admin route with the new Ember.js SPA
 
-## Prerequisites
+## Requirement
+
+- One We.js blog project
+- we-plugin-article installed
+
+## Instalation
+
+In your We.js project root folder tip:
+
+```sh
+we i we-admin-blog
+```
+
+## Example:
+
+Generate one blog project with [We.js generator](https://github.com/wejs/generator-wejs#generate-one-wejs-blog-project) and see how it works.
+
+## DEVELOPMENT:
+
+### Prerequisites for development
 
 You will need the following things properly installed on your computer.
 
@@ -15,38 +33,35 @@ You will need the following things properly installed on your computer.
 * [Ember CLI](http://ember-cli.com/)
 * [PhantomJS](http://phantomjs.org/)
 
-## Installation
+### Installation for SPA development:
 
 * `git clone <repository-url>` this repository
 * change into the new directory
 * `npm install`
 * `bower install`
 
-## Running / Development
+### Running / Development
 
 * `ember server`
 * Visit your app at [http://localhost:4200](http://localhost:4200).
 
-### Code Generators
+#### Code Generators
 
 Make use of the many generators for code, try `ember help generate` for more details
 
-### Running Tests
+#### Running Tests
 
 * `ember test`
 * `ember test --server`
 
-### Building
+#### Building
 
 * `ember build` (development)
 * `ember build --environment production` (production)
 
-### Deploying
-
-Specify what it takes to deploy your app.
-
 ## Further Reading / Useful Links
 
+* [We.js](https://wejs.org)
 * [ember.js](http://emberjs.com/)
 * [ember-cli](http://ember-cli.com/)
 * Development Browser Extensions

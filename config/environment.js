@@ -52,7 +52,7 @@ module.exports = function(environment) {
         lagThreshold: 3
       },
       ajax: {
-        trackMethods: ['POST', 'DELETE', 'UPDATE', 'PATCH', 'PUT'],
+        trackMethods: ['GET', 'POST', 'DELETE', 'UPDATE', 'PATCH', 'PUT'],
         trackWebSockets: true,
         ignoreURLs: []
       }

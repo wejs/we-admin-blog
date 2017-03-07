@@ -25,7 +25,14 @@ Ember.Controller.reopen({
 Ember.Route.reopen({
   notifications: Ember.inject.service('notification-messages'),
   settings: Ember.inject.service('settings'),
-  i18n: Ember.inject.service()
+  i18n: Ember.inject.service(),
+  // pace loading on route change:
+  activatePace: Ember.on('activate', function(){
+    return window.Pace.restart();
+  }),
+  deactivatePace: Ember.on('deactivate', function() {
+    return window.Pace.stop();
+  })
 });
 
 export default App;

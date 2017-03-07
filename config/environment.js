@@ -53,8 +53,8 @@ module.exports = function(environment) {
       },
       ajax: {
         trackMethods: ['GET', 'POST', 'DELETE', 'UPDATE', 'PATCH', 'PUT'],
-        trackWebSockets: true,
-        ignoreURLs: []
+        // trackWebSockets: true,
+        // ignoreURLs: []
       }
     }
   };
@@ -67,7 +67,6 @@ module.exports = function(environment) {
     serverTokenEndpoint: '/auth/grant-password/authenticate'
   };
   if (environment === 'development') {
-    console.log('rodo'); process.exit();
     // ENV.APP.LOG_RESOLVER = true;
     // ENV.APP.LOG_ACTIVE_GENERATION = true;
     // ENV.APP.LOG_TRANSITIONS = true;

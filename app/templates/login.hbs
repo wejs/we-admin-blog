@@ -5,11 +5,15 @@
     <form class="form-signin" {{action 'authenticate' on='submit'}}>
       <h2 class="form-signin-heading">{{t 'Login'}}</h2>
 
-      <label for="inputEmail" class="sr-only">{{t 'form-login-email'}}</label>
-      {{input id='identification' type="email" placeholder=(t "form-placeholder-login-email") value=identification required="required" autofocus="true" class="form-control"}}
+      <div class="form-group">
+        <label for="inputEmail" class="sr-only">{{t 'form-login-email'}}</label>
+        {{input id='identification' type="email" placeholder=(t "form-placeholder-login-email") value=identification required="required" autofocus="true" class="form-control"}}
+      </div>
 
-      <label for="inputPassword" class="sr-only">{{t 'form-login-password'}}</label>
-      {{input id='password' placeholder=(t "form-placeholder-login-password") type='password' value=password required="required" class="form-control"}}
+      <div class="form-group">
+        <label for="inputPassword" class="sr-only">{{t 'form-login-password'}}</label>
+        {{input id='password' placeholder=(t "form-placeholder-login-password") type='password' value=password required="required" class="form-control"}}
+      </div>
       {{!--
       <div class="checkbox">
         <label>
@@ -17,6 +21,12 @@
         </label>
       </div> --}}
       <button class="btn btn-lg btn-primary btn-block" type="submit">{{t 'form-login-submit'}}</button>
+
+      <div class="login-form-links">
+      {{#link-to 'forgot-password'}}
+        Recuperar senha
+      {{/link-to}}
+      </div>
     </form>
   {{/if}}
 </div></div>

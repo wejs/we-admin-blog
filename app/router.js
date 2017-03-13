@@ -9,6 +9,7 @@ Router.map(function() {
   this.route('user');
 
   this.route('login');
+  this.route('forgot-password');
   this.route('logout');
   this.route('profile', function() {
     this.route('change-password');

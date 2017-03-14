@@ -18201,7 +18201,7 @@ catch(err) {
 /* jshint ignore:start */
 
 if (!runningTests) {
-  require("we-admin-blog/app")["default"].create({"name":"we-admin-blog","version":"1.0.1+886e2d14"});
+  require("we-admin-blog/app")["default"].create({"name":"we-admin-blog","version":"1.1.0"});
 }
 
 /* jshint ignore:end */

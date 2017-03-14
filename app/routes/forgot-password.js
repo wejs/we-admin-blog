@@ -23,7 +23,7 @@ export default Ember.Route.extend(UnauthenticatedRouteMixin, {
       let headers = { Accept: 'application/json' };
 
       Ember.$.ajax({
-        url: `${ENV.API_HOST}/acl/permission`,
+        url: `${ENV.API_HOST}/auth/forgot-password`,
         type: 'POST',
         headers: headers,
         data: {
@@ -31,12 +31,24 @@ export default Ember.Route.extend(UnauthenticatedRouteMixin, {
         }
       })
       .done( (result)=> {
-        console.log('result>', result);
+        // reset email:
+        this.set('currentModel.email', '');
+        // then show the result as notification:
+        if (result && result.messages) {
+          result.messages.forEach( (m)=> {
+            if (m.status === 'success') {
+              this.get('notifications').success(m.message);
+            } else {
+              this.get('notifications').error(m.message);
+            }
+          });
+        } else {
+          Ember.Logger.log('Unknow success response on forgot-password page');
+        }
+      })
+      .fail( (err)=> {
+        this.send('queryError', err);
       });
-      // .fail( (error)=> {
-      //   console.log('er')
-      // });
-
     }
   }
 });

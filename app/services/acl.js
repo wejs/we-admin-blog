@@ -213,5 +213,60 @@ export default Ember.Service.extend({
       .done(resolve)
       .fail(reject);
     });
+  },
+
+
+  /**
+   * Add one permission from role
+   *
+   * @param  {String} roleName
+   * @param  {String} permissionName
+   * @return {Promise}
+   */
+  addPermissionToRole(roleName, permissionName) {
+    return new window.Promise( (resolve, reject)=> {
+      let headers = { Accept: 'application/vnd.api+json' },
+          accessToken = this.get('session.session.authenticated.access_token');
+
+      if (accessToken) {
+        headers.Authorization = `Basic ${accessToken}`;
+      }
+
+      Ember.$.ajax({
+        url: `${ENV.API_HOST}/acl/role/${roleName}/permissions/${permissionName}`,
+        type: 'POST',
+        dataType: 'json',
+        headers: headers
+      })
+      .done(resolve)
+      .fail(reject);
+    });
+  },
+
+  /**
+   * Remove one permission from role
+   *
+   * @param  {String} roleName
+   * @param  {String} permissionName
+   * @return {Promise}
+   */
+  removePermissionFromRole(roleName, permissionName) {
+    return new window.Promise( (resolve, reject)=> {
+      let headers = { Accept: 'application/vnd.api+json' },
+          accessToken = this.get('session.session.authenticated.access_token');
+
+      if (accessToken) {
+        headers.Authorization = `Basic ${accessToken}`;
+      }
+
+      Ember.$.ajax({
+        url: `${ENV.API_HOST}/acl/role/${roleName}/permissions/${permissionName}`,
+        type: 'DELETE',
+        dataType: 'json',
+        headers: headers
+      })
+      .done(resolve)
+      .fail(reject);
+    });
   }
 });

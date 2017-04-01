@@ -20,7 +20,7 @@ export default Ember.Route.extend(AuthenticatedRouteMixin, {
 
   actions: {
     addPermission(roleName, permissionName, cb) {
-      this.get('acl').addPermission(roleName, permissionName)
+      this.get('acl').addPermissionToRole(roleName, permissionName)
       .then( ()=> {
         cb();
         return null;
@@ -30,7 +30,7 @@ export default Ember.Route.extend(AuthenticatedRouteMixin, {
       });
     },
     removePermission(roleName, permissionName, cb) {
-      this.get('acl').removePermission(roleName, permissionName)
+      this.get('acl').removePermissionFromRole(roleName, permissionName)
       .then( ()=> {
         cb();
         return null;

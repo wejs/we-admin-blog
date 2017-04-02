@@ -2,7 +2,19 @@ import Ember from 'ember';
 import EmberUploader from 'ember-uploader';
 
 export default EmberUploader.FileField.extend({
+  session: Ember.inject.service('session'),
+
   uploader: null,
+
+  getHeaders() {
+    let headers = { Accept: 'application/vnd.api+json' },
+        accessToken = this.get('session.session.authenticated.access_token');
+
+    if (accessToken) {
+      headers.Authorization = `Basic ${accessToken}`;
+    }
+    return headers;
+  },
 
   filesDidChange(files) {
     if (Ember.isEmpty(files)) {
@@ -11,6 +23,9 @@ export default EmberUploader.FileField.extend({
     }
 
     const uploader = EmberUploader.Uploader.create({
+      ajaxSettings: {
+        headers: this.getHeaders()
+      },
       paramName: 'image',
       url: this.get('url')
     });

@@ -1,18 +1,148 @@
 import Ember from 'ember';
 import ENV from "../../config/environment";
 
+let editorLocaleCache, editorLocaleUrlCache;
+
 export default Ember.Controller.extend({
   ajax: Ember.inject.service(),
+  session: Ember.inject.service('session'),
+  settings: Ember.inject.service('settings'),
 
-  editorOptions: {
-    min_height: 400,
-    plugins: [
-      'advlist autolink lists link image charmap print preview hr anchor pagebreak',
-      'searchreplace wordcount visualblocks visualchars code fullscreen',
-      'insertdatetime media nonbreaking save table contextmenu directionality',
-      'emoticons template paste textcolor colorpicker textpattern imagetools codesample'
-    ]
+  editorOptions: Ember.computed('settings.data', {
+    get() {
+      const opts = {
+        min_height: 400,
+        language: this.getEditorLocale(),
+        language_url: this.getEditorLocaleUrl()
+      };
+
+      return opts;
+    }
+  }),
+
+  getEditorLocale() {
+    if (editorLocaleCache) {
+      return editorLocaleCache;
+    }
+
+    let locale = this.get('settings.data.activeLocale');
+    // use default en-us locale
+    if (!locale || locale === 'en' || locale === 'en-us') {
+      return null;
+    }
+
+    if (locale.indexOf('-') > -1) {
+      const parts = locale.split('-');
+      // Locales with more than 2 parts not are supported
+      // TODO!
+      if (parts.length > 2) {
+        return null;
+      }
+      // Converts the seccond part of the locale to uppercase:
+      parts[1] = parts[1].toUpperCase();
+      // override the locale?
+      locale = parts.join('_');
+    } else {
+      return null;
+    }
+
+    editorLocaleCache = locale;
+
+    return editorLocaleCache;
   },
+
+  getEditorLocaleUrl() {
+    if (editorLocaleUrlCache) {
+      return editorLocaleUrlCache;
+    }
+
+    let locale = this.get('settings.data.activeLocale');
+    // use default en-us locale
+    if (!locale || locale === 'en' || locale === 'en-us') {
+      return null;
+    }
+
+    if (locale.indexOf('-') > -1) {
+      const parts = locale.split('-');
+      // Locales with more than 2 parts not are supported
+      // TODO!
+      if (parts.length > 2) {
+        return null;
+      }
+      // Converts the seccond part of the locale to uppercase:
+      parts[1] = parts[1].toUpperCase();
+      // override the locale?
+      locale = parts.join('_');
+    } else {
+      return null;
+    }
+
+    editorLocaleUrlCache = `/admin/tiny-mce-languages/${locale}.js`;
+
+    return editorLocaleUrlCache;
+  },
+
+  // editorOptions: {
+  //   min_height: 400,
+  //   language: Ember.computed('settings.data.activeLocale', {
+  //     get(key) {
+  //       let locale = this.get('settings.data.activeLocale');
+  //       // use default en-us locale
+  //       if (locale === 'en' || 'en-us') {
+  //         return null;
+  //       }
+  //
+  //       if (locale.indexOf('-') > -1) {
+  //         const parts = locale.split('-');
+  //         // Locales with more than 2 parts not are supported
+  //         // TODO!
+  //         if (parts.length > 2) {
+  //           return null;
+  //         }
+  //         // Converts the seccond part of the locale to uppercase:
+  //         parts[1] = parts[1].toUpperCase();
+  //         // override the locale?
+  //         locale = parts.joins('_');
+  //       } else {
+  //         return null;
+  //       }
+  //
+  //       return locale;
+  //     }
+  //   }),
+  //   language_url:  Ember.computed('settings.data.activeLocale', {
+  //     get(key) {
+  //       let locale = this.get('settings.data.activeLocale');
+  //       // use default en-us locale
+  //       if (locale === 'en' || 'en-us') {
+  //         return null;
+  //       }
+  //
+  //       if (locale.indexOf('-') > -1) {
+  //         const parts = locale.split('-');
+  //         // Locales with more than 2 parts not are supported
+  //         // TODO!
+  //         if (parts.length > 2) {
+  //           return null;
+  //         }
+  //         // Converts the seccond part of the locale to uppercase:
+  //         parts[1] = parts[1].toUpperCase();
+  //         // override the locale?
+  //         locale = parts.joins('_');
+  //       } else {
+  //         return null;
+  //       }
+  //
+  //       return `/admin/tiny-mce-languages/${locale}.js`;
+  //     }
+  //   }),
+  //   plugins: [
+  //     'advlist autolink lists link image charmap print preview hr anchor pagebreak',
+  //     'searchreplace wordcount visualblocks visualchars code fullscreen',
+  //     'insertdatetime media nonbreaking save table contextmenu directionality',
+  //     'emoticons template paste textcolor colorpicker textpattern imagetools codesample'
+  //   ]
+  // },
 
   actions: {
     searchCategoryTerms(term) {

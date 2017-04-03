@@ -7,7 +7,7 @@
     "test": "tests"
   },
   "scripts": {
-    "build": "ember build --environment production",
+    "build": "ember build --environment production && ember build --environment production",
     "start": "ember server --live-reload=true",
     "test": "ember test",
     "test-server": "NODE_ENV=test LOG_LV=info ./node_modules/.bin/mocha test/bootstrap.js test/**/*.test.js",

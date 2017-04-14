@@ -16,8 +16,9 @@ export default Ember.Component.extend({
   uploadingImage: false,
   description: null,
 
-  canAddMore: Ember.computed('value', 'multiple', function() {
+  canAddMore: Ember.computed('value.length', 'multiple', function() {
     const isMultiple = this.get('multiple');
+
     if (
       // multiple:
       isMultiple ||

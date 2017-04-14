@@ -7,8 +7,15 @@ module.exports = function(defaults) {
     'ember-power-select': {
       theme: 'bootstrap'
     },
+
     fingerprint: {
        exclude: ['tiny-mce-languages/**'],
+    },
+
+    'ember-bootstrap': {
+      'bootstrapVersion': 3,
+      'importBootstrapFont': true,
+      'importBootstrapCSS': true
     }
   });
 

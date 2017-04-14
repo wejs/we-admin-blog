@@ -15,5 +15,6 @@ export default DS.Model.extend({
     async: true
   }),
   createdAt: DS.attr('date'),
-  updatedAt: DS.attr('date')
+  updatedAt: DS.attr('date'),
+  avatar: DS.attr('array')
 });

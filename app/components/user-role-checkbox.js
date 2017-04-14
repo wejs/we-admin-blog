@@ -18,8 +18,6 @@ export default Ember.Component.extend({
     const roles = this.get('user.roles'),
       roleName = this.get('roleName');
 
-    console.log(roles);
-
     if (
       !roles ||
       roles.indexOf(roleName) === -1

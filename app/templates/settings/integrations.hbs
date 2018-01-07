@@ -1,0 +1,142 @@
+<h1 class="page-header">Integrações</h1>
+
+{{settings-menu}}
+
+<form {{action "save" model.settings on="submit"}}>
+  <div class="row">
+    <div class="col-md-12">
+      <div class="alert alert-warning" role="alert">Atenção! Altere as configurações abaixo com cuidado pois podem desativar funções importantes do sistema.<br>Em caso de dúvidas entre em contato com a Linky Systems pelo email contact@linkysystems.com</div>
+    </div>
+
+    <div class="col-md-6">
+      <div class="panel panel-default">
+        <div class="panel-heading"><i class="fa fa-google" aria-hidden="true"></i> Google analytics:</div>
+        <div class="panel-body">
+          <fieldset>
+            <div class="form-group">
+              <label>ID de acompanhamento:</label>
+              {{input value=model.settings.googleAnalyticsID name="googleAnalyticsID" class="form-control" placeholder="Digite o id aqui..."}}
+              <p class="help-block">O ID de acompanhamento pego no site do google analytics. Ex: UA-00000000-0.</p>
+            </div>
+          </fieldset>
+        </div>
+      </div>
+
+      <div class="panel panel-default">
+        <div class="panel-heading"><i class="fa fa-facebook" aria-hidden="true"></i> Facebook:</div>
+        <div class="panel-body">
+          <fieldset>
+            <div class="form-group">
+              <label>Client id (client_id):</label>
+              {{input value=model.settings.fbClientId name="fbClientId" class="form-control" placeholder="Digite o client_id aqui..."}}
+              <p class="help-block">O client_id pego na página do aplicativo do facebook.</p>
+            </div>
+            <div class="form-group">
+              <label>Client secret (client_secret):</label>
+              {{input value=model.settings.fbclientSecret name="fbclientSecret" class="form-control" placeholder="Digite o client_secret aqui..."}}
+              <p class="help-block">O client_secret pego na página do aplicativo do facebook.</p>
+            </div>
+            <div class="form-group">
+              <label>Id da página:</label>
+              {{input value=model.settings.fbPageId name="fbPageId" class="form-control" placeholder="Digite o id da página aqui..."}}
+              <p class="help-block">O id da página pego na url página facebook, normalmente um número grande como: 189264414423109.</p>
+            </div>
+          </fieldset>
+        </div>
+      </div>
+
+      <div class="panel panel-default">
+        <div class="panel-heading"><i class="fa fa-envelope-o" aria-hidden="true"></i> SMTP:</div>
+        <div class="panel-body">
+          <fieldset>
+            <div class="form-group">
+              <label>Servidor (host):</label>
+              {{input value=model.settings.smtp__host name="smtp__host" class="form-control"}}
+              <p class="help-block">Endereço do servidor SMTP. Exemplo: smtp.gmail.com</p>
+            </div>
+            <div class="form-group">
+              <label>Porta (port):</label>
+              {{input value=model.settings.smtp__port name="smtp__port" class="form-control"}}
+              <p class="help-block">Porta de conexão com o servidor de e-mail. Exemplo: 465</p>
+            </div>
+            <div class="form-group">
+              <label>Nome de usuário (username):</label>
+              {{input autocomplete="off" value=model.settings.smtp__auth__user name="smtp__auth__user" class="form-control"}}
+              <p class="help-block">Nome de usuário no servidor de e-mail.</p>
+            </div>
+            <div class="form-group">
+              <label>Senha do SMTP:</label>
+              {{input type="password" autocomplete="new-password" value=model.settings.smtp__auth__pass name="smtp__auth__pass" class="form-control"}}
+              <p class="help-block">Senha usuário no servidor de e-mail.</p>
+            </div>
+            <div class="checkbox">
+              <label>
+                {{input type="checkbox" checked=model.settings.smtp__secure name="smtp__secure"}} Usar TLS na conexão?
+              </label>
+            </div>
+            <hr>
+            <div class="form-group">
+              <label>Remetente padrão (from):</label>
+              {{input value=model.settings.smtp__mailOptions__from name="smtp__mailOptions__from" class="form-control"}}
+              <p class="help-block">Usado como from, deve ter o mesmo domínio da conta de email de SMTP. <br>Exemplo: contact@linkysystems.com</p>
+            </div>
+            <div class="form-group">
+              <label>Responder para padrão (replyTo):</label>
+              {{input value=model.settings.smtp__mailOptions__replyTo name="smtp__mailOptions__replyTo" class="form-control"}}
+              <p class="help-block">Email padrão que receberá a resposta do usuário. Qualquer email válido pode ser usado<br>Exemplo: contato@albertosouza.net</p>
+            </div>
+            <div class="form-group">
+              <label>Assunto padrão (subject):</label>
+              {{input value=model.settings.smtp__mailOptions__subject name="smtp__mailOptions__subject" class="form-control"}}
+              <p class="help-block">Usado caso o tipo de e-mail enviado não possua um assunto.</p>
+            </div>
+          </fieldset>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="col-md-6">
+      <div class="panel panel-default">
+        <div class="panel-heading"><i class="fa fa-map" aria-hidden="true"></i> Google maps:</div>
+        <div class="panel-body">
+          <fieldset>
+            <div class="form-group">
+              <label>API Key:</label>
+              {{input value=model.settings.googleMapsKey name="googleMapsKey" class="form-control" placeholder="Ex: AIzaSyDa_THpEmCgLPCOKDIj-q7IRTkyIku99TE"}}
+              <p class="help-block">Chave pública (key) do google maps criada no "google maps console", link: https://developers.google.com/maps/documentation/embed/guide?hl=pt-br.</p>
+            </div>
+          </fieldset>
+        </div>
+      </div>
+
+      <div class="panel panel-default">
+        <div class="panel-heading"><i class="fa fa-shield" aria-hidden="true"></i> Recaptcha:</div>
+        <div class="panel-body">
+          <fieldset>
+            <div class="form-group">
+              <label>Recaptcha key:</label>
+              {{input value=model.settings.recaptchaKey name="recaptchaKey" class="form-control"}}
+              <p class="help-block">Chave pública (key) criada em: https://www.google.com/recaptcha/admin.</p>
+            </div>
+            <div class="form-group">
+              <label>Recaptcha secret:</label>
+              {{input value=model.settings.recaptchaSecret name="recaptchaSecret" class="form-control"}}
+              <p class="help-block">Chave privada (secret) criada em: https://www.google.com/recaptcha/admin.</p>
+            </div>
+          </fieldset>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="col-md-12">
+      <div>
+        <button class="btn btn-primary">
+          <i class="fa fa-save"></i>
+          Salvar
+        </button>
+      </div>
+    </div>
+  </div>
+</form>

@@ -3,12 +3,136 @@ module.exports = function(environment) {
   var ENV = {
     modulePrefix: 'we-admin-blog',
     environment: environment,
-    baseURL: '/admin/',
+    rootURL: '/admin/',
     locationType: 'hash',
+    API_HOST: '',
+    imageHost: '',
     i18n: {
       defaultLocale: 'en-us'
       // defaultLocale: 'pt-br'
     },
+
+    settingsMenu: {
+      links: [
+      {
+        icon: '<i class="fa fa-wrench" aria-hidden="true"></i>',
+        text: 'Dados do hotel',
+        linkTo: 'settings.project'
+      },
+      {
+        icon: '<i class="fa fa-wrench" aria-hidden="true"></i>',
+        text: 'Dados do sistema',
+        linkTo: 'settings.index'
+      },
+      {
+        icon: '<i class="fa fa-tachometer" aria-hidden="true"></i>',
+        text: 'Visual e tema',
+        linkTo: 'settings.theme'
+      },
+      {
+        icon: '<i class="fa fa-mixcloud" aria-hidden="true"></i>',
+        text: 'Integrações',
+        linkTo: 'settings.integrations'
+      },
+      // {
+      //   icon: '<i class="fa fa-envelope-o" aria-hidden="true"></i>',
+      //   text: 'Contato e email',
+      //   linkTo: 'settings.email'
+      // }
+      ]
+    },
+
+    menuLinkSelectorComponents: [
+      {
+        name: 'content',
+        title: 'Páginas',
+        componentName: 'menu-page-selector'
+      },
+      {
+        name: 'custom',
+        title: 'Links personalizados',
+        componentName: 'menu-custom-link-form'
+      },
+      {
+        name: 'category',
+        title: 'Categorias',
+        componentName: 'menu-category-selector'
+      },
+      {
+        name: 'tags',
+        title: 'Tags',
+        componentName: 'menu-tag-selector'
+      },
+      {
+        name: 'user',
+        title: 'Usuário',
+        componentName: 'menu-user-links-selector'
+      }
+    ],
+
+    adminMenu: [
+      {
+        icon: '<i class="fa fa-bar-chart"></i>',
+        text: 'Dashboard',
+        linkTo: 'index',
+        permission: true
+      },
+      {
+        icon: '<i class="fa fa-file-text"></i>',
+        text: 'Conteúdos',
+        linkTo: 'contents.index',
+        permission: 'create_content'
+      },
+      {
+        icon: '<i class="fa fa-slideshare"></i>',
+        text: 'Slideshow',
+        linkTo: 'slides.index',
+        permission: 'create_slide'
+      },
+      {
+        icon: '<i class="fa fa-envelope-o" aria-hidden="true"></i>',
+        text: 'Mensagens de contato',
+        linkTo: 'site-contacts.index',
+        permission: 'update_site-contact'
+      },
+      {
+        icon: '<i class="fa fa-briefcase" aria-hidden="true"></i>',
+        text: 'Dados do Blog',
+        linkTo: 'settings.project',
+        permission: 'system_settings_update'
+      },
+      {
+        icon: '<i class="fa fa-bars"></i>',
+        text: 'Menus e links',
+        linkTo: 'menus.index',
+        roles: ['editor']
+      },
+      {
+        icon: '<i class="fa fa-tags"></i>',
+        text: 'Categorias e Tags',
+        linkTo: 'vocabulary',
+        roles: ['editor']
+      },
+      {
+        icon: '<i class="fa fa-users"></i>',
+        text: 'Usuários',
+        linkTo: 'users.index',
+        permission: 'find_user'
+      },
+      {
+        icon: '<i class="fa fa-envelope" aria-hidden="true"></i>',
+        text: 'Templates de email',
+        linkTo: 'email-templates.index',
+        permission: 'create_email-template'
+      },
+      {
+        icon: '<i class="fa fa-wrench"></i>',
+        text: 'Configurações',
+        linkTo: 'settings.index',
+        permission: 'system_settings_update'
+      }
+    ],
+
     EmberENV: {
       EXTEND_PROTOTYPES: {
         Date: false,
@@ -56,6 +180,9 @@ module.exports = function(environment) {
         // trackWebSockets: true,
         // ignoreURLs: []
       }
+    },
+    tinyMCE:{
+      version: 4
     }
   };
   ENV['ember-simple-auth'] = {
@@ -64,7 +191,12 @@ module.exports = function(environment) {
     authenticationRoute: 'login',
     routeAfterAuthentication: 'index',
     routeIfAlreadyAuthenticated: 'index',
-    serverTokenEndpoint: '/auth/grant-password/authenticate'
+    serverTokenEndpoint: '/auth/grant-password/authenticate',
+
+
+    authorizer: 'authorizer:custom',
+    store: 'simple-auth-session-store:cookie', // optional
+    crossOriginWhitelist: ['http://localhost:4000']
   };
   if (environment === 'development') {
     // ENV.APP.LOG_RESOLVER = true;
@@ -72,12 +204,22 @@ module.exports = function(environment) {
     // ENV.APP.LOG_TRANSITIONS = true;
     // ENV.APP.LOG_TRANSITIONS_INTERNAL = true;
     // ENV.APP.LOG_VIEW_LOOKUPS = true;
+
+    if (!ENV.APP) {
+      ENV.APP = {};
+    }
+    ENV.APP.usingCors = false;
+    ENV.APP.corsWithCreds = false;
+    ENV.APP.apiURL = null;
+
     ENV.API_HOST = 'http://localhost:4000';
+    ENV.imageHost = 'http://localhost:4000';
+
     ENV['ember-simple-auth'].serverTokenEndpoint = ENV['API_HOST'] + ENV['ember-simple-auth'].serverTokenEndpoint;
   }
   if (environment === 'test') {
     // Testem prefers this...
-    ENV.baseURL = '/';
+    ENV.rootURL = '/';
     ENV.locationType = 'none';
     // keep test console output quieter
     ENV.APP.LOG_ACTIVE_GENERATION = false;
@@ -85,7 +227,8 @@ module.exports = function(environment) {
     ENV.APP.rootElement = '#ember-testing';
   }
   if (environment === 'production') {
-    ENV.baseURL = '/admin';
+    ENV.rootURL = '/admin';
+    ENV.imageHost = '';
     ENV.API_HOST = '';
     ENV['ember-simple-auth'].serverTokenEndpoint = ENV['API_HOST'] + ENV['ember-simple-auth'].serverTokenEndpoint;
   }

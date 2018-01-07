@@ -26,6 +26,10 @@ Ember.Route.reopen({
   notifications: Ember.inject.service('notification-messages'),
   settings: Ember.inject.service('settings'),
   i18n: Ember.inject.service(),
+  activate: function() {
+    this._super.apply(this, arguments);
+    window.scrollTo(0,0);
+  },
   // pace loading on route change:
   activatePace: Ember.on('activate', function(){
     return window.Pace.restart();
@@ -34,5 +38,21 @@ Ember.Route.reopen({
     return window.Pace.stop();
   })
 });
+
+// settup ember ajax for this project session store
+if (config.environment === 'development') {
+  Ember.$.ajaxSetup({
+    crossDomain: true,
+    xhrFields: {
+      withCredentials: true
+    }
+  });
+} else {
+  Ember.$.ajaxSetup({
+    xhrFields: {
+      withCredentials: true
+    }
+  });
+}
 
 export default App;

@@ -8,6 +8,14 @@ module.exports = function(defaults) {
       theme: 'bootstrap'
     },
 
+    'ember-font-awesome': {
+      includeComponent: false
+    },
+
+    flatpickr: {
+      locales: ['pt']
+    },
+
     fingerprint: {
        exclude: ['tiny-mce-languages/**'],
     },

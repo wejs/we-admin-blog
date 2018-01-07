@@ -15,11 +15,9 @@ Router.map(function() {
     this.route('change-password');
   });
 
-  this.route('articles', function() {
+  this.route('contents', function() {
     this.route('create');
-    this.route('item', { path: ':id' }, function(){
-
-    });
+    this.route('item', { path: ':id' }, function(){});
   });
 
   this.route('users', function() {
@@ -39,8 +37,16 @@ Router.map(function() {
   this.route('menus', function() {
     this.route('create');
     this.route('item', { path: ':id' }, function(){
+      this.route('add-link');
+      this.route('edit-link', { path: ':linkid' }, function(){
 
+      });
     });
+  });
+
+  this.route('slides', function() {
+    this.route('create');
+    this.route('item', { path: ':id' }, function(){});
   });
 
   this.route('vocabulary', function() {
@@ -53,6 +59,34 @@ Router.map(function() {
     });
   });
 
+
+  this.route('settings', function() {
+    this.route('project');
+    this.route('integrations');
+    this.route('theme');
+  });
+
+  this.route('site-contacts', function() {
+    this.route('create');
+    this.route('item', { path: ':id' }, function(){});
+  });
+  this.route('site-contact-forms', function() {
+    this.route('create');
+    this.route('item', { path: ':id' }, function(){});
+  });
+
+  this.route('email-templates', function() {
+    this.route('create');
+    this.route('item', { path: ':id' }, function(){});
+  });
+
+
+  this.route('comments', function() {
+    this.route('item', { path: ':id' }, function(){});
+  });
+
+
+  this.route('widgets');
   this.route('permissions');
   this.route('roles');
   this.route('not-found', { path: '/*path' });

@@ -77,10 +77,5 @@
       "we-plugin-i18n-api": true
     }
   },
-  "ember-addon": {
-    "paths": [
-      "lib/copy-build-files"
-    ]
-  },
   "dependencies": {}
 }

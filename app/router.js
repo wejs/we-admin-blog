@@ -54,7 +54,7 @@ Router.map(function() {
     this.route('item', { path: ':id' }, function() {
       this.route('terms', function() {
         this.route('create');
-        this.route('item', { path: ':id' }, function(){});
+        this.route('item', { path: ':termId' }, function(){});
       });
     });
   });

@@ -15,8 +15,8 @@ module.exports = function(environment) {
     settingsMenu: {
       links: [
       {
-        icon: '<i class="fa fa-wrench" aria-hidden="true"></i>',
-        text: 'Dados do hotel',
+        icon: '<i class="fa fa-briefcase" aria-hidden="true"></i>',
+        text: 'Dados do site',
         linkTo: 'settings.project'
       },
       {
@@ -97,7 +97,7 @@ module.exports = function(environment) {
       },
       {
         icon: '<i class="fa fa-briefcase" aria-hidden="true"></i>',
-        text: 'Dados do Blog',
+        text: 'Dados do site',
         linkTo: 'settings.project',
         permission: 'system_settings_update'
       },
@@ -196,7 +196,7 @@ module.exports = function(environment) {
 
     authorizer: 'authorizer:custom',
     store: 'simple-auth-session-store:cookie', // optional
-    crossOriginWhitelist: ['http://localhost:4000']
+    crossOriginWhitelist: [( process.env.API_HOST || 'http://localhost:4000' )]
   };
   if (environment === 'development') {
     // ENV.APP.LOG_RESOLVER = true;
@@ -212,8 +212,8 @@ module.exports = function(environment) {
     ENV.APP.corsWithCreds = false;
     ENV.APP.apiURL = null;
 
-    ENV.API_HOST = 'http://localhost:4000';
-    ENV.imageHost = 'http://localhost:4000';
+    ENV.API_HOST = ( process.env.API_HOST || 'http://localhost:4000' );
+    ENV.imageHost = ( process.env.imageHost || process.env.API_HOST || 'http://localhost:4000' );
 
     ENV['ember-simple-auth'].serverTokenEndpoint = ENV['API_HOST'] + ENV['ember-simple-auth'].serverTokenEndpoint;
   }

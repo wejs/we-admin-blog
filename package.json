@@ -1,6 +1,6 @@
 {
   "name": "we-admin-blog",
-  "version": "1.1.8",
+  "version": "1.1.9",
   "description": "We.js plugin with ember.js for add admin blog SPA in /admin route",
   "directories": {
     "doc": "doc",

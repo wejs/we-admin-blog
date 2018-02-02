@@ -37,6 +37,8 @@ export default Ember.Route.extend(AuthenticatedRouteMixin, {
         {
           propertyName: 'createdAt',
           filteredBy: 'createdAt',
+          disableSorting: true,
+          disableFiltering: true,
           title: i18n.t('form-content-createdAt'),
           component: 'mt-list-item-created-at',
           className: 'mt-c-createdAt'

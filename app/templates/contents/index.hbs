@@ -3,11 +3,12 @@
   {{#acl-btn-create model="content" url="/contents/create"}}{{t 'content.create'}}{{/acl-btn-create}}
 </div>
 <br>
+
 {{conteudos-table
   data=model.records
   columns=model.columns
   pageSize=25
-  useFilteringByColumns=false
+  useFilteringByColumns=true
   deleteRecord='deleteRecord'
   changePublishedStatus='changePublishedStatus'
 }}

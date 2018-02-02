@@ -14,7 +14,13 @@ export default Ember.Route.extend(AuthenticatedRouteMixin, {
       }
     },
     changePublishedStatus(record, status) {
-      record.published = status;
+      Ember.set(record, 'published', status);
+      if (status) {
+        Ember.set(record, 'publishedAt', new Date());
+      } else {
+        Ember.set(record, 'publishedAt', null);
+      }
+
       record.save()
       .then( (r)=> {
         if (status) {

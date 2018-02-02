@@ -30,3 +30,90 @@ nav.navbar.navbar-default > .container-fluid {
 .nav-tabs {
   margin-bottom: 0;
 }
+
+.navbar-user-avatar {
+  width: 27px;
+  margin-top: -9px;
+  margin-bottom: -5px;
+  margin-right: 5px;
+}
+
+#page-wrapper {
+  padding-bottom: 20px;
+}
+
+.navbar-brand > img {
+  max-height: 41px;
+  text-align: left;
+  margin-top: -10px;
+  margin-right: 5px;
+  display: inline;
+}
+
+.help-block {
+  font-size: 0.8em;
+  margin-top: 0px;
+}
+
+.system-settings-sidebar table,
+table.image-uploader-table {
+  margin-bottom: 5px;
+}
+
+.text-cell {
+  width: 250px;
+  font-size: 0.9em;
+}
+
+.company-createdAt,
+.content-createdAt {
+  font-size: 0.9em;
+}
+
+.data-importer-id,
+.content-id,
+.company-id {
+  width: 85px;
+}
+
+.content-published {
+  width: 80px;
+}
+
+.models-table-wrapper input {
+  padding: 6px 4px;
+}
+
+.mt-c-id {
+  width: 80px;
+}
+.mt-c-highlighted {
+  width: 118px;
+}
+.mt-c-published {
+  width: 80px;
+}
+.mt-c-createdAt {
+  font-size: 0.9em;
+}
+.text-cell {
+  width: 250px;
+  font-size: 0.9em;
+}
+
+h1,
+.page-header {
+  margin: 20px 0 20px;
+  font-size: 24px;
+}
+
+.link-list-checkbox,
+.hotel-news-link-checkbox {
+  border-top: 1px dashed #ddd;
+  padding: 5px 0px;
+  border-bottom: 1px dashed #ddd;
+}
+
+.globalSearch {
+  margin-bottom: 5px;
+}

@@ -98,7 +98,8 @@
           </fieldset>
         </div>
       </div>
-      <div class="panel panel-default">
+
+{{!--       <div class="panel panel-default">
         <div class="panel-heading">{{t 'content.form.publish.Title'}}</div>
         <div class="panel-body">
           <fieldset>
@@ -115,6 +116,23 @@
           </fieldset>
         </div>
       </div>
+ --}}
+      <div class="panel panel-default">
+        <div class="panel-heading">{{t 'content.form.publish.Title'}}</div>
+        <div class="panel-body">
+          <fieldset>
+            {{field-content-publication class="form-group" publicationDate=model.record.publishedAt isPublished=model.record.published}}
+            <hr />
+
+            <div class="form-group">
+              <label>
+                {{input type="checkbox" checked=model.record.showInLists}} Exibir nas listas?
+              </label>
+            </div>
+          </fieldset>
+        </div>
+      </div>
+
 
       <div class="panel panel-default">
         <div class="panel-heading">{{t 'content.form.terms.Dates'}}</div>
@@ -128,11 +146,7 @@
               }}
             </div>
             <div class="form-group">
-              <label>{{t 'form-content-updatedAt'}}:</label>
-              {{date-time-picker
-                onChange=(action "changeDate" model.record "updatedAt")
-                date=(readonly model.record.updatedAt)
-              }}
+              <strong>{{t 'form-content-updatedAt'}}: </strong> {{moment-format model.record.updatedAt 'DD/MM/YYYY HH:mm'}}
             </div>
           </fieldset>
         </div>

@@ -28,6 +28,13 @@ export default Ember.Route.extend(AuthenticatedRouteMixin, {
           title: i18n.t('content.creator')
         },
         {
+          propertyName: 'highlighted',
+          filteredBy: 'highlighted',
+          title: 'Ordenação',
+          component: 'mt-highlighted',
+          className: 'mt-c-highlighted'
+        },
+        {
           propertyName: 'published',
           disableSorting: true,
           disableFiltering: true,

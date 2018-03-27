@@ -6,9 +6,7 @@ export default Ember.Route.extend(AuthenticatedRouteMixin, {
 
   model() {
     return {
-      record: this.store.createRecord('content', {
-        published: true
-      }),
+      record: this.store.createRecord('content'),
       categories: this.get('term').getSystemCategories()
     };
   },

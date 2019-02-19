@@ -1,9 +1,9 @@
-/*jshint node:true*/
-/* global require, module */
-var EmberApp = require('ember-cli/lib/broccoli/ember-app');
+'use strict';
+
+const EmberApp = require('ember-cli/lib/broccoli/ember-app');
 
 module.exports = function(defaults) {
-  var app = new EmberApp(defaults, {
+  let app = new EmberApp(defaults, {
     'ember-power-select': {
       theme: 'bootstrap'
     },
@@ -17,7 +17,7 @@ module.exports = function(defaults) {
     },
 
     fingerprint: {
-       exclude: ['tiny-mce-languages/**'],
+      exclude: ['tiny-mce-languages/**'],
     },
 
     'ember-bootstrap': {

@@ -19,7 +19,8 @@
                   searchEnabled=false
                   onchange=(action (mut model.themeCollor) )
                   as |opts|
-                }}[{{opts.id}}] {{opts.label}} {{#each opts.colors as |color|}}{{theme-color-item color=color.value}}{{/each}}{{/power-select}}
+                }}[{{opts.id}}] {{opts.label}} {{#each opts.colors as |color|}}{{theme-color-item color=color.value}}{{/each}}
+                {{/power-select}}
               {{else}}
                 Cores do tema: <strong> padrão</strong>
               {{/if}}

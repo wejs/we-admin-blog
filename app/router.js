@@ -1,8 +1,9 @@
-import Ember from 'ember';
+import EmberRouter from '@ember/routing/router';
 import config from './config/environment';
 
-const Router = Ember.Router.extend({
-  location: config.locationType
+const Router = EmberRouter.extend({
+  location: config.locationType,
+  rootURL: config.rootURL
 });
 
 Router.map(function() {
@@ -16,6 +17,12 @@ Router.map(function() {
   });
 
   this.route('contents', function() {
+    this.route('create');
+    this.route('item', { path: ':id' }, function(){});
+  });
+
+
+  this.route('articles', function() {
     this.route('create');
     this.route('item', { path: ':id' }, function(){});
   });
@@ -54,7 +61,7 @@ Router.map(function() {
     this.route('item', { path: ':id' }, function() {
       this.route('terms', function() {
         this.route('create');
-        this.route('item', { path: ':termId' }, function(){});
+        this.route('item', { path: ':term_id' }, function(){});
       });
     });
   });
@@ -80,11 +87,14 @@ Router.map(function() {
     this.route('item', { path: ':id' }, function(){});
   });
 
-
   this.route('comments', function() {
     this.route('item', { path: ':id' }, function(){});
   });
 
+  this.route('t', function() {
+    this.route('create');
+    this.route('item', { path: ':id' }, function(){});
+  });
 
   this.route('widgets');
   this.route('permissions');

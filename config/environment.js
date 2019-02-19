@@ -1,10 +1,11 @@
 /* jshint node: true */
 module.exports = function(environment) {
-  var ENV = {
+  let ENV = {
     modulePrefix: 'we-admin-blog',
-    environment: environment,
+    environment,
     rootURL: '/admin/',
     locationType: 'hash',
+
     API_HOST: '',
     imageHost: '',
     i18n: {
@@ -79,16 +80,22 @@ module.exports = function(environment) {
       },
       {
         icon: '<i class="fa fa-file-text"></i>',
-        text: 'Conteúdos',
+        text: 'Páginas',
         linkTo: 'contents.index',
         permission: 'create_content'
       },
       {
-        icon: '<i class="fa fa-slideshare"></i>',
-        text: 'Slideshow',
-        linkTo: 'slides.index',
-        permission: 'create_slide'
+        icon: '<i class="fa fa-file-text"></i>',
+        text: 'Artigos / posts',
+        linkTo: 'articles.index',
+        permission: 'create_article'
       },
+      // {
+      //   icon: '<i class="fa fa-slideshare"></i>',
+      //   text: 'Slideshow',
+      //   linkTo: 'slides.index',
+      //   permission: 'create_slide'
+      // },
       {
         icon: '<i class="fa fa-envelope-o" aria-hidden="true"></i>',
         text: 'Mensagens de contato',
@@ -130,18 +137,26 @@ module.exports = function(environment) {
         text: 'Configurações',
         linkTo: 'settings.index',
         permission: 'system_settings_update'
+      },
+      {
+        icon: '<i class="fa fa-globe" aria-hidden="true"></i>',
+        text: 'Tradução',
+        linkTo: 't.index',
+        permission: 'create_t'
       }
     ],
 
     EmberENV: {
       EXTEND_PROTOTYPES: {
-        Date: false,
+        // Prevent Ember Data from overriding Date.parse.
+        Date: false
       },
       FEATURES: {
         // Here you can enable experimental features on an ember canary build
         // e.g. 'with-controller': true
       }
     },
+
     APP: {
       // Here you can pass flags/options to your application instance
       // when it is created
@@ -185,6 +200,7 @@ module.exports = function(environment) {
       version: 4
     }
   };
+
   ENV['ember-simple-auth'] = {
     identificationField: 'email',
     passwordField: 'password',
@@ -198,6 +214,7 @@ module.exports = function(environment) {
     store: 'simple-auth-session-store:cookie', // optional
     crossOriginWhitelist: [( process.env.API_HOST || 'http://localhost:4000' )]
   };
+
   if (environment === 'development') {
     // ENV.APP.LOG_RESOLVER = true;
     // ENV.APP.LOG_ACTIVE_GENERATION = true;
@@ -217,20 +234,25 @@ module.exports = function(environment) {
 
     ENV['ember-simple-auth'].serverTokenEndpoint = ENV['API_HOST'] + ENV['ember-simple-auth'].serverTokenEndpoint;
   }
+
   if (environment === 'test') {
     // Testem prefers this...
-    ENV.rootURL = '/';
     ENV.locationType = 'none';
+
     // keep test console output quieter
     ENV.APP.LOG_ACTIVE_GENERATION = false;
     ENV.APP.LOG_VIEW_LOOKUPS = false;
+
     ENV.APP.rootElement = '#ember-testing';
+    ENV.APP.autoboot = false;
   }
+
   if (environment === 'production') {
     ENV.rootURL = '/admin';
     ENV.imageHost = '';
     ENV.API_HOST = '';
     ENV['ember-simple-auth'].serverTokenEndpoint = ENV['API_HOST'] + ENV['ember-simple-auth'].serverTokenEndpoint;
   }
+
   return ENV;
 };

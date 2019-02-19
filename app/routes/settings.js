@@ -1,9 +1,12 @@
-import Ember from 'ember';
 import AuthenticatedRouteMixin from 'ember-simple-auth/mixins/authenticated-route-mixin';
+import Route from '@ember/routing/route';
+import { inject } from '@ember/service';
+import { hash } from 'rsvp';
+import { get, set } from '@ember/object';
 
-export default Ember.Route.extend(AuthenticatedRouteMixin, {
-  ajax: Ember.inject.service(),
-  image: Ember.inject.service(),
+export default Route.extend(AuthenticatedRouteMixin, {
+  ajax: inject(),
+  image: inject(),
 
   model() {
     const systemSettings = (this.get('settings').get('systemSettings') || ''),
@@ -12,7 +15,7 @@ export default Ember.Route.extend(AuthenticatedRouteMixin, {
           bannerId = systemSettings.bannerId,
           ogImageId = systemSettings.ogImageId;
 
-    return Ember.RSVP.hash({
+    return hash({
       settings: systemSettings,
       logo: ((logoId)? this.get('image').getImageData(logoId) : null ),
       icon: ((iconId)? this.get('image').getImageData(iconId) : null ),
@@ -40,7 +43,7 @@ export default Ember.Route.extend(AuthenticatedRouteMixin, {
 
       s.setSystemSettings(data)
       .then( (result) => {
-        Ember.set(s, 'systemSettings', result.settings);
+        set(s, 'systemSettings', result.settings);
         this.get('notifications').success('As configurações do sistema foram salvas.');
         this.send('scrollToTop');
       })
@@ -54,23 +57,23 @@ export default Ember.Route.extend(AuthenticatedRouteMixin, {
     let image;
 
     if (images && images.firstObject) {
-      image = Ember.get(images, 'firstObject');
+      image = get(images, 'firstObject');
     } else {
       return;
     }
 
     if (image && image.urls && image.urls.large) {
-      Ember.set(data, name+'Id', image.id);
-      Ember.set(data, name+'UrlThumbnail', image.urls.thumbnail);
-      Ember.set(data, name+'UrlMedium', image.urls.medium);
-      Ember.set(data, name+'UrlOriginal', image.urls.original);
-      Ember.set(data, name+'Url', image.urls.thumbnail);
+      set(data, name+'Id', image.id);
+      set(data, name+'UrlThumbnail', image.urls.thumbnail);
+      set(data, name+'UrlMedium', image.urls.medium);
+      set(data, name+'UrlOriginal', image.urls.original);
+      set(data, name+'Url', image.urls.thumbnail);
     } else {
-      Ember.set(data, name+'Id', null);
-      Ember.set(data, name+'UrlThumbnail', null);
-      Ember.set(data, name+'UrlMedium', null);
-      Ember.set(data, name+'UrlOriginal', null);
-      Ember.set(data, name+'Url', null);
+      set(data, name+'Id', null);
+      set(data, name+'UrlThumbnail', null);
+      set(data, name+'UrlMedium', null);
+      set(data, name+'UrlOriginal', null);
+      set(data, name+'Url', null);
     }
   }
 });

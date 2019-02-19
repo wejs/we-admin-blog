@@ -1,7 +1,7 @@
 {{#if model.record.id}}
-  <h1 class="page-header">{{t 'content.edit' title=model.record.title}}</h1>
+  <h1 class="page-header">{{t "content.edit" title=model.record.title}}</h1>
 {{else}}
-  <h1 class="page-header">{{t 'content.create'}}</h1>
+  <h1 class="page-header">{{t "content.create"}}</h1>
 {{/if}}
 
 <form {{action "save" model.record model.alias on="submit"}}>
@@ -9,19 +9,19 @@
     <div class="col-md-8">
 
       <div class="panel panel-default">
-        <div class="panel-heading">{{t 'content.form.terms.Data'}}</div>
+        <div class="panel-heading">{{t "content.form.terms.Data"}}</div>
         <div class="panel-body">
           <fieldset>
             <div class="form-group">
-              <label>{{t 'form-content-title'}}*:</label>
-              {{input value=model.record.title class="form-control" placeholder=(t 'form-placeholder-content-title') required="required"}}
+              <label>{{t "form-content-title"}}*:</label>
+              {{input value=model.record.title class="form-control" placeholder=(t "form-placeholder-content-title") required="required"}}
             </div>
             <div class="form-group">
-              <label>{{t 'form-content-about'}}:</label>
+              <label>{{t "form-content-about"}}:</label>
               {{textarea value=model.record.about class="form-control"}}
             </div>
             <div class="form-group">
-              <label>{{t 'form-content-body'}}:</label>
+              <label>{{t "form-content-body"}}:</label>
               {{tinymce-editor
                 options=editorOptions
                 value=model.record.body
@@ -32,26 +32,26 @@
       </div>
 
       <div class="panel panel-default">
-        <div class="panel-heading">{{t 'content.form.terms.Images'}}</div>
+        <div class="panel-heading">{{t "content.form.terms.Images"}}</div>
         <div class="panel-body">
           <fieldset>
             <div class="form-group">
-              <label>{{t 'form-content-featuredImage'}}:</label>
+              <label>{{t "form-content-featuredImage"}}:</label>
               {{image-uploader value=model.record.featuredImage}}
             </div>
             <div class="form-group">
-              <label>{{t 'form-content-images'}}:</label>
+              <label>{{t "form-content-images"}}:</label>
               {{image-uploader value=model.record.images multiple=true}}
             </div>
           </fieldset>
         </div>
       </div>
       <div class="panel panel-default">
-        <div class="panel-heading">{{t 'content.form.terms.Attachment'}}</div>
+        <div class="panel-heading">{{t "content.form.terms.Attachment"}}</div>
         <div class="panel-body">
           <fieldset>
             <div class="form-group">
-              <label>{{t 'form-content-attachment'}}:</label>
+              <label>{{t "form-content-attachment"}}:</label>
               {{file-uploader value=model.record.attachment multiple=true}}
             </div>
           </fieldset>
@@ -60,21 +60,21 @@
       <div>
         <button class="btn btn-primary">
           <i class="fa fa-save"></i>
-          {{t 'content.Save'}}
+          {{t "content.Save"}}
         </button>
-        <button {{action 'goTo' 'contents.index'}} type="button" class="btn btn-default">
+        <button {{action "goTo" "contents.index"}} type="button" class="btn btn-default">
           <i class="fa fa-step-backward"></i>
-          {{t 'content.find'}}
+          {{t "content.find"}}
         </button>
       </div>
     </div>
     <div class="col-md-4">
       <div class="panel panel-default">
-        <div class="panel-heading">{{t 'content.form.terms.Title'}}</div>
+        <div class="panel-heading">{{t "content.form.terms.Title"}}</div>
         <div class="panel-body">
           <fieldset>
             <div class="form-group">
-              <label>{{t 'form-content-category'}}:</label>
+              <label>{{t "form-content-category"}}:</label>
               {{#power-select
                 options=model.categories
                 selected=model.record.category
@@ -85,7 +85,7 @@
               {{/power-select}}
             </div>
             <div class="form-group">
-              <label>{{t 'form-content-tags'}}:</label>
+              <label>{{t "form-content-tags"}}:</label>
               {{#power-select-multiple
                 search=(action "searchTagsTerms")
                 selected=model.record.tags
@@ -99,30 +99,12 @@
         </div>
       </div>
 
-{{!--       <div class="panel panel-default">
-        <div class="panel-heading">{{t 'content.form.publish.Title'}}</div>
-        <div class="panel-body">
-          <fieldset>
-            <div class="form-group">
-              <label>
-                {{input type="checkbox" checked=model.record.published}} {{t 'form-content-published'}}?
-              </label>
-              {{#if model.record.publishedAt}}
-                <div class="form-group">
-                  <strong>Publicado em:</strong> {{moment-format model.record.publishedAt "DD/MM/YYYY h:mm a"}}
-                </div>
-              {{/if}}
-            </div>
-          </fieldset>
-        </div>
-      </div>
- --}}
       <div class="panel panel-default">
-        <div class="panel-heading">{{t 'content.form.publish.Title'}}</div>
+        <div class="panel-heading">{{t "content.form.publish.Title"}}</div>
         <div class="panel-body">
           <fieldset>
             {{field-content-publication class="form-group" publicationDate=model.record.publishedAt isPublished=model.record.published}}
-            <hr />
+            <hr>
 
             <div class="form-group">
               <label>
@@ -133,20 +115,19 @@
         </div>
       </div>
 
-
       <div class="panel panel-default">
-        <div class="panel-heading">{{t 'content.form.terms.Dates'}}</div>
+        <div class="panel-heading">{{t "content.form.terms.Dates"}}</div>
         <div class="panel-body">
           <fieldset>
             <div class="form-group">
-              <label>{{t 'form-content-createdAt'}}:</label>
+              <label>{{t "form-content-createdAt"}}:</label>
               {{date-time-picker
                 onChange=(action "changeDate" model.record "createdAt")
                 date=(readonly model.record.createdAt)
               }}
             </div>
             <div class="form-group">
-              <strong>{{t 'form-content-updatedAt'}}: </strong> {{moment-format model.record.updatedAt 'DD/MM/YYYY HH:mm'}}
+              <strong>{{t "form-content-updatedAt"}}: </strong> {{moment-format model.record.updatedAt "DD/MM/YYYY HH:mm"}}
             </div>
           </fieldset>
         </div>

@@ -16,9 +16,15 @@
             </div>
             <div class="form-group">
               <label>Descrição:</label>
-              {{textarea value=model.settings.siteDescription class="form-control" rows="3"}}
-              <p class="help-block">Descrição usada nas páginas e nos compartilhamentos nas redes sociais.<br>
-              Para uma melhor apresentação evite passar de 200 palavras.</p>
+              {{textarea
+                value=model.settings.siteDescription
+                class="form-control"
+                rows="3"
+              }}
+              <p class="help-block">
+                Descrição usada nas páginas e nos compartilhamentos nas redes sociais.<br>
+              Para uma melhor apresentação evite passar de 200 palavras.
+              </p>
             </div>
 
             <div class="form-group">
@@ -30,7 +36,8 @@
             <div class="form-group">
               <label>Assuntos (keywords):</label>
               {{input value=model.settings.metatagKeywords name="metatagKeywords" class="form-control" placeholder="Ex: tecnologia,site,comida"}}
-              <p class="help-block">Palavras separadas por <strong>,</strong>.
+              <p class="help-block">
+                Palavras separadas por <strong>,</strong>.
                 <br>Os assuntos são opcionais e são usados por alguns motores de busca para indexação do site.
               </p>
             </div>
@@ -70,7 +77,8 @@
             <div class="form-group">
               <label>Imagem para redes sociais:</label>
               {{image-uploader value=model.ogImage}}
-              <p class="help-block">Imagem com 1200x630px.
+              <p class="help-block">
+                Imagem com 1200x630px.
                 <br>Essa imagem é exibida ao compartilhar páginas sem imagens de destaque nas redes sociais.
               </p>
             </div>

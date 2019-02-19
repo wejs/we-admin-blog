@@ -1,7 +1,8 @@
-import Ember from 'ember';
 import AuthenticatedRouteMixin from 'ember-simple-auth/mixins/authenticated-route-mixin';
+import Route from '@ember/routing/route';
+import { set } from '@ember/object';
 
-export default Ember.Route.extend(AuthenticatedRouteMixin, {
+export default Route.extend(AuthenticatedRouteMixin, {
   actions: {
     deleteRecord(record) {
       if (confirm(`Tem certeza que deseja deletar o conteúdo "${record.get('title')}"? \nEssa ação não pode ser desfeita.`)) {
@@ -14,11 +15,11 @@ export default Ember.Route.extend(AuthenticatedRouteMixin, {
       }
     },
     changePublishedStatus(record, status) {
-      Ember.set(record, 'published', status);
+      set(record, 'published', status);
       if (status) {
-        Ember.set(record, 'publishedAt', new Date());
+        set(record, 'publishedAt', new Date());
       } else {
-        Ember.set(record, 'publishedAt', null);
+        set(record, 'publishedAt', null);
       }
 
       record.save()
@@ -54,9 +55,6 @@ export default Ember.Route.extend(AuthenticatedRouteMixin, {
         this.send('queryError', err);
         return err;
       });
-    },
-    changeDate(x, y, z) {
-      console.log('>', x, y, z);
     }
   }
 });

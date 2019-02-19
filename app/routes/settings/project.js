@@ -1,14 +1,17 @@
-import Ember from 'ember';
 import AuthenticatedRouteMixin from 'ember-simple-auth/mixins/authenticated-route-mixin';
+import Route from '@ember/routing/route';
+import { inject } from '@ember/service';
+import { hash } from 'rsvp';
+import { set } from '@ember/object';
 
-export default Ember.Route.extend(AuthenticatedRouteMixin, {
-  ajax: Ember.inject.service(),
-  image: Ember.inject.service(),
+export default Route.extend(AuthenticatedRouteMixin, {
+  ajax: inject(),
+  image: inject(),
 
   model() {
     const systemSettings = (this.get('settings').get('systemSettings') || '');
 
-    return Ember.RSVP.hash({
+    return hash({
       settings: systemSettings
     });
   },
@@ -19,9 +22,8 @@ export default Ember.Route.extend(AuthenticatedRouteMixin, {
 
       s.setSystemSettings(data)
       .then( (result) => {
-        Ember.set(s, 'systemSettings', result.settings);
+        set(s, 'systemSettings', result.settings);
 
-        console.log('success');
         this.get('notifications').success('Os dados do hotel foram salvos.');
         this.send('scrollToTop');
       })

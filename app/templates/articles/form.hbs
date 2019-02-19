@@ -1,0 +1,149 @@
+{{#if model.record.id}}
+  <h1 class="page-header">{{t "article.edit" title=model.record.title}}</h1>
+{{else}}
+  <h1 class="page-header">{{t "article.create"}}</h1>
+{{/if}}
+
+<form {{action "save" model.record model.alias on="submit"}}>
+  <div class="row">
+    <div class="col-md-8">
+
+      <div class="panel panel-default">
+        <div class="panel-heading">{{t "article.form.terms.Data"}}</div>
+        <div class="panel-body">
+          <fieldset>
+            <div class="form-group">
+              <label>{{t "form-article-title"}}*:</label>
+              {{input value=model.record.title class="form-control" placeholder=(t "form-placeholder-article-title") required="required"}}
+            </div>
+            <div class="form-group">
+              <label>{{t "form-article-about"}}:</label>
+              {{textarea value=model.record.about class="form-control"}}
+            </div>
+            <div class="form-group">
+              <label>{{t "form-article-body"}}:</label>
+              {{tinymce-editor
+                options=editorOptions
+                value=model.record.body
+              }}
+            </div>
+          </fieldset>
+        </div>
+      </div>
+
+      <div class="panel panel-default">
+        <div class="panel-heading">{{t "content.form.terms.Images"}}</div>
+        <div class="panel-body">
+          <fieldset>
+            <div class="form-group">
+              <label>{{t "form-content-featuredImage"}}:</label>
+              {{image-uploader value=model.record.featuredImage}}
+            </div>
+            <div class="form-group">
+              <label>{{t "form-content-images"}}:</label>
+              {{image-uploader value=model.record.images multiple=true}}
+            </div>
+          </fieldset>
+        </div>
+      </div>
+      <div class="panel panel-default">
+        <div class="panel-heading">{{t "content.form.terms.Attachment"}}</div>
+        <div class="panel-body">
+          <fieldset>
+            <div class="form-group">
+              <label>{{t "form-content-attachment"}}:</label>
+              {{file-uploader value=model.record.attachment multiple=true}}
+            </div>
+          </fieldset>
+        </div>
+      </div>
+      <div>
+        <button class="btn btn-primary">
+          <i class="fa fa-save"></i>
+          {{t "content.Save"}}
+        </button>
+        <button {{action "goTo" "contents.index"}} type="button" class="btn btn-default">
+          <i class="fa fa-step-backward"></i>
+          {{t "content.find"}}
+        </button>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="panel panel-default">
+        <div class="panel-heading">{{t "content.form.terms.Title"}}</div>
+        <div class="panel-body">
+          <fieldset>
+            <div class="form-group">
+              <label>{{t "form-content-category"}}:</label>
+              {{#power-select
+                options=model.categories
+                selected=model.record.category
+                onchange=(action (mut model.record.category))
+                as |term|
+              }}
+                {{term}}
+              {{/power-select}}
+            </div>
+            <div class="form-group">
+              <label>{{t "form-content-tags"}}:</label>
+              {{#power-select-multiple
+                search=(action "searchTagsTerms")
+                selected=model.record.tags
+                onchange=(action (mut model.record.tags))
+                as |term|
+              }}
+                {{term}}
+              {{/power-select-multiple}}
+            </div>
+          </fieldset>
+        </div>
+      </div>
+
+      <div class="panel panel-default">
+        <div class="panel-heading">{{t "content.form.publish.Title"}}</div>
+        <div class="panel-body">
+          <fieldset>
+            {{field-content-publication class="form-group" publicationDate=model.record.publishedAt isPublished=model.record.published}}
+            <hr>
+
+            <div class="form-group">
+              <label>
+                {{input type="checkbox" checked=model.record.showInLists}} Exibir nas listas?
+              </label>
+            </div>
+          </fieldset>
+        </div>
+      </div>
+
+      <div class="panel panel-default">
+        <div class="panel-heading">{{t "content.form.terms.Dates"}}</div>
+        <div class="panel-body">
+          <fieldset>
+            <div class="form-group">
+              <label>{{t "form-content-createdAt"}}:</label>
+              {{date-time-picker
+                onChange=(action "changeDate" model.record "createdAt")
+                date=(readonly model.record.createdAt)
+              }}
+            </div>
+            <div class="form-group">
+              <strong>{{t "form-content-updatedAt"}}: </strong> {{moment-format model.record.updatedAt "DD/MM/YYYY HH:mm"}}
+            </div>
+          </fieldset>
+        </div>
+      </div>
+
+      <div class="panel panel-default">
+        <div class="panel-heading">URL</div>
+        <div class="panel-body">
+          <div class="form-group">
+            <label>URL de acesso*:</label>
+            {{input name="setAlias" value=model.alias.alias class="form-control" placeholder="Ex /sobre" }}
+            <p class="help-block">URL/caminho de acesso à página, use um texto simples sem espaço ou acentuação. Ex /sobre</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</form>

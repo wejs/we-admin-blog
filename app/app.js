@@ -1,13 +1,15 @@
-import Ember from 'ember';
+import Application from '@ember/application';
 import Resolver from './resolver';
 import loadInitializers from 'ember-load-initializers';
 import config from './config/environment';
 
-let App;
+import Controller from '@ember/controller';
+import { inject } from '@ember/service';
+import Route from '@ember/routing/route';
+import { on } from '@ember/object/evented';
+import $ from 'jquery';
 
-Ember.MODEL_FACTORY_INJECTIONS = true;
-
-App = Ember.Application.extend({
+const App = Application.extend({
   modulePrefix: config.modulePrefix,
   podModulePrefix: config.podModulePrefix,
   Resolver
@@ -15,40 +17,40 @@ App = Ember.Application.extend({
 
 loadInitializers(App, config.modulePrefix);
 
-Ember.Controller.reopen({
-  notifications: Ember.inject.service('notification-messages'),
-  settings: Ember.inject.service('settings'),
-  session: Ember.inject.service('session'),
-  i18n: Ember.inject.service()
+Controller.reopen({
+  notifications: inject('notification-messages'),
+  settings: inject('settings'),
+  session: inject('session'),
+  i18n: inject()
 });
 
-Ember.Route.reopen({
-  notifications: Ember.inject.service('notification-messages'),
-  settings: Ember.inject.service('settings'),
-  i18n: Ember.inject.service(),
+Route.reopen({
+  notifications: inject('notification-messages'),
+  settings: inject('settings'),
+  i18n: inject(),
   activate: function() {
     this._super.apply(this, arguments);
     window.scrollTo(0,0);
   },
   // pace loading on route change:
-  activatePace: Ember.on('activate', function(){
+  activatePace: on('activate', function(){
     return window.Pace.restart();
   }),
-  deactivatePace: Ember.on('deactivate', function() {
+  deactivatePace: on('deactivate', function() {
     return window.Pace.stop();
   })
 });
 
 // settup ember ajax for this project session store
 if (config.environment === 'development') {
-  Ember.$.ajaxSetup({
+  $.ajaxSetup({
     crossDomain: true,
     xhrFields: {
       withCredentials: true
     }
   });
 } else {
-  Ember.$.ajaxSetup({
+  $.ajaxSetup({
     xhrFields: {
       withCredentials: true
     }

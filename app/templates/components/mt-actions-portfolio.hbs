@@ -1,0 +1,26 @@
+<a href="{{ENV.API_HOST}}{{record.linkPermanent}}" class="btn btn-default btn-sm" target="_blank">
+<i class="glyphicon glyphicon-eye-open"></i>
+{{#bs-tooltip placement="top"}}Ver{{/bs-tooltip}}
+</a>
+
+{{#link-to 'portfolio.item' record.id class="btn btn-default btn-sm"}}
+  <i class="glyphicon glyphicon-pencil text-success"></i>
+  {{#bs-tooltip placement="top"}}Editar{{/bs-tooltip}}
+{{/link-to}}
+
+{{#if record.published}}
+  <button {{action 'changePublishedStatus' record false}} type="button" class="btn btn-default btn-sm">
+    <i class="glyphicon glyphicon-unchecked text-danger"></i>
+    {{#bs-tooltip placement="top"}}Despublicar{{/bs-tooltip}}
+  </button>
+{{else}}
+  <button {{action 'changePublishedStatus' record true}} type="button" class="btn btn-default btn-sm">
+    <i class="glyphicon glyphicon-check text-success"></i>
+    {{#bs-tooltip placement="top"}}Publicar{{/bs-tooltip}}
+  </button>
+{{/if}}
+
+<button {{action 'deleteRecord' record}} type="button" class="btn btn-default btn-sm">
+  <i class="glyphicon glyphicon-remove text-danger"></i>
+  {{#bs-tooltip placement="top"}}Deletar{{/bs-tooltip}}
+</button>

@@ -26,10 +26,17 @@ export default Route.extend(AuthenticatedRouteMixin, {
   },
 
   afterModel(model) {
+    let id = get(model, 'record.id');
+
     if (
       model.alias && model.alias.alias && model.record && model.record.id
     ) {
       set(model.record, 'setAlias', get(model.alias,'alias'));
+    } else {
+      model.alias = this.get('store').createRecord('url-alia', {
+        target: '/content/'+id,
+        alias: '/content/'+id
+      });
     }
   }
 });

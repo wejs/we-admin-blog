@@ -1,0 +1,14 @@
+<h1 class="page-header">{{t "portfolio.find"}}</h1>
+<div class="actions">
+  {{#acl-btn-create model="portfolio" url="/portfolio/create"}}{{t "portfolio.create"}}{{/acl-btn-create}}
+</div>
+<br>
+
+{{conteudos-table
+  data=model.records
+  columns=model.columns
+  pageSize=25
+  useFilteringByColumns=true
+  deleteRecord="deleteRecord"
+  changePublishedStatus="changePublishedStatus"
+}}

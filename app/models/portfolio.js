@@ -11,6 +11,10 @@ export default DS.Model.extend({
   projectDate: DS.attr('date'),
   published: DS.attr('boolean'),
   publishedAt: DS.attr('date'),
+  highlighted: DS.attr('number'),
+  showInLists: DS.attr('boolean', {
+    defaultValue: 'true'
+  }),
   attachment: DS.attr('array'),
   featuredImage: DS.attr('array'),
   images: DS.attr('array'),

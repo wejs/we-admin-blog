@@ -8,7 +8,9 @@ export default Route.extend(AuthenticatedRouteMixin, {
 
   model() {
     return hash({
-      record: this.store.createRecord('content'),
+      record: this.store.createRecord('content', {
+        published: true
+      }),
       categories: this.get('term').getSystemCategories()
     });
   },

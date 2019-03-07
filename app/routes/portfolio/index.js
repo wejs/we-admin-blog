@@ -9,7 +9,7 @@ export default Route.extend(AuthenticatedRouteMixin, {
     const i18n = this.get('i18n');
 
     return hash({
-      records: this.get('store').query('content', {}),
+      records: this.get('store').query('portfolio', {}),
       columns: [
         {
           propertyName: 'id',
@@ -19,14 +19,14 @@ export default Route.extend(AuthenticatedRouteMixin, {
         {
           propertyName: 'title',
           filteredBy: 'title',
-          title: i18n.t('form-content-title'),
+          title: i18n.t('form-portfolio-title'),
           className: 'mt-c-name text-cell'
         },
         {
           propertyName: 'creator.displayName',
           disableSorting: true,
           disableFiltering: true,
-          title: i18n.t('content.creator')
+          title: i18n.t('portfolio.creator')
         },
         {
           propertyName: 'highlighted',
@@ -39,7 +39,7 @@ export default Route.extend(AuthenticatedRouteMixin, {
           propertyName: 'published',
           disableSorting: true,
           disableFiltering: true,
-          title: i18n.t('form-content-published'),
+          title: i18n.t('form-portfolio-published'),
           className: 'mt-c-published'
         },
         {
@@ -47,7 +47,7 @@ export default Route.extend(AuthenticatedRouteMixin, {
           filteredBy: 'createdAt',
           disableSorting: true,
           disableFiltering: true,
-          title: i18n.t('form-content-createdAt'),
+          title: i18n.t('form-portfolio-createdAt'),
           component: 'mt-list-item-created-at',
           className: 'mt-c-createdAt'
         },
@@ -56,7 +56,7 @@ export default Route.extend(AuthenticatedRouteMixin, {
           disableSorting: true,
           disableFiltering: true,
           title: i18n.t('Actions'),
-          component: 'mt-actions-content'
+          component: 'mt-actions-portfolio'
         }
       ]
     });

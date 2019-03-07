@@ -21,8 +21,12 @@ Router.map(function() {
     this.route('item', { path: ':id' }, function(){});
   });
 
-
   this.route('articles', function() {
+    this.route('create');
+    this.route('item', { path: ':id' }, function(){});
+  });
+
+  this.route('portfolio', function() {
     this.route('create');
     this.route('item', { path: ':id' }, function(){});
   });
@@ -66,11 +70,14 @@ Router.map(function() {
     });
   });
 
-
   this.route('settings', function() {
     this.route('project');
     this.route('integrations');
-    this.route('theme');
+    this.route('theme', function() {
+      this.route('change', function() {
+        this.route('color', { path: ':id' });
+      });
+    });
   });
 
   this.route('site-contacts', function() {

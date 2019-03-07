@@ -9,8 +9,7 @@ export default Route.extend(AuthenticatedRouteMixin, {
     const i18n = this.get('i18n');
 
     return hash({
-      records: this.get('store').query('article', {
-      }),
+      records: this.get('store').query('article', {}),
       columns: [
         {
           propertyName: 'id',

@@ -8,10 +8,10 @@ export default Route.extend(AuthenticatedRouteMixin, {
   term: inject(),
   model(params) {
     return hash({
-      record: this.get('store').findRecord('article', params.id),
+      record: this.get('store').findRecord('portfolio', params.id),
       categories: this.get('term').getSystemCategories(),
       alias: this.get('store').query('url-alia', {
-        target: '/article/'+params.id,
+        target: '/portfolio/'+params.id,
         limit: 1,
         order: 'id DESC'
       })
@@ -34,8 +34,8 @@ export default Route.extend(AuthenticatedRouteMixin, {
       set(model.record, 'setAlias', get(model.alias,'alias'));
     } else {
       model.alias = this.get('store').createRecord('url-alia', {
-        target: '/article/'+id,
-        alias: '/article/'+id
+        target: '/portfolio/'+id,
+        alias: '/portfolio/'+id
       });
     }
   }

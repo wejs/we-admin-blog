@@ -8,7 +8,7 @@ export default Route.extend(AuthenticatedRouteMixin, {
 
   model() {
     return hash({
-      record: this.store.createRecord('article', {
+      record: this.store.createRecord('portfolio',  {
         published: true
       }),
       categories: this.get('term').getSystemCategories()
@@ -18,9 +18,9 @@ export default Route.extend(AuthenticatedRouteMixin, {
     save(record) {
       record.save()
       .then( (r)=> {
-        this.get('notifications').success('Artigo criado com sucesso.');
+        this.get('notifications').success('Portifolio cadastrado com sucesso.');
 
-        this.transitionTo('articles.item', r.id);
+        this.transitionTo('portfolio.item', r.id);
         this.send('scrollToTop');
         // success
         return r;

@@ -57,16 +57,6 @@
           </fieldset>
         </div>
       </div>
-      <div>
-        <button class="btn btn-primary">
-          <i class="fa fa-save"></i>
-          {{t "content.Save"}}
-        </button>
-        <button {{action "goTo" "contents.index"}} type="button" class="btn btn-default">
-          <i class="fa fa-step-backward"></i>
-          {{t "content.find"}}
-        </button>
-      </div>
     </div>
     <div class="col-md-4">
       <div class="panel panel-default">
@@ -114,24 +104,25 @@
           </fieldset>
         </div>
       </div>
-
-      <div class="panel panel-default">
-        <div class="panel-heading">{{t "content.form.terms.Dates"}}</div>
-        <div class="panel-body">
-          <fieldset>
-            <div class="form-group">
-              <label>{{t "form-content-createdAt"}}:</label>
-              {{date-time-picker
-                onChange=(action "changeDate" model.record "createdAt")
-                date=(readonly model.record.createdAt)
-              }}
-            </div>
-            <div class="form-group">
-              <strong>{{t "form-content-updatedAt"}}: </strong> {{moment-format model.record.updatedAt "DD/MM/YYYY HH:mm"}}
-            </div>
-          </fieldset>
+      {{#if model.record.id}}
+        <div class="panel panel-default">
+          <div class="panel-heading">{{t "content.form.terms.Dates"}}</div>
+          <div class="panel-body">
+            <fieldset>
+              <div class="form-group">
+                <label>{{t "form-content-createdAt"}}:</label>
+                {{date-time-picker
+                  onChange=(action "changeDate" model.record "createdAt")
+                  date=(readonly model.record.createdAt)
+                }}
+              </div>
+              <div class="form-group">
+                <strong>{{t "form-content-updatedAt"}}: </strong> {{moment-format model.record.updatedAt "DD/MM/YYYY HH:mm"}}
+              </div>
+            </fieldset>
+          </div>
         </div>
-      </div>
+      {{/if}}
 
       <div class="panel panel-default">
         <div class="panel-heading">URL</div>
@@ -144,6 +135,17 @@
         </div>
       </div>
     </div>
-
+    <div class="col-md-12">
+      <div class="footer-actions">
+        <button class="btn btn-primary">
+          <i class="fa fa-save"></i>
+          {{t "content.Save"}}
+        </button>
+        <button {{action "goTo" "contents.index"}} type="button" class="btn btn-default">
+          <i class="fa fa-step-backward"></i>
+          {{t "content.find"}}
+        </button>
+      </div>
+    </div>
   </div>
 </form>

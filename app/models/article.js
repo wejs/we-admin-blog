@@ -12,6 +12,11 @@ export default DS.Model.extend({
   published: DS.attr('boolean', {
     defaultValue: 'true'
   }),
+  publishedAt: DS.attr('date'),
+  highlighted: DS.attr('number'),
+  showInLists: DS.attr('boolean', {
+    defaultValue: 'true'
+  }),
   title: DS.attr('string'),
   about: DS.attr('string'),
   body: DS.attr('string'),

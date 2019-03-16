@@ -39,7 +39,8 @@ export default Route.extend(AuthenticatedRouteMixin, {
           propertyName: 'published',
           disableSorting: true,
           disableFiltering: true,
-          title: i18n.t('form-portfolio-published'),
+          title: i18n.t('form-content-published'),
+          component: 'mt-published',
           className: 'mt-c-published'
         },
         {

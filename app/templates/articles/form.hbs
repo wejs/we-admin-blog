@@ -142,10 +142,16 @@
           <i class="fa fa-save"></i>
           {{t "content.Save"}}
         </button>
-        <button {{action "goTo" "contents.index"}} type="button" class="btn btn-default">
+        <button {{action "goTo" "articles.index"}} type="button" class="btn btn-default">
           <i class="fa fa-step-backward"></i>
           {{t "article.find"}}
         </button>
+        {{#if model.record.id}}
+          <a href={{model.record.linkPermanent}} target="_blank" class="btn btn-default">
+            <i class="glyphicon glyphicon-eye-open"></i>
+            {{t "View"}}
+          </a>
+        {{/if}}
       </div>
     </div>
   </div>

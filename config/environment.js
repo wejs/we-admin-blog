@@ -93,6 +93,7 @@ module.exports = function(environment) {
         icon: '<i class="fa fa-product-hunt" aria-hidden="true"></i>',
         text: 'Portifólio',
         linkTo: 'portfolio.index',
+        plugin: 'we-plugin-portfolio',
         permission: 'create_portfolio'
       },
       // {

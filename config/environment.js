@@ -96,12 +96,13 @@ module.exports = function(environment) {
         plugin: 'we-plugin-portfolio',
         permission: 'create_portfolio'
       },
-      // {
-      //   icon: '<i class="fa fa-slideshare"></i>',
-      //   text: 'Slideshow',
-      //   linkTo: 'slides.index',
-      //   permission: 'create_slide'
-      // },
+      {
+        icon: '<i class="fa fa-slideshare"></i>',
+        text: 'Slideshow',
+        linkTo: 'slides.index',
+        plugin: 'we-plugin-slideshow',
+        permission: 'create_slide'
+      },
       {
         icon: '<i class="fa fa-envelope-o" aria-hidden="true"></i>',
         text: 'Mensagens de contato',

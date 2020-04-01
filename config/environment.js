@@ -81,7 +81,15 @@ module.exports = function(environment) {
         icon: '<i class="fa fa-file-text"></i>',
         text: 'Páginas',
         linkTo: 'contents.index',
+        plugin: 'we-plugin-page',
         permission: 'create_content'
+      },
+      {
+        icon: '<i class="fa fa-bullhorn" aria-hidden="true"></i>',
+        text: 'Notícias',
+        linkTo: 'news.index',
+        plugin: 'we-plugin-news',
+        permission: 'create_news'
       },
       {
         icon: '<i class="fa fa-file-text"></i>',

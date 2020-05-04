@@ -98,6 +98,13 @@ module.exports = function(environment) {
         permission: 'create_article'
       },
       {
+        icon: '<i class="fa fa-object-group" aria-hidden="true"></i>',
+        text: 'Galerias',
+        linkTo: 'gallery.index',
+        plugin: 'we-plugin-gallery',
+        permission: 'create_gallery'
+      },
+      {
         icon: '<i class="fa fa-product-hunt" aria-hidden="true"></i>',
         text: 'Portifólio',
         linkTo: 'portfolio.index',

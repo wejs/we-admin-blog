@@ -36,27 +36,26 @@ Router.map(function() {
     this.route('item', { path: ':id' }, function(){});
   });
 
+  this.route('gallery', function() {
+    this.route('create');
+    this.route('item', { path: ':id' }, function(){});
+  });
+
   this.route('users', function() {
     this.route('create');
-    this.route('item', { path: ':id' }, function(){
-
-    });
+    this.route('item', { path: ':id' }, function(){});
   });
 
   this.route('url-alia', function() {
     this.route('create');
-    this.route('item', { path: ':id' }, function(){
-
-    });
+    this.route('item', { path: ':id' }, function(){});
   });
 
   this.route('menus', function() {
     this.route('create');
     this.route('item', { path: ':id' }, function(){
       this.route('add-link');
-      this.route('edit-link', { path: ':linkid' }, function(){
-
-      });
+      this.route('edit-link', { path: ':linkid' }, function(){});
     });
   });
 

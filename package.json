@@ -19,7 +19,7 @@
     "build": "ember build --environment production",
     "lint:hbs": "ember-template-lint .",
     "lint:js": "eslint .",
-    "start": "API_HOST='http://localhost:3900' ember serve",
+    "start": "ember serve",
     "test": "ember test",
     "up": "ncu -u --semverLevel minor"
   },
@@ -67,7 +67,8 @@
     "qunit-dom": "^0.9.2",
     "we-admin": "wejs/we-admin#v1.0.38",
     "we-admin-news": "linkysystems/we-admin-news#v1.0.0",
-    "we-admin-portfolio": "wejs/we-admin-portfolio#v1.0.0"
+    "we-admin-portfolio": "wejs/we-admin-portfolio#v1.0.0",
+    "we-admin-gallery": "linkysystems/we-admin-gallery#v1.1.1"
   },
   "engines": {
     "node": "6.* || 8.* || >= 10.*"

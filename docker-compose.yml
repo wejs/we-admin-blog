@@ -1,0 +1,21 @@
+---
+version: '3'
+services:
+  install_admin: &adminDefault
+    user: root
+    image: danlynn/ember-cli:3.4.3
+    volumes:
+      - .:/myapp
+    environment:
+      NODE_ENV: development
+    command: npm install
+  admin:
+    <<: *adminDefault
+    environment:
+      NODE_ENV: development
+      API_HOST: "http://localhost:5400"
+    ports:
+      - "4203:4203"
+      - "7020:7020"
+      - "7357:7357"
+    command: npm start

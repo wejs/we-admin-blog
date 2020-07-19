@@ -63,12 +63,13 @@
     "ember-truth-helpers": "2.1.0",
     "ember-uploader": "2.0.0",
     "eslint-plugin-ember": "^7.7.2",
+    "heic2any": "0.0.3",
     "loader.js": "^4.7.0",
     "qunit-dom": "^0.9.2",
-    "we-admin": "wejs/we-admin#v1.0.38",
+    "we-admin": "wejs/we-admin#v1.0.39",
+    "we-admin-gallery": "linkysystems/we-admin-gallery#v1.1.1",
     "we-admin-news": "linkysystems/we-admin-news#v1.0.0",
-    "we-admin-portfolio": "wejs/we-admin-portfolio#v1.0.0",
-    "we-admin-gallery": "linkysystems/we-admin-gallery#v1.1.1"
+    "we-admin-portfolio": "wejs/we-admin-portfolio#v1.0.0"
   },
   "engines": {
     "node": "6.* || 8.* || >= 10.*"

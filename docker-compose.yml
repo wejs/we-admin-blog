@@ -1,16 +1,29 @@
 ---
 version: '3'
 services:
-  install_admin: &adminDefault
+  # install_admin: &adminDefault
+  #   user: root
+  #   image: danlynn/ember-cli:3.4.3
+  #   volumes:
+  #     - .:/myapp
+  #   environment:
+  #     NODE_ENV: development
+  #   command: npm install
+  cmd:
     user: root
     image: danlynn/ember-cli:3.4.3
     volumes:
       - .:/myapp
     environment:
       NODE_ENV: development
-    command: npm install
+    command: tail -f /dev/null
   admin:
-    <<: *adminDefault
+    user: root
+    image: danlynn/ember-cli:3.4.3
+    volumes:
+      - .:/myapp
+      - /home/a/project/ember/we-admin:/myapp/node_modules/we-admin
+      - /home/a/project/ember/we-admin-gallery:/myapp/node_modules/we-admin-gallery
     environment:
       NODE_ENV: development
       API_HOST: "http://localhost:5400"
